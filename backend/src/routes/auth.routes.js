@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import * as authService from '../services/auth.service.js';
-import { bad, nameRule, ok, validate } from './validate.js';
+import { bad, emailRule, nameRule, ok, validate } from './validate.js';
 
 export const authRouter = Router();
 
 const COOKIE_BASE = { httpOnly: true, secure: true, sameSite: 'lax' };
 const ACCESS_PATH = '/';
 const REFRESH_PATH = '/api/auth';
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function setTokenCookies(res, tokens) {
   res.cookie('access_token', tokens.accessToken, { ...COOKIE_BASE, path: ACCESS_PATH, maxAge: 15 * 60 * 1000 });
@@ -22,13 +21,6 @@ function clearTokenCookies(res) {
   res.clearCookie('access_token', { ...COOKIE_BASE, path: ACCESS_PATH });
   res.clearCookie('refresh_token', { ...COOKIE_BASE, path: REFRESH_PATH });
 }
-
-const emailRule = (strict) => (v) => {
-  const email = typeof v === 'string' ? v.trim().toLowerCase() : '';
-  if (!email) return bad('이메일을 입력해 주세요.');
-  if (strict && (email.length > 254 || !EMAIL_RE.test(email))) return bad('이메일 형식이 올바르지 않습니다.');
-  return ok(email);
-};
 
 const signupRules = {
   email: emailRule(true),

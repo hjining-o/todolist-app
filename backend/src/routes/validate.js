@@ -1,5 +1,6 @@
 import { AppError } from '../domain/errors.js';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const bad = (error) => ({ error });
@@ -23,6 +24,13 @@ export function validate(body, rules) {
 export const nameRule = (v) => {
   const name = typeof v === 'string' ? v.trim() : '';
   return name.length >= 1 && name.length <= 50 ? ok(name) : bad('이름은 1~50자여야 합니다.');
+};
+
+export const emailRule = (strict) => (v) => {
+  const email = typeof v === 'string' ? v.trim().toLowerCase() : '';
+  if (!email) return bad('이메일을 입력해 주세요.');
+  if (strict && (email.length > 254 || !EMAIL_RE.test(email))) return bad('이메일 형식이 올바르지 않습니다.');
+  return ok(email);
 };
 
 // uuid가 아니면 pg 22P02로 500이 되므로 미리 400 처리
