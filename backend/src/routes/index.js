@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import { AppError } from '../domain/errors.js';
 import { authRouter } from './auth.routes.js';
+import { categoriesRouter } from './categories.routes.js';
 import { usersRouter } from './users.routes.js';
 
 export const router = Router();
@@ -16,5 +17,6 @@ router.use(authenticate);
 
 // 보호 라우터 마운트 자리
 router.use(usersRouter);
+router.use('/categories', categoriesRouter);
 
 router.use((req, res, next) => next(AppError.of('NOT_FOUND')));
