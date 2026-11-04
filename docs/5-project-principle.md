@@ -1,0 +1,457 @@
+# TodoList 프로젝트 구조 설계 원칙
+
+| 항목 | 내용 |
+|------|------|
+| 문서 버전 | v0.6 |
+| 상태 | 초안 |
+| 최종 수정일 | 2026-11-04 |
+| 작성자 | hjining |
+| 기준 문서 | `docs/1-domain-definition.md` v0.11, `docs/2-prd.md` v0.10, `docs/3-user-scenario.md` v0.8, `docs/4-wireframe.md` v0.6 |
+
+> 표기
+> - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`SC`, `A`, `B`, `K`, `M`, `Q1`–`Q4`), 시나리오 `US-xx`·`EX-xx`·`C-xx`·`D-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `ST-xx`·`DLG-xx`·`U-xx`.
+> - 원칙 ID: `P-xx`(1장), `BE-xx`(백엔드 의존), `FE-xx`(프론트 의존), `N-xx`(네이밍), `Q-xx`(품질), `SEC-xx`(보안·입력), `OPS-xx`(설정·운영). 도메인의 문제 `P1`–`P5`, 우선순위 `P0`/`P1`, PRD의 미결 결정 `Q1`–`Q4`와는 하이픈으로 구분한다.
+> - **[가정]** = 기준 문서에 없어 이 문서에서 정한 사항. 7장에서 상태(확정, 미결)를 관리한다. 미결 항목은 구현 전에 정한다.
+> - 변경 이력은 8장에 있다.
+
+## 1. 모든 스택에 공통인 최상위 원칙
+
+### 1.1 공통 원칙
+
+| ID | 원칙 | 근거 |
+|----|------|------|
+| P-01 | 코드 이름은 도메인 용어를 따른다. 엔티티(User, Category, Todo, TodoShare, Team, TeamMember, TodoHistory)와 역할·상태 용어를 그대로 쓰고, 동의어(task, group, log 등)를 만들지 않는다. | 도메인 §2, §3 |
+| P-02 | 권한, 입력 검증, 상태 계산, '오늘' 판정은 서버가 최종 판정한다. 클라이언트 검증과 버튼 숨김은 편의 기능이며 보안 수단이 아니다. | PRD §5.2, §5.3, 시나리오 EX-07, EX-20 |
+| P-03 | 규칙은 한 곳에만 구현한다. 권한 조건(R2, R19, R21)은 `access.js` 한 파일, 상태 판정(S1–S4)은 `todo-status.js` 한 함수, 일시 정규화(R3–R5)는 `period.js` 한 모듈에만 둔다. 같은 규칙을 다른 곳에 복사하지 않는다. | PRD §4.2, §9 K4, K5 |
+| P-04 | 파생값은 저장하지 않는다. `status`는 조회 시 계산해 응답에만 넣고, DB 컬럼이나 요청 필드로 받지 않는다. 저장하는 값은 `completed`, `startAt`, `endAt`(및 `completedAt`)뿐이다. | 도메인 §5.1 |
+| P-05 | 기본 거부. 미인증은 401, 볼 수 없는 리소스(공유 없음, 비구성원)는 404로 존재를 숨긴다, 볼 수는 있으나 변경 권한이 없으면 403. 허용은 명시적으로만 한다. | PRD §5.2, 도메인 R1, R2, 시나리오 EX-05, EX-20, EX-21 |
+| P-06 | 비밀과 내부 정보는 응답, 로그, 클라이언트 번들에 나가지 않는다. 대상은 비밀번호, 해시, JWT, 시크릿, 스택 트레이스, 다른 사용자의 카테고리 정보다. | PRD §5.2, 시나리오 §6.2 (500) |
+| P-07 | 범위 밖 기능의 코드, 테이블, 라우트, 화면을 만들지 않는다. 대상은 휴지통, 알림, 반복 할일, 우선순위, 태그, 소셜 로그인, 비밀번호 찾기, 회원 탈퇴, 팀 삭제, 초대 수락, 실시간 동기화, 다국어다. | 도메인 §7, PRD §3.2 |
+| P-08 | 데이터 모델은 P1 테이블(TodoHistory 포함)까지 Day 1에 한 번에 만든다. P1 기능의 라우트와 화면은 P1 구현 때 추가한다. | PRD §4.2 A6 |
+| P-09 | 작게 만든다. 1인 2일 MVP 기준으로, 문서에 없는 추상화 계층, 공통 프레임워크, 설정 옵션을 만들지 않는다. 필요가 생기면 이 문서를 먼저 고친다. | PRD §2.1, K1, K2 |
+
+### 1.2 적용 스택 (문서 근거)
+
+| 영역 | 스택 | 근거 |
+|------|------|------|
+| 프론트엔드 | React 19 + TypeScript, TanStack Query(서버 상태), Zustand(UI 상태), 브라우저 기본 `<input type="date">`, `<input type="time">` | PRD §6 |
+| 프론트 빌드 | Vite | PRD §6, §8.1 |
+| UI 컴포넌트 | shadcn/ui (Tailwind CSS + Radix UI, `lucide-react`). 날짜 입력은 shadcn `Input`으로 스타일만 맞춘 기본 input이며 shadcn Date Picker는 쓰지 않는다 | PRD §6, A24 |
+| 캘린더 | FullCalendar(`@fullcalendar/react`, `daygrid`, `timegrid`). PRD §6이 허용한 오픈소스 라이브러리 중에서 고른 것이다. `dayMaxEvents: 3`으로 한 칸 3개 + `+N`, `moreLinkClick: 'day'`로 `+N`을 누르면 일 뷰(U-13), `firstDay: 0`으로 일요일 시작(C-07). shadcn Calendar로 대신하지 않는다 | PRD §6, §9 K8, [가정 G-11] |
+| 백엔드 | Node.js + JavaScript(TypeScript 아님) + Express | PRD §6 |
+| DB 접근 | `pg`(node-postgres). Prisma와 다른 ORM 금지 | PRD §6 |
+| 데이터베이스 | PostgreSQL 17, Supabase 사용. DB로만 쓰며 Supabase Auth와 자동 생성 API는 쓰지 않음 | PRD §5.1 B1 |
+| 배포 | Vercel 단일 프로젝트. 프론트 정적 빌드와 Express(Vercel Functions)를 같은 도메인 `/api/*`에 배포 | PRD §5.1 |
+| 인증 | JWT를 httpOnly 쿠키(`access_token`)로 발급. `jsonwebtoken`, `cookie-parser`. 비밀번호는 `bcryptjs`, cost 10 | PRD §5.2 B4, [가정 G-09] |
+| 테스트 | Vitest(단위, 통합), supertest(API 통합), `@playwright/test`(E2E 회귀), Playwright MCP(E2E 탐색과 스크립트 작성 보조) | [가정 G-04] |
+
+## 2. 의존성 및 레이어 원칙
+
+### 2.1 백엔드 레이어
+
+의존 방향은 `routes → services → repositories → (config/db)`이다. `domain`은 아무것도 import하지 않는다.
+
+| 레이어 | 책임 | 허용 import |
+|--------|------|-------------|
+| routes | 경로·메서드 정의, 요청 파싱, 형식·길이 검증, 서비스 호출, 응답 조립 | services, middleware, domain/errors |
+| middleware | 인증(쿠키 JWT → `req.user`), 공통 에러 응답 변환 | config/env, domain/errors |
+| services | 유스케이스, 도메인 규칙 적용, 권한 판정 호출, 트랜잭션 경계 | domain, 같은 모듈 repositories, 다른 모듈 services |
+| domain | 순수 함수(상태 판정, 기간 정규화, 이력 diff), `AppError`와 에러 코드 상수 | 없음 |
+| repositories | SQL 실행, row를 camelCase 객체로 변환, 권한 조각 사용 | config/db, repositories/sql |
+| config | 환경변수 검증, `pg.Pool` 생성, `withTransaction` 헬퍼 | 없음 |
+
+백엔드 금지 규칙:
+
+| ID | 규칙 |
+|----|------|
+| BE-01 | routes는 repositories와 `pg`를 import하지 않는다. 데이터는 services를 거친다. |
+| BE-02 | services는 `req`, `res` 같은 Express 객체와 HTTP 상태 코드를 다루지 않는다. 실패는 `AppError`로 던진다. |
+| BE-03 | domain은 express, pg, config, services, repositories를 import하지 않는다. |
+| BE-04 | `pg`는 `config/db.js`와 `repositories/`에서만 import한다. |
+| BE-05 | repositories는 services와 routes를 import하지 않는다. 할일과 카테고리의 권한 WHERE 조건은 `repositories/sql/access.js`의 조각으로만 쓴다. |
+| BE-06 | 다른 모듈의 데이터는 그 모듈의 service 함수로만 접근한다. 예: `todos`가 카테고리를 확인할 때는 `categories.service`를 호출하고 `categories.repo`를 직접 호출하지 않는다. |
+| BE-07 | SQL은 `$1, $2 …` parameterized query만 쓴다. 문자열 연결이나 템플릿 리터럴로 SQL을 만들지 않는다. 정렬 컬럼 같은 식별자는 허용 목록 객체에서만 고른다. |
+| BE-08 | 여러 쓰기를 한 단위로 묶어야 하는 흐름(가입, 카테고리 삭제와 할일 이동, 구성원 제거와 공유 해제, 팀 나가기, P1의 할일 변경과 이력 기록)은 service에서 `withTransaction`으로 감싼다. repository 함수는 `client`(pool 또는 트랜잭션 클라이언트)를 인자로 받는다. |
+| BE-09 | 순환 import를 만들지 않는다. |
+
+### 2.2 프론트엔드 레이어
+
+의존 방향은 `app → pages → features → shared`이고, `stores`는 UI 상태만 담으며 아무것도 import하지 않는다.
+
+| 레이어 | 책임 | 허용 import |
+|--------|------|-------------|
+| app | 라우트 정의(SC-01–SC-09), 인증 가드(ST-01), 공통 레이아웃(SC-00) | pages, features, shared, stores |
+| pages | 화면 1개 = 파일 1개. features의 훅과 컴포넌트를 조합하고 라우트 파라미터를 읽는다 | features, shared, stores |
+| features/<도메인> | 서버 상태 훅(TanStack Query), 도메인 컴포넌트, 표시 로직 | shared, stores |
+| shared | 도메인 무관한 API 클라이언트, UI 부품, 순수 유틸, 공통 타입 | 없음 |
+| stores | Zustand UI 상태(필터, 캘린더 뷰와 기준일, 모달 열림 등) | 없음 |
+
+프론트엔드 금지 규칙:
+
+| ID | 규칙 |
+|----|------|
+| FE-01 | pages 간에 import하지 않는다. 공통 코드는 features 또는 shared로 내린다. |
+| FE-02 | features는 pages와 app을 import하지 않는다. |
+| FE-03 | shared는 features, pages, stores를 import하지 않는다. |
+| FE-04 | HTTP 호출은 `shared/api/client.ts`를 거친다. 컴포넌트와 페이지에서 `fetch`를 직접 호출하지 않는다. 서버 데이터 훅은 `features/<도메인>/`에 둔다. |
+| FE-05 | 서버 응답 데이터(할일, 카테고리, 팀 등)를 Zustand에 복사하지 않는다. Zustand에는 서버와 무관한 UI 상태만 둔다(PRD §6). |
+| FE-06 | 상태(S1–S4) 판정, '오늘', 시간대 계산에 클라이언트 시계(`new Date()`)를 쓰지 않는다. 상태는 서버 응답의 `status`를 표시하고, 일시는 `User.timezone` 기준으로 포맷만 한다(PRD §5.3, 와이어프레임 §3.3). 예외: 캘린더의 '오늘' 이동, 초기 기준일, 오늘 칸 강조(FR-08 #1)는 브라우저 시계를 써도 된다. 화면 이동에만 쓰고 상태나 저장 값에는 쓰지 않는다. |
+| FE-10 | 캘린더에 넘기는 일시는 서버가 `User.timezone`의 오프셋으로 보낸 ISO 8601 문자열에서 오프셋을 뗀 벽시계 값(`2026-11-04T09:00`)이다. FullCalendar는 `timeZone: 'UTC'`로 설정해 다시 변환하지 않는다. 그래서 브라우저 시간대와 `User.timezone`이 달라도(US-16 #5) 사용자 시간대로 보이고, 시간대 플러그인은 두지 않는다. 변환 함수는 `features/todos/calendar/` 한 곳에 둔다. |
+| FE-07 | 편집, 완료, 삭제 버튼 노출과 카테고리 필드 활성 여부는 서버 응답의 권한 플래그(`canEdit`, `isOwner`, [가정 G-06])로만 결정한다. |
+| FE-08 | 버튼, 입력, 선택, 표, 배지, 대화상자 같은 기본 UI 부품은 `shared/components/ui/`의 shadcn 컴포넌트를 쓴다. 같은 부품을 직접 만들거나 다른 UI 라이브러리를 추가하지 않는다. 컴포넌트 추가는 shadcn CLI 또는 shadcn MCP로만 한다(PRD §6). |
+| FE-09 | `shared/components/ui/`의 생성 파일은 직접 고치지 않는 것을 기본으로 한다. 도메인 표현(예: 상태 배지 색)은 features 컴포넌트에서 감싸서 만든다. 스타일은 Tailwind 유틸리티 클래스와 `src/index.css`의 테마 변수로만 지정하고, 별도 CSS 파일과 인라인 `style`은 캘린더 라이브러리 덮어쓰기 외에는 쓰지 않는다. |
+
+## 3. 코드 및 네이밍 원칙
+
+| ID | 대상 | 규칙 | 예시 | 근거 |
+|----|------|------|------|------|
+| N-01 | 디렉토리 | 소문자 kebab-case. 도메인 모듈 이름은 엔티티의 복수형이다. 독립 경로가 없는 엔티티(TodoShare, TeamMember)는 상위 모듈에 둔다. | `features/todos/`, `features/todo-histories/`, `services/teams.service.js` | 도메인 §3, [가정 G-01] |
+| N-02 | 프론트 컴포넌트 파일 | PascalCase.tsx. 화면 파일은 `<이름>Page.tsx`이고, 첫 줄 주석에 화면 ID를 적는다. 예외: `shared/components/ui/`는 shadcn이 만든 kebab-case 이름(`alert-dialog.tsx`)을 그대로 둔다. | `TodoListPage.tsx` (`// SC-03`) | 와이어프레임 §2.1, PRD §6 |
+| N-03 | 프론트 훅과 유틸 파일 | camelCase.ts. 훅은 `use` 접두사를 붙인다. | `useTodos.ts`, `dateTime.ts` | [가정 G-05] |
+| N-04 | 백엔드 파일 | kebab-case. 계층 파일은 `<모듈>.<계층>.js`(routes, service, repo)로 쓴다. domain, middleware, config 파일은 역할 접미사 없이 쓴다. | `todos.routes.js`, `todos.service.js`, `todos.repo.js`, `todo-status.js`, `error-handler.js` | [가정 G-01] |
+| N-05 | 테스트 파일 | `<대상>.test.js`(백엔드) 또는 `<대상>.test.ts(x)`(프론트, 대상 파일 옆). E2E는 `e2e/<기능>.spec.ts`이고, 테스트 제목 앞에 시나리오 ID를 붙인다. | `todo-status.test.js`, `e2e/todos.spec.ts`의 `'US-04 할일 등록'` | [가정 G-04] |
+| N-06 | 변수, 함수 | camelCase. 도메인 속성명을 그대로 쓴다. | `ownerId`, `startAt`, `endAt`, `completedAt`, `categoryId`, `teamId` | 도메인 §3 |
+| N-07 | 불리언 | `is`, `has`, `can` 접두사를 쓴다. 도메인 속성은 원래 이름을 유지한다. | `canEdit`, `isOwner`, `isDefault`, `completed` | 도메인 §3.5, 와이어프레임 §4.5 |
+| N-08 | 동의어 금지 | 할일은 `todo`(task, item 금지), 카테고리는 `category`(group, tag 금지), 팀은 `team`(group, workspace 금지), 이력은 `history`(audit 금지). `log`는 운영 로깅 전용이다. | — | 도메인 §2 |
+| N-09 | 상수, enum 값 | UPPER_SNAKE_CASE. 역할 `OWNER`, `MANAGER`, `MEMBER`와 이력 동작 `CREATED`, `UPDATED`, `COMPLETED`, `UNCOMPLETED`는 도메인 값을 그대로 쓴다. 상태 값은 `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `OVERDUE`로 쓴다. | `TodoStatus.OVERDUE` | 도메인 §3.3, §3.8, [가정 G-06] |
+| N-10 | 컴포넌트 이름 | PascalCase 명사. 화면 요소는 도메인 이름을 쓴다. shadcn 컴포넌트 이름(`Button`, `AlertDialog`)과 겹치는 이름을 만들지 않는다. | `TodoRow`, `StatusBadge`, `CategorySelect`, `TeamMemberTable`, `ConfirmDialog` | 와이어프레임 §2.1 |
+| N-11 | API 경로 | `/api/` 아래 소문자 kebab-case 복수형 명사. 중첩은 최대 2단계. 동작은 HTTP 메서드로 나타낸다. 동사 경로는 로그인처럼 메서드로 나타낼 수 없는 동작에만 쓴다. 예외: 로그인한 사용자 자신의 정보는 `/api/me`로 쓴다(ID를 경로에 받지 않아 다른 사용자 접근 경로가 생기지 않는다). | `GET`, `POST /api/todos`; `PATCH`, `DELETE /api/todos/:todoId`; `GET /api/todos/:todoId/histories`; `POST /api/teams/:teamId/members`; `POST /api/teams/:teamId/leave` | PRD §5.1, [가정 G-06] |
+| N-12 | 완료 처리 | 별도 경로를 만들지 않는다. `PATCH /api/todos/:todoId`의 `completed` 필드로 처리하고, `completedAt`은 서버가 설정한다. | — | 도메인 R14, §3.6 |
+| N-13 | HTTP 메서드 | `GET`은 상태를 바꾸지 않는다. 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. | — | PRD §5.2 CSRF |
+| N-14 | JSON 필드, 쿼리 파라미터 | camelCase. 일시는 ISO 8601 + 오프셋 형식이다. 목록 파라미터는 `limit`, `offset`을 쓴다. | `startAt: "2026-11-04T09:00+09:00"` | PRD §5.1, §5.3 |
+| N-15 | 권한 플래그 | 할일 응답에 `canEdit`(수정·완료·삭제 가능), `isOwner`(소유자 본인 여부)를 넣는다. 다른 사용자 할일의 응답에는 카테고리 필드를 넣지 않는다. | — | 와이어프레임 §4.5.2, PRD §5.2 [가정 G-06] |
+| N-16 | 에러 코드 | UPPER_SNAKE_CASE. 시나리오 §6.2 표의 코드만 쓴다. 새 코드는 §6.2에 먼저 추가한다. | `INVALID_PERIOD`, `FORBIDDEN` | 시나리오 §6.2 |
+| N-17 | DB 테이블 | snake_case 복수형. | `users`, `categories`, `todos`, `todo_shares`, `teams`, `team_members`, `todo_histories` | [가정 G-07] |
+| N-18 | DB 컬럼 | snake_case. 기본키는 `id`, 참조는 `<엔티티>_id`, 시각은 `*_at`, 기본 카테고리는 `is_default`. `status` 컬럼은 만들지 않는다(P-04). | `owner_id`, `start_at`, `end_at`, `completed_at`, `is_default` | [가정 G-07] |
+| N-19 | DB 제약, 인덱스 | `uq_<테이블>_<컬럼>`, `idx_<테이블>_<컬럼>`. 대소문자 무시 유일은 `lower(...)` 표현식 인덱스로 만든다. | `uq_users_email_lower` | PRD §5.1 인덱스 수준, [가정 G-07] |
+| N-20 | 이름 변환 | snake_case와 camelCase 변환은 repositories에서만 한다. API와 프론트는 camelCase만 쓴다. | — | [가정 G-07] |
+
+## 4. 테스트 및 품질 원칙
+
+### 4.1 테스트 종류, 위치, 최소 기준
+
+| ID | 종류 | 대상 | 위치 | 최소 기준 |
+|----|------|------|------|-----------|
+| Q-01 | 단위(백엔드) | `domain/` 규칙 | `backend/tests/unit/` | S1–S4 판정 순서. R3 경계(같은 일시 허용). R4 세 경우의 기본값. R5 분 단위 경계(11/05 23:59:30은 진행 중, 11/06 00:00은 기한 초과, 시작 정각은 진행 중). 근거: 시나리오 EX-07, EX-08, EX-10, EX-11, EX-14 |
+| Q-02 | 통합(백엔드) | services, repositories와 PostgreSQL 17 | `backend/tests/integration/` | 권한: 비구성원 404(EX-21), 일반 팀원의 변경 403(EX-20), 관리자의 구성원 할일 수정 성공(US-14), 관리자라도 공유되지 않은 할일은 404(EX-25). 타인 할일 응답에 카테고리 없음(R2). 가입 트랜잭션 원자성(EX-01). 카테고리 삭제 시 할일 이동 원자성(R9). 구성원 제거 시 공유 해제(R21). P1: 할일 변경과 이력이 같은 트랜잭션(EX-33). |
+| Q-03 | 프론트 단위 | 날짜와 시간대 포맷, 필터를 쿼리 파라미터로 바꾸는 함수, 권한 플래그 분기 | `frontend/src/**/` (대상 옆) | 분기가 있는 함수는 분기마다 케이스 1개 이상 |
+| Q-04 | 프론트 컴포넌트 | 권한별 화면 | 대상 옆 `*.test.tsx` | SC-03(행의 완료, 삭제 버튼 노출)과 SC-04(읽기 전용 모드)만. 나머지 화면은 수동 검증. Radix 컴포넌트용 jsdom 보완(`ResizeObserver`, `hasPointerCapture`, `scrollIntoView`)은 `src/test/setup.ts` 한 곳에 둔다. shadcn 생성 컴포넌트 자체는 테스트하지 않는다 |
+| Q-05 | E2E (`@playwright/test`) | P0 시나리오(US)의 정상 흐름과 권한 예외(EX-20, EX-21) | 루트 `e2e/` | P0 US 1개당 테스트 1개 이상(수동 검증하는 US-10 모바일 레이아웃 제외). 스크립트를 실행해 통과하면 PRD 4.3 체크박스에 표시한다. Day 2 종료 시 P0 100%(M6). Playwright MCP는 시나리오를 브라우저에서 먼저 따라가 보고 스크립트를 작성, 디버깅하는 데 쓴다. 모바일 레이아웃처럼 스크립트로 확인하기 어려운 항목은 수동으로 검증한다 [가정 G-04] |
+| Q-06 | 부하 테스트 | — | — | 하지 않는다(PRD Q2) |
+
+### 4.2 커버리지 기준
+
+- Q-07 라인, 분기 커버리지 수치 목표는 두지 않는다 [가정 G-12]. 1인 2일 일정에서 수치 목표는 테스트 대상을 왜곡한다.
+- Q-08 대신 **규칙 추적**을 기준으로 한다. 권한(R2, R19, R21), 상태(S1–S4, 도메인 §5.3), 일시(R3–R5), 트랜잭션(R9, R20, EX-01)에 해당하는 규칙은 각각 자동 테스트가 1개 이상 있어야 머지한다(PRD K2, K4, K5).
+- Q-09 새 분기, 루프, 권한 조건을 추가하면 테스트 1개를 같이 추가한다. 단순 CRUD 연결과 스타일 변경은 제외한다.
+
+### 4.2.1 E2E 원칙 (`@playwright/test`, Playwright MCP)
+
+- Q-17 E2E는 운영 DB에 실행하지 않는다. `playwright.config.ts`의 `webServer`로 로컬 백엔드와 프론트 개발 서버를 띄우고 테스트 DB(G-04)에 연결한다. 브라우저는 Chromium 하나만 쓴다(G-13).
+- Q-18 테스트마다 새 계정을 만든다(이메일에 실행 시각과 난수 접미사). 계정, 팀, 할일 같은 사전 데이터는 UI가 아니라 `e2e/fixtures/`의 API 호출로 만든다. UI로 검증하는 대상 흐름만 화면에서 조작한다. 다른 테스트나 이전 실행이 남긴 데이터에 의존하지 않아 순서와 무관하게 통과해야 한다.
+- Q-19 요소는 `getByRole`, `getByLabel`, `getByText`로만 찾는다. 버튼과 입력에는 보이는 텍스트나 `<label>`을 붙이고, 아이콘만 있는 버튼(햄버거 메뉴, 삭제 등)에는 `aria-label`을 붙인다. Playwright MCP의 접근성 스냅샷도 같은 이름을 쓴다. `data-testid`, CSS 선택자, `waitForTimeout`은 쓰지 않는다.
+- Q-20 서버 현재 시각에 따라 결과가 바뀌는 판정(R5 분 단위 경계, 기한 초과 전환)은 E2E에서 단언하지 않는다. 이 경계는 Q-01 단위 테스트로 고정한다. E2E 데이터의 일시는 실행 시점과 무관하게 상태가 정해지는 값(먼 미래, 먼 과거)을 쓴다.
+- Q-21 `main` 머지 전에 `npx playwright test` 전체를 통과시킨다. 실패하면 실패 테스트의 trace와 스크린샷(`test-results/`)으로 원인을 찾고, 필요하면 Playwright MCP로 같은 흐름을 재현한다. `playwright-report/`와 `test-results/`는 커밋하지 않는다.
+
+### 4.3 Lint, 포맷, 타입
+
+- Q-10 ESLint와 Prettier를 루트 설정 하나로 공유한다 [가정 G-05]. 커밋 전에 린트와 테스트를 통과시킨다.
+- Q-11 프론트엔드는 `tsc --noEmit`을 통과해야 한다. 백엔드는 JavaScript이므로 타입 검사를 강제하지 않는다.
+- Q-12 §2의 레이어 규칙(BE-01, BE-04, FE-01–FE-03)은 `import/no-restricted-paths` 같은 lint 규칙으로 옮겨 자동으로 막는다 [가정 G-05].
+- Q-16 `shared/components/ui/`는 생성 코드이므로 ESLint의 `react-refresh/only-export-components` 규칙에서 뺀다. Prettier에는 `prettier-plugin-tailwindcss`로 클래스 순서를 맞춘다 [가정 G-16].
+- Q-13 `console.log`는 커밋하지 않는다. 에러 로그는 `error-handler.js`에서만 남긴다(OPS-06).
+
+### 4.4 리뷰
+
+- Q-14 1인 개발(PRD K2)이므로 동료 리뷰는 없다. 기능 단위 브랜치에서 작업하고, 아래 셀프 체크리스트를 PR 본문에 확인한 뒤 `main`에 머지한다.
+  1. 권한 조건이 `access.js` 조각으로 들어갔는가(BE-05).
+  2. 볼 수 없는 리소스는 404, 볼 수만 있는 리소스의 변경은 403인가(P-05).
+  3. 타인 할일 응답에 카테고리 정보가 없는가(SEC-06).
+  4. 상태 코드와 에러 코드가 시나리오 §6.2와 일치하는가(OPS-07).
+  5. 쓰기 경로에 길이, 필수, R3 검증이 있는가(SEC-08, SEC-09).
+  6. 여러 쓰기는 `withTransaction`으로 묶였고, 연결은 `finally`에서 반납되는가(BE-08, OPS-12).
+  7. 로그와 응답에 비밀, 해시, 토큰, 개인정보가 없는가(P-06, OPS-05).
+  8. 테스트를 추가했는가(Q-08, Q-09).
+- Q-15 커밋 메시지는 Conventional Commits 접두사(`feat:`, `fix:`, `docs:`, `chore:`)를 쓴다. 기존 git 로그 형식과 맞춘다.
+
+## 5. 설정, 보안, 운영 원칙
+
+### 5.1 환경변수와 시크릿
+
+| ID | 원칙 |
+|----|------|
+| OPS-01 | 시크릿(DB 연결 문자열, JWT 서명 키)은 Vercel 환경변수에만 둔다. 저장소에 커밋하지 않는다. `.env*`는 `.gitignore`에 넣고, 키 이름만 적은 `.env.example`만 커밋한다. |
+| OPS-02 | 서버 환경변수는 `config/env.js`에서만 읽는다. 값이 없거나 형식이 틀리면 기동을 실패시킨다. 다른 파일에서 `process.env`를 직접 읽지 않는다. |
+| OPS-03 | 프론트엔드 번들에 들어가는 변수(`VITE_` 접두사)는 공개 값만 둔다. |
+
+| 변수 | 용도 | 근거 |
+|------|------|------|
+| `DATABASE_URL` | Supabase 트랜잭션 풀러(포트 6543) 연결 문자열 [가정 G-08] | PRD §5.1 B2 |
+| `JWT_SECRET` | JWT 서명 키 [가정 G-08] | PRD §5.2 |
+
+### 5.2 인증과 인가
+
+| ID | 원칙 | 근거 |
+|----|------|------|
+| SEC-01 | 비밀번호는 8–72자를 검증한 뒤 `bcryptjs`(cost 10)로 해시해서만 저장한다. 평문과 해시는 응답과 로그에 나가지 않는다. | PRD §5.2 B4, 도메인 §3.4 |
+| SEC-02 | JWT를 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급하고 만료는 24시간이다. 리프레시 토큰은 두지 않는다. 로그아웃은 쿠키 삭제다. 탈취된 토큰은 만료까지 유효하다는 한계를 알고 있다. | PRD §5.2, 시나리오 D-03 |
+| SEC-03 | JWT 페이로드에는 사용자 ID(`sub`)와 만료 시각만 담는다. 역할, 팀, 권한을 넣지 않고, 권한은 요청마다 DB로 확인한다. | PRD §5.2, 시나리오 US-15 #2 |
+| SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`과 `/api/auth/login`을 뺀 모든 `/api/*` 라우터에 기본 적용한다. 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01·02 |
+| SEC-05 | 로그인 실패는 이메일 존재 여부를 드러내지 않는다. 없는 이메일과 틀린 비밀번호는 같은 `INVALID_CREDENTIALS` 응답이다. | PRD FR-01 #5, 시나리오 EX-04 |
+| SEC-06 | 다른 사용자 할일의 응답에서는 카테고리 필드를 응답 생성 함수 한 곳에서 제거한다. 라우트마다 따로 제거하지 않는다. | 도메인 R2, PRD §5.2 |
+| SEC-07 | 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. 쿠키는 `SameSite=Lax`이고, 프론트와 API는 같은 출처(`/api/*`)에서 동작한다. CSRF 토큰과 CORS 허용 목록은 두지 않는다. | PRD §5.2 CSRF 결정 |
+
+### 5.3 입력 검증
+
+| ID | 원칙 | 근거 |
+|----|------|------|
+| SEC-08 | 모든 입력은 서버에서 검증한다. 필수 여부, 형식, 길이는 routes에서 검증하고, 도메인 규칙(R3, R7, R19, R21)은 services와 domain에서 검증한다. | PRD §5.2 신뢰 경계 |
+| SEC-09 | 길이는 앞뒤 공백을 제거한 뒤 센다. 이메일 254자, 비밀번호 8–72(bcrypt는 72바이트까지만 쓰므로 바이트 기준으로 검사), 이름, 카테고리 이름, 팀 이름 1–50자, 할일 제목 1–200자, 설명 0–2,000자다. | 시나리오 §6.3 |
+| SEC-10 | 요청 본문은 100KB로 제한한다(`express.json({ limit: '100kb' })`). 초과는 413 `PAYLOAD_TOO_LARGE`다. | PRD §5.2 A19 |
+| SEC-11 | 일시는 ISO 8601 + 오프셋 형식만 받는다. 오프셋이 없으면 400이다 [가정 G-06]. | PRD §5.3 A20 |
+| SEC-12 | 정렬, 필터, 역할 같은 열거 값은 허용 목록에 있는 값만 받는다. 목록에 없는 값은 400이다. | BE-07 |
+
+### 5.4 로깅
+
+| ID | 원칙 | 근거 |
+|----|------|------|
+| OPS-04 | 요청 로그 코드는 두지 않는다. 메서드, 경로, 상태 코드, 처리 시간은 Vercel 기본 함수 로그로 본다. 코드에서 남기는 로그는 OPS-06의 5xx 에러 로그뿐이다(Q-13) [가정 G-10]. | Q-13 |
+| OPS-05 | 로그에 비밀번호, 쿠키, JWT, 이메일, 이름, 할일 제목과 설명을 남기지 않는다. 사용자는 ID로만 식별한다. | P-06 |
+| OPS-06 | 5xx의 스택 트레이스는 `error-handler.js`에서만 기록한다. 응답에는 `INTERNAL_ERROR`만 보낸다. | 시나리오 §6.2 |
+
+### 5.5 에러 처리
+
+| ID | 원칙 | 근거 |
+|----|------|------|
+| OPS-07 | 에러 응답은 `{ "error": { "code", "message", "fields"? } }` 형식 하나로 통일한다. 상태 코드, 코드, 메시지는 시나리오 §6.2 표를 따른다. | 시나리오 §6.2 C-05, PRD §5.2 |
+| OPS-08 | services는 `AppError(status, code, message)`를 던지고, HTTP 응답으로 바꾸는 일은 `error-handler.js` 한 곳에서만 한다. 예상하지 못한 예외는 500 `INTERNAL_ERROR`가 된다. | BE-02 |
+| OPS-09 | 트랜잭션이 실패하면 `ROLLBACK`한 뒤 원래 에러를 다시 던진다. 연결 반납은 `finally`에서 한다(OPS-12). | PRD K6 |
+| OPS-10 | 프론트엔드는 코드로 분기한다. 401은 SC-01로 이동(ST-01)하되, 로그인 화면의 `INVALID_CREDENTIALS`는 폼 오류로 보여준다. 403은 ST-03, 404 `NOT_FOUND`는 ST-02, 413과 5xx와 네트워크 오류는 ST-04다. 400, 409와 구성원 추가의 404 `USER_NOT_FOUND`는 폼·필드 오류로 보여준다(와이어프레임 §3.2, §4.10). 메시지는 서버의 `error.message`를 그대로 보여준다. | 와이어프레임 §3.5, §4.2 |
+
+### 5.6 데이터베이스와 성능
+
+| ID | 원칙 | 근거 |
+|----|------|------|
+| OPS-11 | `pg.Pool`은 `config/db.js`에서 모듈 최상위에 한 번만 만든다. 설정은 `max: 5`, `idleTimeoutMillis: 10000`, `connectionTimeoutMillis: 5000`이고, 연결은 Supabase 트랜잭션 풀러(포트 6543)를 쓴다. | PRD §5.1 B2 |
+| OPS-12 | 트랜잭션은 `pool.connect()`로 얻은 클라이언트를 `try/finally`로 감싸 `release()`한다. 단건 쿼리는 `pool.query()`를 쓴다. | PRD §5.1 |
+| OPS-13 | 이름 있는 prepared statement(`name` 옵션)는 쓰지 않는다. 트랜잭션은 한 요청 안에서 끝낸다. | PRD §5.1 B3 |
+| OPS-14 | DB 세션 시간대는 `Asia/Seoul`, 일시 컬럼은 `timestamptz`를 쓴다. R4의 '오늘'은 서버에서 `User.timezone` 기준으로 계산한다. 상태 판정의 현재 시각은 서버 시각을 분 단위로 자른다. | 도메인 R5, PRD §5.3 |
+| OPS-15 | 목록은 `limit`과 `offset`을 쓴다. 기본 50건, 최대 100건, 정렬은 `start_at` 오름차순이다. 응답에 필터 적용 후 `total`을 포함한다. | PRD §5.1 U-12 |
+| OPS-16 | 캘린더 조회는 범위를 최대 42일, 결과를 최대 500건으로 제한한다. 상한에 걸리면 응답에 `truncated: true`를 넣는다. | PRD §5.1 U-13 |
+| OPS-17 | 목록과 캘린더는 1회 쿼리에 공유 팀 같은 연관 데이터를 JOIN이나 집계로 함께 가져온다(N+1 금지). 상태는 SQL에서 계산해 필터와 정렬에 쓴다. | PRD §5.1 |
+| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))을 포함한다. | PRD §5.1, [가정 G-07] |
+
+### 5.7 배포
+
+| ID | 원칙 | 근거 |
+|----|------|------|
+| OPS-19 | Vercel 단일 프로젝트로 배포한다. 프론트는 정적 빌드하고, `api/index.js`가 Express 앱을 함수로 노출한다. 브라우저는 `/api/*`를 같은 도메인으로 호출한다. | PRD §5.1 Q1 |
+| OPS-20 | 운영은 HTTPS만 쓴다. 쿠키 `Secure`는 운영 전제이며, 로컬 개발은 `localhost`에서 확인한다 [가정 G-13]. | PRD §5.2 |
+| OPS-21 | Day 1 오전에 빈 API(`/api/health` [가정 G-06])를 먼저 배포해 Express 함수와 콜드 스타트를 확인한다. | PRD K10 |
+| OPS-22 | 배포 순서는 마이그레이션 적용, 백엔드와 프론트 배포다. 운영 지표 M1–M5는 Vercel과 Supabase 대시보드로 확인한다. 부하 테스트는 하지 않는다. | PRD K3, Q2 [가정 G-15] |
+
+## 6. 디렉토리 구조
+
+### 6.1 저장소 최상위
+
+```
+todolist-app/
+├─ api/
+│  └─ index.js          # Vercel Functions 진입점. backend/src/app.js를 import해 export
+├─ backend/             # Express API (JavaScript)
+├─ frontend/            # React 19 + TypeScript SPA (Vite)
+├─ docs/                # 기획 문서 1–5
+├─ e2e/                 # @playwright/test E2E (Q-05, Q-17–Q-21)
+│  ├─ fixtures/         # API로 계정, 팀, 할일을 만드는 헬퍼
+│  ├─ auth.spec.ts      # 가입, 로그인, 로그아웃
+│  ├─ todos.spec.ts     # 할일 등록, 수정, 완료, 삭제, 목록 필터
+│  ├─ calendar.spec.ts  # 캘린더 월, 주, 일 전환과 클릭 이동
+│  ├─ categories.spec.ts
+│  ├─ teams.spec.ts     # 팀 생성, 구성원 관리, 공유
+│  └─ permissions.spec.ts  # 비구성원 404, 일반 팀원 403, 관리자 수정, 공유 없는 할일 404 (EX-20, EX-21, US-14, EX-25)
+├─ playwright.config.ts # webServer(백엔드, 프론트), Chromium, baseURL
+├─ vercel.json          # /api/* 라우팅, SPA 경로 fallback [가정 G-01]
+├─ package.json         # 루트 공통 스크립트와 의존성 [가정 G-01]
+├─ .env.example         # 키 이름만
+└─ .gitignore           # .env*, playwright-report/, test-results/ 포함
+```
+
+- `api/` 아래에는 `index.js`만 둔다. Vercel은 이 폴더의 모든 파일을 함수로 취급한다.
+
+### 6.2 프론트엔드 구조
+
+```
+frontend/
+├─ index.html
+├─ components.json              # shadcn 설정. aliases를 @/shared/components/ui, @/shared/lib/utils로 지정 [가정 G-16]
+├─ tsconfig.json                # @/ → src/ 경로 별칭
+├─ vite.config.ts               # 빌드 설정, @/ 별칭, Tailwind 플러그인, 개발 서버에서 /api 프록시 [가정 G-14]
+└─ src/
+   ├─ main.tsx                  # 진입점: QueryClientProvider, 라우터 마운트
+   ├─ index.css                 # Tailwind 진입점과 shadcn 테마 변수
+   ├─ test/
+   │  └─ setup.ts               # 테스트 공통 설정 (Radix용 jsdom 보완, Q-04)
+   ├─ app/
+   │  ├─ App.tsx                # 라우트 정의 (SC-01–SC-09)
+   │  ├─ AuthGuard.tsx          # 401 → SC-01, ?next= 처리 (ST-01)
+   │  └─ AppLayout.tsx          # 공통 레이아웃 (SC-00)
+   ├─ pages/                    # 화면 1개 = 파일 1개
+   │  ├─ LoginPage.tsx          # SC-01
+   │  ├─ SignupPage.tsx         # SC-02
+   │  ├─ TodoListPage.tsx       # SC-03
+   │  ├─ TodoEditPage.tsx       # SC-04 (등록, 편집, 읽기 전용, 이력 탭)
+   │  ├─ CalendarPage.tsx       # SC-05
+   │  ├─ CategoriesPage.tsx     # SC-06
+   │  ├─ ProfilePage.tsx        # SC-07 (P1)
+   │  ├─ TeamsPage.tsx          # SC-08
+   │  └─ TeamDetailPage.tsx     # SC-09
+   ├─ features/                 # 도메인 모듈
+   │  ├─ auth/                  # 로그인, 가입, 로그아웃 훅 (User)
+   │  ├─ users/                 # 내 정보 조회, 수정 훅 (User, P1)
+   │  ├─ categories/            # 카테고리 훅과 컴포넌트 (Category)
+   │  ├─ todos/                 # 목록, 상세, 폼, 행, 필터 바, 상태 배지 (Todo, TodoShare)
+   │  │  └─ calendar/           # 캘린더 뷰와 훅 (SC-05)
+   │  ├─ teams/                 # 팀, 구성원 훅과 표 (Team, TeamMember)
+   │  └─ todo-histories/        # 이력 목록 (TodoHistory, P1)
+   ├─ shared/
+   │  ├─ api/
+   │  │  ├─ client.ts           # fetch 래퍼, credentials, 에러 본문 파싱
+   │  │  └─ queryKeys.ts        # TanStack Query 키 팩토리 (invalidate 단위)
+   │  ├─ components/
+   │  │  ├─ ui/                 # shadcn 생성 컴포넌트 (button, input, select, table, badge, dialog, alert-dialog, sheet, alert, skeleton, pagination 등)
+   │  │  ├─ ConfirmDialog.tsx   # AlertDialog 래퍼 (DLG 확인 대화상자)
+   │  │  └─ ErrorBanner.tsx     # Alert 래퍼 (ST-03, ST-04 상단 알림 막대)
+   │  ├─ lib/                   # utils.ts (shadcn cn), dateTime.ts (시간대 포맷) 등 순수 유틸
+   │  └─ types/                 # 서버 응답 타입 (camelCase)
+   └─ stores/                   # Zustand UI 상태
+      ├─ todoFilterStore.ts     # 보기(F4), 카테고리, 상태 필터
+      └─ calendarStore.ts       # 뷰(월, 주, 일), 기준일
+```
+
+| 경로 | 역할 | 허용 import |
+|------|------|-------------|
+| `src/main.tsx` | 앱 시작점. 프로바이더와 라우터를 마운트한다. | app, shared |
+| `src/app/` | 라우트, 인증 가드, 공통 레이아웃 | pages, features, shared, stores |
+| `src/pages/` | 화면 단위 조합. 파일 하나가 SC-ID 하나에 대응한다 | features, shared, stores |
+| `src/features/<도메인>/` | 도메인별 서버 상태 훅과 컴포넌트. 권한 플래그에 따라 표시를 바꾼다 | shared, stores |
+| `src/shared/api/` | HTTP 클라이언트와 쿼리 키. 여기서만 `fetch`를 쓴다 | 없음 |
+| `src/shared/components/` | 도메인과 무관한 UI 부품. 하위 `ui/`는 shadcn 생성 코드(FE-08, FE-09, N-02 예외) | shared 내부 |
+| `src/shared/lib/`, `src/shared/types/` | 순수 유틸과 공통 타입. `lib/utils.ts`는 shadcn의 `cn`(clsx + tailwind-merge) | 없음 |
+| `src/stores/` | 서버와 무관한 UI 상태만 둔다. 서버 데이터는 두지 않는다(FE-05) | 없음 |
+
+- 테스트 파일은 대상 파일 옆에 둔다(N-05).
+
+### 6.3 백엔드 구조
+
+```
+backend/
+├─ src/
+│  ├─ app.js                    # Express 앱 조립: JSON(100kb), /api 라우터, error-handler
+│  ├─ server.js                 # 로컬 실행용 listen. 배포 진입점에서 import하지 않는다
+│  ├─ config/
+│  │  ├─ env.js                 # 환경변수 검증
+│  │  └─ db.js                  # pg.Pool 단일 인스턴스, withTransaction
+│  ├─ middleware/
+│  │  ├─ authenticate.js        # JWT 쿠키 검증 → req.user, 실패 401
+│  │  └─ error-handler.js       # AppError → 에러 응답, 그 밖은 500
+│  ├─ routes/                   # HTTP 경계 (<모듈>.routes.js)
+│  │  ├─ index.js               # /api 마운트, 공개 경로 외 authenticate 적용
+│  │  ├─ auth.routes.js         # POST /api/auth/signup, login, logout
+│  │  ├─ users.routes.js        # GET, PATCH /api/me (P1: 비밀번호 변경 포함)
+│  │  ├─ categories.routes.js
+│  │  ├─ todos.routes.js        # 목록, 캘린더, 등록, 수정, 삭제
+│  │  ├─ teams.routes.js        # 팀, 구성원, 나가기
+│  │  └─ todo-histories.routes.js   # P1
+│  ├─ services/                 # 유스케이스, 권한, 트랜잭션 (<모듈>.service.js)
+│  │  ├─ auth.service.js
+│  │  ├─ users.service.js
+│  │  ├─ categories.service.js
+│  │  ├─ todos.service.js       # 응답 생성(카테고리 제거, SEC-06) 포함
+│  │  ├─ teams.service.js
+│  │  └─ todo-histories.service.js  # P1
+│  ├─ domain/                   # 순수 규칙. 외부 import 없음
+│  │  ├─ todo-status.js         # S1–S4 판정, now는 분 단위
+│  │  ├─ period.js              # R3 검증, R4 기본값, R5 기본 시각
+│  │  ├─ history-diff.js        # 필드별 이전→새 값, 카테고리와 공유 팀 필터 (P1)
+│  │  └─ errors.js              # AppError, 에러 코드 상수
+│  ├─ repositories/             # SQL 전담 (<모듈>.repo.js)
+│  │  ├─ sql/
+│  │  │  └─ access.js           # 권한 WHERE 조각 (R2, R19, R21). 이 파일에만 둔다
+│  │  ├─ users.repo.js
+│  │  ├─ categories.repo.js
+│  │  ├─ todos.repo.js          # todo_shares 포함
+│  │  ├─ teams.repo.js          # team_members 포함
+│  │  └─ todo-histories.repo.js     # P1
+│  └─ db/
+│     └─ migrations/            # 순번 SQL 파일 (P1 테이블 포함)
+└─ tests/
+   ├─ unit/                     # domain 규칙 테스트
+   └─ integration/              # 실제 PostgreSQL 대상 테스트
+```
+
+| 경로 | 역할 | 허용 import |
+|------|------|-------------|
+| `api/index.js` (루트) | Vercel 함수 진입점. `backend/src/app.js`를 export한다 | app |
+| `src/app.js` | Express 앱 조립. 에러 핸들러는 마지막에 등록한다 | routes, middleware, config |
+| `src/server.js` | 로컬 실행 전용 | app, config |
+| `src/config/` | 환경변수 검증, 풀, 트랜잭션 헬퍼 | 없음 |
+| `src/middleware/` | 인증과 에러 응답 변환 | config/env, domain/errors |
+| `src/routes/` | HTTP 요청과 응답. 비즈니스 규칙을 두지 않는다 | services, middleware, domain/errors |
+| `src/services/` | 유스케이스와 트랜잭션 경계 | domain, 같은 모듈 repositories, 다른 모듈 services |
+| `src/domain/` | 순수 함수와 에러 타입 | 없음 |
+| `src/repositories/` | SQL 실행과 이름 변환 | config/db, repositories/sql |
+| `src/repositories/sql/access.js` | 권한 조건의 유일한 정의 | 없음 |
+| `src/db/migrations/` | 스키마 변경 이력(SQL) | 없음 |
+| `tests/unit/` | domain 단위 테스트 | domain |
+| `tests/integration/` | 실제 DB 대상 테스트 | app, services, repositories |
+
+### 6.4 엔티티, 기능, 화면과 모듈 대응
+
+| 도메인 엔티티, 기능 | 백엔드 모듈 | 프론트 features | 화면 |
+|--------------------|-------------|-----------------|------|
+| User (가입, 로그인, 로그아웃) | auth | auth | SC-01, SC-02, SC-00 |
+| User (내 정보) | users | users | SC-07 (P1) |
+| Category | categories | categories | SC-06, SC-04 카테고리 필드 |
+| Todo, TodoShare, 목록과 캘린더 | todos | todos, todos/calendar | SC-03, SC-04, SC-05 |
+| Team, TeamMember | teams | teams | SC-08, SC-09 |
+| TodoHistory | todo-histories (P1) | todo-histories (P1) | SC-04 이력 탭 |
+| 인증 가드, 공통 에러 | middleware | app, shared/api | ST-01–ST-04 |
+
+## 7. 가정 목록
+
+기준 문서에 없어 이 문서에서 정한 항목이다. v0.6에서 모든 항목을 확정했다. 본문의 `[가정 G-xx]` 표시는 근거 추적용으로 남긴다.
+
+- 미결 없음. 아래 항목은 반영 완료(문서 v0.6): G-04 테스트 DB 위치(Supabase 테스트 전용 프로젝트), 그리고 v0.5 정합성 검토에서 나온 미결 ①–③(① FE-06 예외와 FE-10, ② N-11 `/api/me` 예외, ③ OPS-04를 Vercel 기본 로그로 대체).
+- (기록) v0.5 미결 내용: ① FE-06(클라이언트 시계 금지)과 G-11(날짜 라이브러리 없음)이 캘린더 요구와 맞는지. FullCalendar의 '오늘' 이동(FR-08 #1)은 기본으로 브라우저 시계를 쓰고, `User.timezone`이 브라우저 시간대와 다를 때(P1 FR-03, US-16 #5) 이름 있는 시간대 표시에는 별도 플러그인이 필요하다. ② `/api/me`(6.3 `users.routes.js`)가 N-11(복수형 명사 경로)의 예외인지. ③ OPS-04(요청 로그를 `console`로 기록)와 Q-13(`console.log` 커밋 금지, 에러 로그는 `error-handler.js`에서만)의 관계와 요청 로그를 남기는 위치(6.3 `middleware/`에 없음).
+
+| ID | 항목 | 가정 내용 |
+|----|------|-----------|
+| G-01 | 저장소 구조 | `api/`, `backend/`, `frontend/`를 한 저장소에 둔다. 루트 `package.json` 하나를 쓴다. `vercel.json`으로 `/api/*`를 함수로 라우팅한다. |
+| G-02 | 모듈 방식 | 백엔드와 프론트는 ESM(`import`, `export`)을 쓴다. Node는 Vercel이 지원하는 최신 LTS를 쓰고 `package.json`의 `engines`에 고정한다. 패키지 매니저는 npm이다. |
+| G-03 | 빌드 도구 | 프론트 빌드는 Vite다(PRD §6, §8.1 근거). |
+| G-04 | 테스트 도구, 테스트 DB | 단위 테스트는 Vitest, 백엔드 통합 테스트는 Vitest와 supertest, E2E 회귀는 `@playwright/test`(루트 `e2e/`), Playwright MCP는 탐색과 스크립트 작성 보조(Q-05, Q-17–Q-21). 통합 테스트와 E2E는 운영과 분리한 Supabase 테스트 전용 프로젝트(PostgreSQL 17)를 쓴다. 연결 문자열은 커밋하지 않는 `.env.test`의 `DATABASE_URL`에 두고, 스키마는 운영과 같은 마이그레이션(OPS-18)으로 만든다. Docker는 쓰지 않는다. |
+| G-05 | 린트, 포맷 | ESLint와 Prettier를 루트 설정으로 공유한다. 레이어 규칙은 lint 규칙으로 옮긴다. 테스트 파일 명명은 N-05를 따른다. |
+| G-06 | API와 응답 세부 | 영문 상태 값(`NOT_STARTED` 등), 쿼리 파라미터 이름(`from`, `to`, `status`, `categoryId` 등), 권한 플래그(`canEdit`, `isOwner`), 헬스 경로(`/api/health`), 오프셋 없는 일시 거부(SEC-11). |
+| G-07 | DB 명명과 마이그레이션 | 테이블과 컬럼은 snake_case 복수형, 인덱스는 N-19 규칙을 따른다. 식별자는 `uuid`이고 기본값은 `gen_random_uuid()`다(URL의 ID 추측 방지, P-05). 마이그레이션은 순번 SQL 파일이다. ORM이 없으므로 마이그레이션 도구는 쓰지 않는다. |
+| G-08 | 환경변수 이름 | `DATABASE_URL`, `JWT_SECRET`을 쓴다. |
+| G-09 | 인증 세부 | JWT는 `jsonwebtoken`, 쿠키 파싱은 `cookie-parser`를 쓴다. 쿠키 이름은 `access_token`이다. |
+| G-10 | 로깅 도구 | 요청 로그는 Vercel 기본 함수 로그로 보고, 코드의 로그는 `error-handler.js`의 `console.error`뿐이다(OPS-04, OPS-06). 구조화 로그 라이브러리는 두지 않는다. |
+| G-11 | 캘린더 라이브러리 | PRD §6이 허용한 오픈소스 캘린더 라이브러리(예: FullCalendar, react-big-calendar) 중 FullCalendar(`@fullcalendar/react`, `@fullcalendar/daygrid`, `@fullcalendar/timegrid`, MIT)를 쓴다. 날짜 라이브러리(localizer)와 시간대 플러그인 없이 월·주·일 뷰와 `+N`을 지원한다. 시간대는 FE-10, '오늘' 이동은 FE-06 예외를 따른다. 코드는 `features/todos/calendar/`에 둔다. |
+| G-12 | 커버리지 | 수치 목표는 두지 않는다. 규칙 추적(Q-08)으로 대신한다. |
+| G-13 | 로컬 쿠키 | Chrome과 Firefox는 `http://localhost`에서도 `Secure` 쿠키를 저장한다. 로컬 개발과 E2E는 Chromium 계열 브라우저로 하고, 개발 환경 예외 코드는 두지 않는다. |
+| G-14 | 개발 프록시 | 개발 서버는 `/api` 요청을 로컬 백엔드로 프록시한다. |
+| G-15 | 배포 환경 | Vercel의 Production과 Preview 환경변수를 나눈다. 배포 순서는 OPS-22를 따른다. |
+| G-16 | shadcn 설정 | Tailwind CSS v4, shadcn 기본 스타일과 기본 색(neutral), 아이콘 `lucide-react`. `npx shadcn init` 직후, 첫 `add` 전에 `components.json`의 aliases를 `shared/components/ui`, `shared/lib/utils`로 바꾼다. 클래스 정렬은 `prettier-plugin-tailwindcss`를 쓴다. |
+
+- 기준 문서 사이에 서로 충돌하는 규칙은 찾지 못했다. 빌드 도구(Vite)가 PRD §8.1에만 있던 누락은 PRD v0.10에서 §6에 추가했다.
+
+## 8. 변경 이력
+
+| 버전 | 일자 | 작성자 | 변경 내용 |
+|------|------|--------|-----------|
+| v0.1 | 2026-11-04 | hjining | 최초 작성. 도메인 정의서 v0.11, PRD v0.8, 사용자 시나리오 v0.6, 와이어프레임 v0.4 기반. 공통 원칙(P-01–P-09), 레이어 규칙(BE, FE), 네이밍(N), 테스트(Q), 보안·운영(SEC, OPS), 프론트와 백엔드 디렉토리 구조, 가정 G-01–G-15 |
+| v0.2 | 2026-11-04 | hjining | UI 컴포넌트로 shadcn/ui 채택(PRD v0.9): 1.2 스택, FE-08·FE-09, N-02 예외, N-10, Q-04 테스트 설정, Q-16, 6.2 프론트 구조(`components.json`, `index.css`, `shared/components/ui/`, `test/setup.ts`), G-16 추가. 기준 문서 버전 갱신 |
+| v0.3 | 2026-11-04 | hjining | 7장 가정 확정: 식별자 uuid(G-07), `jsonwebtoken`·`cookie-parser`·쿠키 `access_token`(G-09), FullCalendar(G-11), Node LTS `engines` 고정(G-02), localhost `Secure` 쿠키(G-13), shadcn init 순서(G-16), 나머지 가정 유지 확정. E2E를 Playwright MCP로 수행(Q-05 개정, 4.2.1 Q-17–Q-20 추가, 1.2 테스트 스택). G-04 테스트 DB 위치만 미결(Docker 미사용 가능성 높음) |
+| v0.4 | 2026-11-04 | hjining | E2E 회귀 검증을 `@playwright/test` 스크립트로 수행: 1.2 테스트 스택, N-05 E2E 파일 명명, Q-05 개정, 4.2.1 Q-17–Q-21(실행 환경, 데이터 준비, 선택자, 시각 의존 단언 금지, 머지 전 실행), 6.1에 `e2e/`·`playwright.config.ts` 추가, G-04 갱신. Playwright MCP는 탐색과 스크립트 작성 보조로 역할 변경 |
+| v0.5 | 2026-11-04 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(PRD v0.10, 사용자 시나리오 v0.8, 와이어프레임 v0.6). 표기에 인용 ID(PRD·시나리오·와이어프레임)와 `Q-xx`·`P-xx`의 구분 추가. 인용 정정: P-03 근거(K4·K5는 PRD §9), N-05 예시(할일 등록은 US-04), Q-01 근거(EX-07), Q-02·`permissions.spec.ts`(관리자 수정 성공은 US-14, EX-25는 공유 없는 할일 404), Q-05(US-10 수동 검증 예외), OPS-10(404 `NOT_FOUND`만 ST-02, 400·409·`USER_NOT_FOUND`는 폼 오류), OPS-18 근거 열 누락, `ErrorBanner` ST-03 포함, BE-08에 구성원 제거와 공유 해제 추가. 캘린더: PRD §6 허용 범위 안에서 FullCalendar를 고른 관계 명시(1.2, G-11), `+N` 클릭 시 일 뷰(`moreLinkClick`, U-13). Vite 근거에 PRD §6 추가(1.2, G-03, 7장). 7장에 새 미결 3건 추가 |
+| v0.6 | 2026-11-04 | hjining | 7장 미결 전부 확정: G-04 테스트 DB는 Supabase 테스트 전용 프로젝트(`.env.test`, Docker 미사용). ① FE-06에 캘린더 화면 이동용 브라우저 시계 예외, FE-10(캘린더 일시는 오프셋을 뗀 벽시계 값 + `timeZone: 'UTC'`, 시간대 플러그인 없음) 추가, G-11 갱신. ② N-11에 `/api/me` 예외 명시. ③ OPS-04를 요청 로그 코드 없음(Vercel 기본 로그)으로 바꾸고 G-10 갱신 |
