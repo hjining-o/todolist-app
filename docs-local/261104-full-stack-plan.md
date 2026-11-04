@@ -38,7 +38,7 @@
 | DB | DB-05 | 만료 리프레시 토큰 정리 작업 | P0 | DB-04 | 🔶 일부 |
 | 백엔드 | API-01 | Express 골격·DB 풀 | P0 | CM-01 | ✅ 완료 |
 | 백엔드 | API-02 | 에러·인증 미들웨어 | P0 | API-01 | ✅ 완료 |
-| 백엔드 | API-03 | 도메인 규칙(상태·기간) | P0 | API-01 |  |
+| 백엔드 | API-03 | 도메인 규칙(상태·기간) | P0 | API-01 | ✅ 완료 |
 | 백엔드 | API-04 | 권한 SQL 조각(access.js) | P0 | API-01, DB-02 |  |
 | 백엔드 | API-05 | 통합 테스트 인프라 | P0 | API-02, DB-04 |  |
 | 백엔드 | API-06 | 인증(리프레시 토큰 포함)·내 정보 조회 | P0 | API-05 |  |
@@ -114,7 +114,7 @@ flowchart LR
 
 | 일자·시간대 | Task |
 |-------------|------|
-| Day 1 (11/04) 오전 | CM-01 ✅, DB-01 🔶, DB-02 ✅, API-01 ✅, DB-03 ✅, DB-04 ✅, DB-05 🔶, CM-02 ⏸, API-02 ✅, API-03, API-04 |
+| Day 1 (11/04) 오전 | CM-01 ✅, DB-01 🔶, DB-02 ✅, API-01 ✅, DB-03 ✅, DB-04 ✅, DB-05 🔶, CM-02 ⏸, API-02 ✅, API-03 ✅, API-04 |
 | Day 1 오후 | API-05, API-06, API-07, API-08, API-09, API-10, API-11 |
 | Day 1 저녁 | UI-01, UI-02, UI-03 |
 | Day 2 (11/05) 오전 | UI-04, UI-05, UI-06, UI-07 |
@@ -337,13 +337,13 @@ flowchart LR
   3. `domain/period.js`: 요청자의 `timezone`과 서버 현재 시각을 받아 R4 빈 값 채우기(둘 다 없음 / 시작만 / 종료만), R5 기본 시각(시작 00:00, 종료 23:59), R3 검증(`INVALID_PERIOD`, 같은 일시 허용).
   4. `backend/tests/unit/`에 Q-01 경계 테스트.
 - **완료 조건**
-  - [ ] 종료 11/05 23:59 미완료 할일: 11/05 23:59:30은 `IN_PROGRESS`, 11/06 00:00은 `OVERDUE`(EX-10)
-  - [ ] 시작 11/10 09:00: 08:59는 `NOT_STARTED`, 09:00은 `IN_PROGRESS`(EX-11)
-  - [ ] 기한 지난 뒤 완료한 할일은 `COMPLETED`(S1 우선, EX-12)
-  - [ ] 일시 모두 비움 → 오늘 00:00–23:59, 시작만 → 종료 = 시작 날짜 23:59, 종료만 11/01 → 시작 = min(오늘 00:00, 종료)(EX-08)
-  - [ ] 종료 < 시작은 `INVALID_PERIOD`, 종료 = 시작은 허용(EX-07)
-  - [ ] '오늘'이 `Asia/Seoul`이 아닌 시간대(예: `America/New_York`)에서도 그 시간대 날짜로 계산된다
-  - [ ] `domain/`이 express·pg·config를 import하지 않는다(BE-03)
+  - [x] 종료 11/05 23:59 미완료 할일: 11/05 23:59:30은 `IN_PROGRESS`, 11/06 00:00은 `OVERDUE`(EX-10)
+  - [x] 시작 11/10 09:00: 08:59는 `NOT_STARTED`, 09:00은 `IN_PROGRESS`(EX-11)
+  - [x] 기한 지난 뒤 완료한 할일은 `COMPLETED`(S1 우선, EX-12)
+  - [x] 일시 모두 비움 → 오늘 00:00–23:59, 시작만 → 종료 = 시작 날짜 23:59, 종료만 11/01 → 시작 = min(오늘 00:00, 종료)(EX-08)
+  - [x] 종료 < 시작은 `INVALID_PERIOD`, 종료 = 시작은 허용(EX-07)
+  - [x] '오늘'이 `Asia/Seoul`이 아닌 시간대(예: `America/New_York`)에서도 그 시간대 날짜로 계산된다
+  - [x] `domain/`이 express·pg·config를 import하지 않는다(BE-03)
 
 ### API-04 권한 SQL 조각(access.js)
 - **선행 Task**: API-01, DB-02
