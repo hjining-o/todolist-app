@@ -1,0 +1,26 @@
+{
+  "name": "todolist-app",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "test": "npm test --workspaces --if-present",
+    "dev": "npm run dev -w backend",
+    "build": "npm run build --workspaces --if-present",
+    "db:migrate": "npm run db:migrate -w backend",
+    "db:reset:test": "npm run db:reset:test -w backend"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-import": "^2.32.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10"
+  }
+}
