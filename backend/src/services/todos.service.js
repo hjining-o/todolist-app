@@ -4,6 +4,7 @@ import { calendarDays, formatOffset, normalizePeriod } from '../domain/period.js
 import { getStatus } from '../domain/todo-status.js';
 import * as todosRepo from '../repositories/todos.repo.js';
 import * as categoriesService from './categories.service.js';
+import * as todoHistoriesService from './todo-histories.service.js';
 import * as teamsService from './teams.service.js';
 import * as usersService from './users.service.js';
 
@@ -70,7 +71,8 @@ export async function createTodo(requesterId, input) {
       endAt,
     });
     await todosRepo.insertShares(client, { todoId: id, teamIds: sharedTeamIds });
-    // API-13: CREATED 이력 INSERT 자리(같은 트랜잭션, actor = requesterId)
+    const after = await todosRepo.findHistorySnapshot(client, id);
+    await todoHistoriesService.recordHistory(client, { todoId: id, actorId: requesterId, before: null, after });
     return todosRepo.findTodoForViewer(client, { todoId: id, viewerId: requesterId });
   });
   return toTodoResponse(row, timezone, now);
@@ -134,12 +136,16 @@ export async function updateTodo(requesterId, todoId, input) {
   // 위 검사는 pool 연결이라 트랜잭션 전에 끝낸다(트랜잭션 연결을 쥔 채 pool 재대여 금지)
   try {
     const row = await withTransaction(async (client) => {
+      // 행 잠금: 동시 수정을 직렬화해 old 값과 '이미 완료' 판정을 정확히
+      const prev = await todosRepo.findHistorySnapshot(client, todoId, { lock: true });
+      if (!prev) throw AppError.of('NOT_FOUND'); // 그 사이 삭제됨
       const updated = await todosRepo.updateTodo(client, { todoId, ...input, startAt, endAt });
       if (!updated) throw AppError.of('NOT_FOUND'); // 그 사이 삭제됨
       if (input.sharedTeamIds !== undefined) {
         await todosRepo.replaceShares(client, { todoId, teamIds: input.sharedTeamIds });
       }
-      // API-13: 이력 INSERT 자리(같은 트랜잭션, actor = requesterId)
+      const next = await todosRepo.findHistorySnapshot(client, todoId);
+      await todoHistoriesService.recordHistory(client, { todoId, actorId: requesterId, before: prev, after: next });
       return todosRepo.findTodoForViewer(client, { todoId, viewerId: requesterId });
     });
     return toTodoResponse(row, timezone, now);

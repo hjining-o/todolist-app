@@ -39,6 +39,28 @@ export async function insertShares(client, { todoId, teamIds }) {
   await client.query('INSERT INTO todo_shares (todo_id, team_id) SELECT $1, unnest($2::uuid[])', [todoId, teamIds]);
 }
 
+// 이력용 전체 스냅숏: 공유 팀을 보는 사람 필터 없이 전부. lock은 불리언 상수 분기만
+export async function findHistorySnapshot(client, todoId, { lock = false } = {}) {
+  const { rows } = await client.query(
+    `SELECT t.title, t.description, t.start_at, t.end_at, t.completed, c.id AS category_id, c.name AS category_name,
+            ARRAY(SELECT s.team_id::text FROM todo_shares s WHERE s.todo_id = t.id ORDER BY 1) AS shared_team_ids
+     FROM todos t JOIN categories c ON c.id = t.category_id
+     WHERE t.id = $1${lock ? ' FOR UPDATE OF t' : ''}`,
+    [todoId],
+  );
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    title: r.title,
+    description: r.description,
+    startAt: r.start_at,
+    endAt: r.end_at,
+    completed: r.completed,
+    category: { id: r.category_id, name: r.category_name },
+    sharedTeamIds: r.shared_team_ids,
+  };
+}
+
 export async function findTodoForViewer(client, { todoId, viewerId }) {
   const { rows } = await client.query(
     `SELECT ${viewCols(2)}
