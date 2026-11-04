@@ -1,11 +1,17 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { categoryOwned, todoCanEdit, todoIsOwner, todoVisible } from '../../src/repositories/sql/access.js';
+import {
+  categoryOwned,
+  shareTeamVisible,
+  todoCanEdit,
+  todoIsOwner,
+  todoVisible,
+} from '../../src/repositories/sql/access.js';
 
 const srcDir = join(import.meta.dirname, '../../src');
 const accessPath = join(srcDir, 'repositories/sql/access.js');
-const fns = { todoVisible, todoCanEdit, todoIsOwner, categoryOwned };
+const fns = { todoVisible, todoCanEdit, todoIsOwner, categoryOwned, shareTeamVisible };
 const badValues = ['1', '1 OR true', '6f1c2b1e-0000-4000-8000-000000000000', 0, -1, 1.5, NaN, undefined];
 
 describe('API-04 권한 SQL 조각 (단위)', () => {

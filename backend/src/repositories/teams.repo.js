@@ -19,6 +19,11 @@ export async function findRole(client, { teamId, userId }) {
   return rows[0]?.role ?? null;
 }
 
+export async function listTeamIdsOfUser(client, userId) {
+  const { rows } = await client.query('SELECT team_id FROM team_members WHERE user_id = $1', [userId]);
+  return rows.map((r) => r.team_id);
+}
+
 export async function listTeamsOfUser(client, userId) {
   const { rows } = await client.query(
     'SELECT t.id, t.name, m.role FROM team_members m JOIN teams t ON t.id = m.team_id WHERE m.user_id = $1 ORDER BY t.name, t.id',

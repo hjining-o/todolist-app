@@ -37,3 +37,8 @@ export function todoIsOwner(n) {
 export function categoryOwned(n) {
   return `(c.owner_id = ${param(n)})`;
 }
+
+// 보는 사람이 속한 팀만 공유 팀 목록에 표시 (R21). 별칭 가정: 팀 `tm`(teams), 내부 `acc_m`(team_members)
+export function shareTeamVisible(n) {
+  return `(EXISTS (SELECT 1 FROM team_members acc_m WHERE acc_m.team_id = tm.id AND acc_m.user_id = ${param(n)}))`;
+}

@@ -63,3 +63,17 @@ export function normalizePeriod({ startAt, endAt }, timezone, now) {
   if (end.getTime() < start.getTime()) throw AppError.of('INVALID_PERIOD');
   return { startAt: start, endAt: end };
 }
+
+// swagger DateTimeOffset 형식. UTC도 +00:00으로 통일
+export function formatOffset(date, tz) {
+  // 분 절삭 먼저: parts()가 초를 버려 초가 있는 값은 offset()이 초만큼 틀어진다
+  const t = Math.floor(date.getTime() / 60000) * 60000;
+  const p = parts(new Date(t), tz);
+  const off = offset(t, tz) / 60000;
+  const a = Math.abs(off);
+  const two = (n) => String(n).padStart(2, '0');
+  return (
+    `${String(p.year).padStart(4, '0')}-${two(p.month)}-${two(p.day)}T${two(p.hour)}:${two(p.minute)}` +
+    `${off < 0 ? '-' : '+'}${two(Math.floor(a / 60))}:${two(a % 60)}`
+  );
+}

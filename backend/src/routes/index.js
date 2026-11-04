@@ -4,6 +4,7 @@ import { AppError } from '../domain/errors.js';
 import { authRouter } from './auth.routes.js';
 import { categoriesRouter } from './categories.routes.js';
 import { teamsRouter } from './teams.routes.js';
+import { todosRouter } from './todos.routes.js';
 import { usersRouter } from './users.routes.js';
 
 export const router = Router();
@@ -20,5 +21,6 @@ router.use(authenticate);
 router.use(usersRouter);
 router.use('/categories', categoriesRouter);
 router.use('/teams', teamsRouter);
+router.use('/todos', todosRouter);
 
 router.use((req, res, next) => next(AppError.of('NOT_FOUND')));

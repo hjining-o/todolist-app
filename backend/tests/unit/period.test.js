@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AppError } from '../../src/domain/errors.js';
-import { normalizePeriod } from '../../src/domain/period.js';
+import { formatOffset, normalizePeriod } from '../../src/domain/period.js';
 import { getStatus } from '../../src/domain/todo-status.js';
 
 const d = (s) => new Date(s);
@@ -133,5 +133,20 @@ describe('normalizePeriod: 시간대 (R4, 완료 조건 6)', () => {
     expect(run({ startAt: '2026-11-10T09:00+09:00' }, 'America/New_York', now)).toMatchObject({
       endAt: '2026-11-10T04:59:00.000Z',
     });
+  });
+});
+
+describe('formatOffset', () => {
+  it('초는 분 단위로 절삭한다', () => {
+    expect(formatOffset(d('2026-11-04T00:00:30Z'), SEOUL)).toBe('2026-11-04T09:00+09:00');
+  });
+
+  it('DST 종료 경계에서 오프셋이 바뀐다', () => {
+    expect(formatOffset(d('2026-11-01T05:30Z'), 'America/New_York')).toBe('2026-11-01T01:30-04:00');
+    expect(formatOffset(d('2026-11-01T06:30Z'), 'America/New_York')).toBe('2026-11-01T01:30-05:00');
+  });
+
+  it('UTC도 Z가 아니라 +00:00', () => {
+    expect(formatOffset(d('2026-11-04T00:00Z'), 'UTC')).toBe('2026-11-04T00:00+00:00');
   });
 });

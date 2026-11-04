@@ -18,6 +18,11 @@ async function assertOwner(teamId, userId) {
   if ((await assertMember(teamId, userId)) !== 'OWNER') throw AppError.of('FORBIDDEN');
 }
 
+export async function assertAllMemberTeams(userId, teamIds) {
+  const mine = new Set(await teamsRepo.listTeamIdsOfUser(pool, userId));
+  if (teamIds.some((id) => !mine.has(id))) throw AppError.of('INVALID_SHARE_TEAM');
+}
+
 export function listMyTeams(userId) {
   return teamsRepo.listTeamsOfUser(pool, userId);
 }

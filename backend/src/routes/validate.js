@@ -38,3 +38,7 @@ export function uuidParam(value, field) {
   if (UUID_RE.test(value)) return value;
   throw AppError.of('VALIDATION_ERROR', { [field]: '형식이 올바르지 않습니다.' });
 }
+
+// typeof 검사로 ['<uuid>'] 같은 배열이 문자열로 변환돼 통과하는 것을 막는다. 비교·중복 판정을 위해 소문자화
+export const uuidRule = (v) =>
+  typeof v === 'string' && UUID_RE.test(v) ? ok(v.toLowerCase()) : bad('형식이 올바르지 않습니다.');
