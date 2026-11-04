@@ -37,7 +37,7 @@
 | DB | DB-04 | 스키마 적용·제약 검증 | P0 | DB-01, DB-03 | ✅ 완료 |
 | DB | DB-05 | 만료 리프레시 토큰 정리 작업 | P0 | DB-04 | 🔶 일부 |
 | 백엔드 | API-01 | Express 골격·DB 풀 | P0 | CM-01 | ✅ 완료 |
-| 백엔드 | API-02 | 에러·인증 미들웨어 | P0 | API-01 |  |
+| 백엔드 | API-02 | 에러·인증 미들웨어 | P0 | API-01 | ✅ 완료 |
 | 백엔드 | API-03 | 도메인 규칙(상태·기간) | P0 | API-01 |  |
 | 백엔드 | API-04 | 권한 SQL 조각(access.js) | P0 | API-01, DB-02 |  |
 | 백엔드 | API-05 | 통합 테스트 인프라 | P0 | API-02, DB-04 |  |
@@ -114,7 +114,7 @@ flowchart LR
 
 | 일자·시간대 | Task |
 |-------------|------|
-| Day 1 (11/04) 오전 | CM-01 ✅, DB-01 🔶, DB-02 ✅, API-01 ✅, DB-03 ✅, DB-04 ✅, DB-05 🔶, CM-02 ⏸, API-02, API-03, API-04 |
+| Day 1 (11/04) 오전 | CM-01 ✅, DB-01 🔶, DB-02 ✅, API-01 ✅, DB-03 ✅, DB-04 ✅, DB-05 🔶, CM-02 ⏸, API-02 ✅, API-03, API-04 |
 | Day 1 오후 | API-05, API-06, API-07, API-08, API-09, API-10, API-11 |
 | Day 1 저녁 | UI-01, UI-02, UI-03 |
 | Day 2 (11/05) 오전 | UI-04, UI-05, UI-06, UI-07 |
@@ -321,12 +321,12 @@ flowchart LR
   3. `middleware/authenticate.js`: 쿠키 `access_token` JWT를 `jwt.verify(token, secret, { algorithms: ['HS384'] })`로 검증(알고리즘 고정, W-07) → `req.user = { id }`, 실패 시 401 `UNAUTHENTICATED`. DB 조회는 하지 않는다.
   4. `routes/index.js`: 공개 경로 `/api/auth/signup`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`, `GET /api/health` 외 모든 `/api/*`에 `authenticate` 적용(로그아웃은 액세스 토큰이 만료된 상태에서도 쿠키를 지울 수 있어야 하므로 공개, 헬스는 배포 확인용, SEC-04).
 - **완료 조건**
-  - [ ] 쿠키 없이 보호 경로를 호출하면 401 `UNAUTHENTICATED`이다(EX-05)
-  - [ ] 만료·서명 오류 토큰도 401이다
-  - [ ] 같은 키로 서명한 HS256 토큰과 `alg: none` 토큰이 401이다(W-07)
-  - [ ] 101KB 본문은 413 `PAYLOAD_TOO_LARGE`이다
-  - [ ] 예상하지 못한 예외의 응답 본문에 스택·내부 메시지가 없다(P-06)
-  - [ ] 에러 코드가 시나리오 6.2 표에 있는 것만 쓰인다(N-16)
+  - [x] 쿠키 없이 보호 경로를 호출하면 401 `UNAUTHENTICATED`이다(EX-05)
+  - [x] 만료·서명 오류 토큰도 401이다
+  - [x] 같은 키로 서명한 HS256 토큰과 `alg: none` 토큰이 401이다(W-07)
+  - [x] 101KB 본문은 413 `PAYLOAD_TOO_LARGE`이다
+  - [x] 예상하지 못한 예외의 응답 본문에 스택·내부 메시지가 없다(P-06)
+  - [x] 에러 코드가 시나리오 6.2 표에 있는 것만 쓰인다(N-16)
 
 ### API-03 도메인 규칙(상태·기간)
 - **선행 Task**: API-01
