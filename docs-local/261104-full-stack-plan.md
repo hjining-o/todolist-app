@@ -21,45 +21,47 @@
 
 ### 1.1 Task 목록 요약
 
-| 영역 | Task | 이름 | 우선순위 | 선행 |
-|------|------|------|----------|------|
-| 공통 | CM-01 | 저장소 골격·공통 설정 | P0 | - |
-| 공통 | CM-02 | 빈 API Vercel 배포 확인 | P0 | API-01, DB-01 |
-| 공통 | CM-03 | E2E 인프라 | P0 | UI-03, API-06 |
-| 공통 | CM-04 | P0 E2E 시나리오 | P0 | CM-03, UI-04–UI-09 |
-| 공통 | CM-05 | 운영 배포·P0 수용 기준 점검 | P0 | CM-02, CM-04, DB-04, DB-05 |
-| 공통 | CM-06 | [P1] P1 E2E·재배포 | P1 | CM-05, UI-10–UI-12 |
-| DB | DB-01 | Supabase 프로젝트·연결 준비 | P0 | - |
-| DB | DB-02 | 초기 마이그레이션 SQL | P0 | CM-01 |
-| DB | DB-03 | 마이그레이션 실행 스크립트 | P0 | API-01, DB-02 |
-| DB | DB-04 | 스키마 적용·제약 검증 | P0 | DB-01, DB-03 |
-| DB | DB-05 | 만료 리프레시 토큰 정리 작업 | P0 | DB-04 |
-| 백엔드 | API-01 | Express 골격·DB 풀 | P0 | CM-01 |
-| 백엔드 | API-02 | 에러·인증 미들웨어 | P0 | API-01 |
-| 백엔드 | API-03 | 도메인 규칙(상태·기간) | P0 | API-01 |
-| 백엔드 | API-04 | 권한 SQL 조각(access.js) | P0 | API-01, DB-02 |
-| 백엔드 | API-05 | 통합 테스트 인프라 | P0 | API-02, DB-04 |
-| 백엔드 | API-06 | 인증(리프레시 토큰 포함)·내 정보 조회 | P0 | API-05 |
-| 백엔드 | API-07 | 카테고리 CRUD | P0 | API-06 |
-| 백엔드 | API-08 | 팀·구성원 관리 | P0 | API-06 |
-| 백엔드 | API-09 | 할일 등록 | P0 | API-03, API-04, API-07, API-08 |
-| 백엔드 | API-10 | 할일 목록·캘린더·단건 조회 | P0 | API-09 |
-| 백엔드 | API-11 | 할일 수정·완료·삭제 | P0 | API-10 |
-| 백엔드 | API-12 | [P1] 내 정보 수정 | P1 | API-06 |
-| 백엔드 | API-13 | [P1] 변경 이력 기록·조회 | P1 | API-11 |
-| 백엔드 | API-14 | [P1] 소유자의 팀 나가기 | P1 | API-08 |
-| 프론트 | UI-01 | 프론트 골격·shadcn | P0 | CM-01 |
-| 프론트 | UI-02 | 공통 API 클라이언트·유틸·부품 | P0 | UI-01, API-10(계약) |
-| 프론트 | UI-03 | 인증 화면·가드·공통 레이아웃 | P0 | UI-02, API-06(계약) |
-| 프론트 | UI-04 | 카테고리 관리(SC-06) | P0 | UI-03, API-07 |
-| 프론트 | UI-05 | 팀 목록·상세(SC-08, SC-09) | P0 | UI-03, API-08 |
-| 프론트 | UI-06 | 할일 목록(SC-03) | P0 | UI-04, UI-05, API-10, API-11 |
-| 프론트 | UI-07 | 할일 등록·편집·읽기 전용(SC-04) | P0 | UI-06, API-09, API-11 |
-| 프론트 | UI-08 | 캘린더(SC-05) | P0 | UI-07, API-10 |
-| 프론트 | UI-09 | 반응형·공통 상태 마감 | P0 | UI-08 |
-| 프론트 | UI-10 | [P1] 내 정보(SC-07) | P1 | UI-03, API-12 |
-| 프론트 | UI-11 | [P1] 변경 이력 탭 | P1 | UI-07, API-13 |
-| 프론트 | UI-12 | [P1] 팀 나가기(DLG-04) | P1 | UI-05, API-14 |
+> 상태: ✅ 완료, 🔶 일부 완료(남은 항목은 해당 Task 메모 참고), ⏸ 보류(이유는 해당 Task 메모 참고), 빈칸은 시작 전. 2026-11-04 기준
+
+| 영역 | Task | 이름 | 우선순위 | 선행 | 상태 |
+|------|------|------|----------|------|------|
+| 공통 | CM-01 | 저장소 골격·공통 설정 | P0 | - | ✅ 완료 |
+| 공통 | CM-02 | 빈 API Vercel 배포 확인 | P0 | API-01, DB-01 | ⏸ 보류 |
+| 공통 | CM-03 | E2E 인프라 | P0 | UI-03, API-06 |  |
+| 공통 | CM-04 | P0 E2E 시나리오 | P0 | CM-03, UI-04–UI-09 |  |
+| 공통 | CM-05 | 운영 배포·P0 수용 기준 점검 | P0 | CM-02, CM-04, DB-04, DB-05 |  |
+| 공통 | CM-06 | [P1] P1 E2E·재배포 | P1 | CM-05, UI-10–UI-12 |  |
+| DB | DB-01 | Supabase 프로젝트·연결 준비 | P0 | - | 🔶 일부 |
+| DB | DB-02 | 초기 마이그레이션 SQL | P0 | CM-01 | ✅ 완료 |
+| DB | DB-03 | 마이그레이션 실행 스크립트 | P0 | API-01, DB-02 | ✅ 완료 |
+| DB | DB-04 | 스키마 적용·제약 검증 | P0 | DB-01, DB-03 | ✅ 완료 |
+| DB | DB-05 | 만료 리프레시 토큰 정리 작업 | P0 | DB-04 | ⏸ 보류 |
+| 백엔드 | API-01 | Express 골격·DB 풀 | P0 | CM-01 | ✅ 완료 |
+| 백엔드 | API-02 | 에러·인증 미들웨어 | P0 | API-01 |  |
+| 백엔드 | API-03 | 도메인 규칙(상태·기간) | P0 | API-01 |  |
+| 백엔드 | API-04 | 권한 SQL 조각(access.js) | P0 | API-01, DB-02 |  |
+| 백엔드 | API-05 | 통합 테스트 인프라 | P0 | API-02, DB-04 |  |
+| 백엔드 | API-06 | 인증(리프레시 토큰 포함)·내 정보 조회 | P0 | API-05 |  |
+| 백엔드 | API-07 | 카테고리 CRUD | P0 | API-06 |  |
+| 백엔드 | API-08 | 팀·구성원 관리 | P0 | API-06 |  |
+| 백엔드 | API-09 | 할일 등록 | P0 | API-03, API-04, API-07, API-08 |  |
+| 백엔드 | API-10 | 할일 목록·캘린더·단건 조회 | P0 | API-09 |  |
+| 백엔드 | API-11 | 할일 수정·완료·삭제 | P0 | API-10 |  |
+| 백엔드 | API-12 | [P1] 내 정보 수정 | P1 | API-06 |  |
+| 백엔드 | API-13 | [P1] 변경 이력 기록·조회 | P1 | API-11 |  |
+| 백엔드 | API-14 | [P1] 소유자의 팀 나가기 | P1 | API-08 |  |
+| 프론트 | UI-01 | 프론트 골격·shadcn | P0 | CM-01 |  |
+| 프론트 | UI-02 | 공통 API 클라이언트·유틸·부품 | P0 | UI-01, API-10(계약) |  |
+| 프론트 | UI-03 | 인증 화면·가드·공통 레이아웃 | P0 | UI-02, API-06(계약) |  |
+| 프론트 | UI-04 | 카테고리 관리(SC-06) | P0 | UI-03, API-07 |  |
+| 프론트 | UI-05 | 팀 목록·상세(SC-08, SC-09) | P0 | UI-03, API-08 |  |
+| 프론트 | UI-06 | 할일 목록(SC-03) | P0 | UI-04, UI-05, API-10, API-11 |  |
+| 프론트 | UI-07 | 할일 등록·편집·읽기 전용(SC-04) | P0 | UI-06, API-09, API-11 |  |
+| 프론트 | UI-08 | 캘린더(SC-05) | P0 | UI-07, API-10 |  |
+| 프론트 | UI-09 | 반응형·공통 상태 마감 | P0 | UI-08 |  |
+| 프론트 | UI-10 | [P1] 내 정보(SC-07) | P1 | UI-03, API-12 |  |
+| 프론트 | UI-11 | [P1] 변경 이력 탭 | P1 | UI-07, API-13 |  |
+| 프론트 | UI-12 | [P1] 팀 나가기(DLG-04) | P1 | UI-05, API-14 |  |
 
 ### 1.2 의존 관계
 
@@ -112,7 +114,7 @@ flowchart LR
 
 | 일자·시간대 | Task |
 |-------------|------|
-| Day 1 (11/04) 오전 | CM-01, DB-01, DB-02, API-01, DB-03, DB-04, DB-05, CM-02, API-02, API-03, API-04 |
+| Day 1 (11/04) 오전 | CM-01 ✅, DB-01 🔶, DB-02 ✅, API-01 ✅, DB-03 ✅, DB-04 ✅, DB-05 ⏸, CM-02 ⏸, API-02, API-03, API-04 |
 | Day 1 오후 | API-05, API-06, API-07, API-08, API-09, API-10, API-11 |
 | Day 1 저녁 | UI-01, UI-02, UI-03 |
 | Day 2 (11/05) 오전 | UI-04, UI-05, UI-06, UI-07 |
@@ -136,10 +138,10 @@ flowchart LR
   4. 루트 ESLint·Prettier 설정 하나로 공유. `import/no-restricted-paths`로 BE-01, BE-04, FE-01–FE-03 레이어 규칙을 강제. `shared/components/ui/`는 `react-refresh/only-export-components`에서 제외, `prettier-plugin-tailwindcss` 적용.
   5. `vercel.json`에 `/api/*` → `api/index.js`, 그 밖의 경로는 SPA `index.html` fallback.
 - **완료 조건**
-  - [ ] 6.1의 최상위 디렉토리 구조가 만들어져 있다
-  - [ ] `.env.example`에 값 없이 키 이름만 있고, `.env`는 git에 추적되지 않는다
-  - [ ] `npm run lint`가 루트에서 실행되고, routes에서 repositories를 import하는 샘플 코드를 넣으면 린트 오류가 난다(확인 후 샘플 삭제)
-  - [ ] `vercel.json`에 `/api/*` 라우팅과 SPA fallback이 있다
+  - [x] 6.1의 최상위 디렉토리 구조가 만들어져 있다
+  - [x] `.env.example`에 값 없이 키 이름만 있고, `.env`는 git에 추적되지 않는다
+  - [x] `npm run lint`가 루트에서 실행되고, routes에서 repositories를 import하는 샘플 코드를 넣으면 린트 오류가 난다(확인 후 샘플 삭제)
+  - [x] `vercel.json`에 `/api/*` 라우팅과 SPA fallback이 있다
 
 ### CM-02 빈 API Vercel 배포 확인
 - **선행 Task**: API-01, DB-01
@@ -151,6 +153,8 @@ flowchart LR
   - [ ] 배포 URL에서 쿠키 없이 `GET /api/health`가 200 `{"status":"ok"}`를 돌려준다(SEC-04)
   - [ ] 시크릿이 저장소가 아니라 Vercel 환경변수에만 있다(OPS-01)
   - [ ] 콜드 스타트 응답 시간을 한 번 기록해 두었다
+
+> 2026-11-04 보류: Vercel 배포는 백엔드·프론트엔드를 모두 만든 뒤 GitHub 저장소를 연동해 한 번에 진행하기로 했다. 배포용 코드(`api/index.js`, `vercel.json`, `GET /api/health`)는 준비됐고 로컬에서 200을 확인했다. 운영 DB(Supabase, DB-01 메모)가 생긴 뒤 CM-05 직전에 수행한다.
 
 ### CM-03 E2E 인프라
 - **선행 Task**: UI-03, API-06
@@ -219,11 +223,13 @@ flowchart LR
   3. Supabase Auth·자동 생성 API(Data API)는 쓰지 않는다. 가능하면 Data API를 끈다.
   4. DB 기본 시간대를 KST로 고정(W-01): 각 프로젝트에서 `ALTER DATABASE postgres SET timezone TO 'Asia/Seoul';` 1회 실행. 트랜잭션 풀러는 세션별 `SET`을 유지하지 않으므로 연결마다 설정하지 않고 DB 기본값으로 둔다.
 - **완료 조건**
-  - [ ] 운영·테스트 프로젝트가 분리되어 있다
+  - [x] 운영·테스트 프로젝트가 분리되어 있다
   - [ ] 두 연결 문자열 모두 포트 6543(트랜잭션 풀러)이다
   - [ ] 두 프로젝트 모두 풀러(6543)로 연결해 `SHOW timezone`을 실행하면 `Asia/Seoul`이 나온다
-  - [ ] `SELECT version()`이 PostgreSQL 17을 돌려준다
-  - [ ] 연결 문자열이 저장소에 커밋되지 않았다
+  - [x] `SELECT version()`이 PostgreSQL 17을 돌려준다
+  - [x] 연결 문자열이 저장소에 커밋되지 않았다
+
+> 2026-11-04 진행 메모: 개발 단계는 로컬 PostgreSQL 17(`todolist` 개발, `todolist_test` 테스트, 연결은 `backend/.env`·`backend/.env.test`)로 진행하고, Supabase 운영 프로젝트는 배포(CM-05) 전에 만들어 마이그레이션한다. 6543 풀러 두 항목은 그때 확인한다. DB-04도 로컬 두 DB 기준으로 검증했다.
 
 ### DB-02 초기 마이그레이션 SQL
 - **선행 Task**: CM-01
@@ -234,13 +240,13 @@ flowchart LR
   3. `gen_random_uuid()`는 PostgreSQL 13+ 내장이라 확장 설치가 필요 없음을 확인한다.
   4. 리프레시 토큰 테이블 추가(W-06, 초안 DDL에 없음): `refresh_tokens (id uuid PK DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users ON DELETE RESTRICT, token_hash text NOT NULL, expires_at timestamptz NOT NULL, revoked_at timestamptz NULL, created_at timestamptz NOT NULL DEFAULT now())`, `uq_refresh_tokens_token_hash UNIQUE (token_hash)`, `idx_refresh_tokens_user_id (user_id)`. 토큰 원문은 저장하지 않고 SHA-256 해시만 저장한다.
 - **완료 조건**
-  - [ ] 테이블 8개(`users`, `teams`, `team_members`, `categories`, `todos`, `todo_shares`, `todo_histories`, `refresh_tokens`)가 모두 있다
-  - [ ] `refresh_tokens`에 토큰 원문 컬럼이 없고 `token_hash` 유일 제약과 `user_id` 인덱스가 있다
-  - [ ] FK `ON DELETE`가 ERD 3.1과 같다(`todo_shares.todo_id`, `todo_histories.todo_id`만 CASCADE, 나머지 RESTRICT)
-  - [ ] `todos (category_id, owner_id)` → `categories (id, owner_id)` 복합 FK가 있다
-  - [ ] ERD 3.2의 이름 있는 유일 제약·인덱스(`uq_users_email`, `uq_categories_owner_id_name_lower`, `uq_categories_id_owner_id`, `uq_teams_name_lower`, `uq_team_members_team_id_owner`, `uq_categories_owner_id_default`, `idx_todos_owner_id_start_at_end_at`, `idx_todo_shares_team_id_todo_id`, `idx_team_members_user_id`, `idx_todo_histories_todo_id_changed_at`, `idx_todos_category_id`)가 모두 있다
-  - [ ] ERD 3.3의 CHECK(기간, 역할, 이력 동작, 공백 이름 4개, 이메일 소문자, 완료 일관성)가 모두 있다
-  - [ ] `status` 컬럼이 없다(P-04)
+  - [x] 테이블 8개(`users`, `teams`, `team_members`, `categories`, `todos`, `todo_shares`, `todo_histories`, `refresh_tokens`)가 모두 있다
+  - [x] `refresh_tokens`에 토큰 원문 컬럼이 없고 `token_hash` 유일 제약과 `user_id` 인덱스가 있다
+  - [x] FK `ON DELETE`가 ERD 3.1과 같다(`todo_shares.todo_id`, `todo_histories.todo_id`만 CASCADE, 나머지 RESTRICT)
+  - [x] `todos (category_id, owner_id)` → `categories (id, owner_id)` 복합 FK가 있다
+  - [x] ERD 3.2의 이름 있는 유일 제약·인덱스(`uq_users_email`, `uq_categories_owner_id_name_lower`, `uq_categories_id_owner_id`, `uq_teams_name_lower`, `uq_team_members_team_id_owner`, `uq_categories_owner_id_default`, `idx_todos_owner_id_start_at_end_at`, `idx_todo_shares_team_id_todo_id`, `idx_team_members_user_id`, `idx_todo_histories_todo_id_changed_at`, `idx_todos_category_id`)가 모두 있다
+  - [x] ERD 3.3의 CHECK(기간, 역할, 이력 동작, 공백 이름 4개, 이메일 소문자, 완료 일관성)가 모두 있다
+  - [x] `status` 컬럼이 없다(P-04)
 
 ### DB-03 마이그레이션 실행 스크립트
 - **선행 Task**: API-01, DB-02
@@ -249,9 +255,9 @@ flowchart LR
   1. `npm run db:migrate`: `migrations/`의 SQL 파일을 파일명 순서대로 대상 DB에 적용하는 짧은 Node 스크립트(`pg` 사용, `config/env.js`로 URL 읽기).
   2. `npm run db:reset:test`: 테스트 DB의 `public` 스키마를 지우고 다시 만든 뒤 마이그레이션 적용. 운영 URL로는 실행되지 않도록 `.env.test`만 읽는다.
 - **완료 조건**
-  - [ ] 빈 DB에 `db:migrate`를 실행하면 001이 적용된다
-  - [ ] `db:reset:test`는 `.env.test`가 없으면 실패하고, 운영 URL을 쓰지 않는다
-  - [ ] 실패 시 트랜잭션이 롤백되어 반쯤 적용된 상태가 남지 않는다(001은 `BEGIN … COMMIT`)
+  - [x] 빈 DB에 `db:migrate`를 실행하면 001이 적용된다
+  - [x] `db:reset:test`는 `.env.test`가 없으면 실패하고, 운영 URL을 쓰지 않는다
+  - [x] 실패 시 트랜잭션이 롤백되어 반쯤 적용된 상태가 남지 않는다(001은 `BEGIN … COMMIT`)
 
 ### DB-04 스키마 적용·제약 검증
 - **선행 Task**: DB-01, DB-03
@@ -260,13 +266,13 @@ flowchart LR
   1. 테스트 DB와 운영 DB에 001 적용.
   2. 제약 동작을 SQL로 직접 확인(아래 완료 조건). 확인용 SQL은 통합 테스트(API-05 이후)로 옮겨 자동화한다.
 - **완료 조건**
-  - [ ] 두 DB 모두 테이블 8개와 인덱스가 `\d`로 확인된다
-  - [ ] `end_at < start_at` 할일 INSERT가 CHECK로 거부된다(R3)
-  - [ ] 한 사용자에게 `is_default = true` 카테고리 2개 INSERT가 거부된다(E-02)
-  - [ ] 한 팀에 `OWNER` 2명 INSERT가 거부된다(OPS-23 ④)
-  - [ ] 다른 사용자의 카테고리 ID로 할일 INSERT가 복합 FK로 거부된다(R7)
-  - [ ] 할일 DELETE 시 `todo_shares`, `todo_histories`가 함께 삭제된다(R12, R20)
-  - [ ] `'Work'`가 있는 사용자에게 `' work '` 카테고리 INSERT가 거부된다(R10)
+  - [x] 두 DB 모두 테이블 8개와 인덱스가 `\d`로 확인된다
+  - [x] `end_at < start_at` 할일 INSERT가 CHECK로 거부된다(R3)
+  - [x] 한 사용자에게 `is_default = true` 카테고리 2개 INSERT가 거부된다(E-02)
+  - [x] 한 팀에 `OWNER` 2명 INSERT가 거부된다(OPS-23 ④)
+  - [x] 다른 사용자의 카테고리 ID로 할일 INSERT가 복합 FK로 거부된다(R7)
+  - [x] 할일 DELETE 시 `todo_shares`, `todo_histories`가 함께 삭제된다(R12, R20)
+  - [x] `'Work'`가 있는 사용자에게 `' work '` 카테고리 INSERT가 거부된다(R10)
 
 ### DB-05 만료 리프레시 토큰 정리 작업
 - **선행 Task**: DB-04
@@ -284,6 +290,8 @@ flowchart LR
   - [ ] 다음 날 `cron.job_run_details`에서 작업이 `succeeded`로 기록된 것을 확인한다(CM-05 점검 때)
   - [ ] 정리 SQL 파일이 저장소에 있다
 
+> 2026-11-04 보류: 시작 전 확인(Supabase Extensions에 `pg_cron`이 보이는지)을 아직 하지 못했다. 개발 단계는 로컬 PostgreSQL을 쓰는데(DB-01 메모), 로컬에는 `pg_cron` 확장이 설치돼 있지 않아 작업을 등록할 곳이 없다. Supabase 운영 프로젝트를 만들고 `pg_cron`을 확인한 뒤 진행하고, 없으면 W-08 방식을 다시 정한다.
+
 ---
 
 ## 4. 백엔드 (API)
@@ -298,11 +306,11 @@ flowchart LR
   4. `app.js`: `express.json({ limit: '100kb' })`, `cookie-parser`, `/api` 라우터, `GET /api/health`(공개, 응답 `{"status":"ok"}` 고정, SEC-04). `server.js`는 로컬 listen 전용. 루트 `api/index.js`는 `app.js`를 export.
   5. DB 세션 시간대는 DB 기본값 `Asia/Seoul`에 맡기고(W-01, DB-01), 코드에서 `SET TIME ZONE`을 하지 않는다. 사용자별 '오늘'과 응답 오프셋은 여전히 요청자 `User.timezone`으로 계산한다(PRD 5.3).
 - **완료 조건**
-  - [ ] 로컬에서 `GET /api/health`가 200이다
-  - [ ] 환경변수가 없으면 서버가 기동하지 않고 키 이름만 담은 오류를 낸다(값은 출력하지 않음)
-  - [ ] `withTransaction`이 예외 시 ROLLBACK 후 원래 에러를 다시 던지고, 모든 경로에서 `release()`한다(단위 테스트 또는 통합 테스트 1개)
-  - [ ] 이름 있는 prepared statement(`name` 옵션)를 쓰지 않는다
-  - [ ] 풀을 통한 `SHOW timezone` 결과가 `Asia/Seoul`인지 확인하는 통합 테스트가 있다(W-01)
+  - [x] 로컬에서 `GET /api/health`가 200이다
+  - [x] 환경변수가 없으면 서버가 기동하지 않고 키 이름만 담은 오류를 낸다(값은 출력하지 않음)
+  - [x] `withTransaction`이 예외 시 ROLLBACK 후 원래 에러를 다시 던지고, 모든 경로에서 `release()`한다(단위 테스트 또는 통합 테스트 1개)
+  - [x] 이름 있는 prepared statement(`name` 옵션)를 쓰지 않는다
+  - [x] 풀을 통한 `SHOW timezone` 결과가 `Asia/Seoul`인지 확인하는 통합 테스트가 있다(W-01)
 
 ### API-02 에러·인증 미들웨어
 - **선행 Task**: API-01
