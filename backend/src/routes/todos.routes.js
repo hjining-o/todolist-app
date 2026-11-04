@@ -116,3 +116,29 @@ todosRouter.get('/', async (req, res) => {
 todosRouter.get('/:todoId', async (req, res) => {
   res.json(await svc.getTodo(req.user.id, uuidParam(req.params.todoId, 'todoId')));
 });
+
+const boolRule = (v) => (typeof v === 'boolean' ? ok(v) : bad('true 또는 false여야 합니다.'));
+
+// 모두 선택(생략 = 변경 안 함). null은 description만 허용
+const updateRules = {
+  title: optional(titleRule),
+  description: optional(descriptionRule),
+  startAt: optional(dateTimeRule),
+  endAt: optional(dateTimeRule),
+  completed: optional(boolRule),
+  categoryId: optional(uuidRule),
+  sharedTeamIds: optional(uuidListRule),
+};
+
+todosRouter.patch('/:todoId', async (req, res) => {
+  const todoId = uuidParam(req.params.todoId, 'todoId');
+  const input = validate(req.body, updateRules);
+  // 빈 본문 400. validate는 생략 키도 undefined로 담는다
+  if (Object.values(input).every((v) => v === undefined)) throw AppError.of('VALIDATION_ERROR');
+  res.json(await svc.updateTodo(req.user.id, todoId, input));
+});
+
+todosRouter.delete('/:todoId', async (req, res) => {
+  await svc.deleteTodo(req.user.id, uuidParam(req.params.todoId, 'todoId'));
+  res.status(204).end();
+});

@@ -86,3 +86,48 @@ export async function listTodosForViewer(
   }
   return { rows: rows.map(toRow), total };
 }
+
+// 보낸 열만 바꾼다(undefined → null → 기존 값 유지). 완료 시각은 DB 현재 값 기준으로 정해 CHECK todos_check1을 지킨다
+export async function updateTodo(client, { todoId, title, description, startAt, endAt, completed, categoryId }) {
+  const { rowCount } = await client.query(
+    `UPDATE todos SET
+       title        = COALESCE($2, title),
+       description  = CASE WHEN $3::boolean THEN $4 ELSE description END,
+       start_at     = COALESCE($5::timestamptz, start_at),
+       end_at       = COALESCE($6::timestamptz, end_at),
+       completed    = COALESCE($7::boolean, completed),
+       completed_at = CASE WHEN $7::boolean IS NULL THEN completed_at
+                           WHEN $7::boolean THEN COALESCE(completed_at, now()) END,
+       category_id  = COALESCE($8::uuid, category_id),
+       updated_at   = now()
+     WHERE id = $1`,
+    [
+      todoId,
+      title ?? null,
+      description !== undefined,
+      description ?? null,
+      startAt ?? null,
+      endAt ?? null,
+      completed ?? null,
+      categoryId ?? null,
+    ],
+  );
+  return rowCount === 1;
+}
+
+// 공유 팀 전체 교체. 남는 팀은 shared_at 유지
+export async function replaceShares(client, { todoId, teamIds }) {
+  await client.query('DELETE FROM todo_shares WHERE todo_id = $1 AND NOT (team_id = ANY($2::uuid[]))', [
+    todoId,
+    teamIds,
+  ]);
+  await client.query(
+    'INSERT INTO todo_shares (todo_id, team_id) SELECT $1, unnest($2::uuid[]) ON CONFLICT DO NOTHING',
+    [todoId, teamIds],
+  );
+}
+
+export async function deleteTodo(client, todoId) {
+  const { rowCount } = await client.query('DELETE FROM todos WHERE id = $1', [todoId]);
+  return rowCount === 1;
+}
