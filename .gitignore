@@ -148,5 +148,4 @@ vite.config.ts.timestamp-*
 # Turbo Repo
 .turbo
 
-docs-local/
 .playwright-mcp/
