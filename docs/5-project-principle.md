@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.9 |
+| 문서 버전 | v0.10 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.12, `docs/3-user-scenario.md` v0.11, `docs/4-wireframe.md` v0.9 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.13, `docs/3-user-scenario.md` v0.12, `docs/4-wireframe.md` v0.10 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`SC`, `A`, `B`, `K`, `M`, `Q1`–`Q4`), 시나리오 `US-xx`·`EX-xx`·`C-xx`·`D-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `ST-xx`·`DLG-xx`·`U-xx`.
@@ -42,7 +42,7 @@
 | DB 접근 | `pg`(node-postgres). Prisma와 다른 ORM 금지 | PRD §6 |
 | 데이터베이스 | PostgreSQL 17, Supabase 사용. DB로만 쓰며 Supabase Auth와 자동 생성 API는 쓰지 않음 | PRD §5.1 B1 |
 | 배포 | Vercel 단일 프로젝트. 프론트 정적 빌드와 Express(Vercel Functions)를 같은 도메인 `/api/*`에 배포 | PRD §5.1 |
-| 인증 | JWT를 httpOnly 쿠키(`access_token`)로 발급. `jsonwebtoken`, `cookie-parser`. 비밀번호는 `bcryptjs`, cost 10 | PRD §5.2 B4, [가정 G-09] |
+| 인증 | 액세스 토큰은 `HS384` JWT(쿠키 `access_token`, 15분), 리프레시 토큰은 불투명 문자열(쿠키 `refresh_token`, 7일, DB에 해시). `jsonwebtoken`, `cookie-parser`, Node `crypto`. 비밀번호는 `bcryptjs`, cost 10 | PRD §5.2 B4, A25, A26, [가정 G-09] |
 | 테스트 | Vitest(단위, 통합), supertest(API 통합), `@playwright/test`(E2E 회귀), Playwright MCP(E2E 탐색과 스크립트 작성 보조) | [가정 G-04] |
 
 ## 2. 의존성 및 레이어 원칙
@@ -71,7 +71,7 @@
 | BE-05 | repositories는 services와 routes를 import하지 않는다. 할일과 카테고리의 권한 WHERE 조건은 `repositories/sql/access.js`의 조각으로만 쓴다. |
 | BE-06 | 다른 모듈의 데이터는 그 모듈의 service 함수로만 접근한다. 예: `todos`가 카테고리를 확인할 때는 `categories.service`를 호출하고 `categories.repo`를 직접 호출하지 않는다. |
 | BE-07 | SQL은 `$1, $2 …` parameterized query만 쓴다. 문자열 연결이나 템플릿 리터럴로 SQL을 만들지 않는다. 정렬 컬럼 같은 식별자는 허용 목록 객체에서만 고른다. |
-| BE-08 | 여러 쓰기를 한 단위로 묶어야 하는 흐름(가입, 카테고리 삭제와 할일 이동, 구성원 제거와 공유 해제, 팀 나가기, P1의 할일 변경과 이력 기록)은 service에서 `withTransaction`으로 감싼다. repository 함수는 `client`(pool 또는 트랜잭션 클라이언트)를 인자로 받는다. |
+| BE-08 | 여러 쓰기를 한 단위로 묶어야 하는 흐름(가입, 카테고리 삭제와 할일 이동, 구성원 제거와 공유 해제, 팀 나가기, 리프레시 토큰 회전, P1의 할일 변경과 이력 기록)은 service에서 `withTransaction`으로 감싼다. repository 함수는 `client`(pool 또는 트랜잭션 클라이언트)를 인자로 받는다. |
 | BE-09 | 순환 import를 만들지 않는다. |
 
 ### 2.2 프론트엔드 레이어
@@ -133,7 +133,7 @@
 | ID | 종류 | 대상 | 위치 | 최소 기준 |
 |----|------|------|------|-----------|
 | Q-01 | 단위(백엔드) | `domain/` 규칙 | `backend/tests/unit/` | S1–S4 판정 순서. R3 경계(같은 일시 허용). R4 세 경우의 기본값. R5 분 단위 경계(11/05 23:59:30은 진행 중, 11/06 00:00은 기한 초과, 시작 정각은 진행 중). 근거: 시나리오 EX-07, EX-08, EX-10, EX-11, EX-14 |
-| Q-02 | 통합(백엔드) | services, repositories와 PostgreSQL 17 | `backend/tests/integration/` | 권한: 비구성원 404(EX-21), 일반 팀원의 변경 403(EX-20), 관리자의 구성원 할일 수정 성공(US-14), 관리자라도 공유되지 않은 할일은 404(EX-25). 타인 할일 응답에 카테고리 없음(R2). 가입 트랜잭션 원자성(EX-01). 카테고리 삭제 시 할일 이동 원자성(R9). 구성원 제거 시 공유 해제(R21). P1: 할일 변경과 이력이 같은 트랜잭션(EX-33). |
+| Q-02 | 통합(백엔드) | services, repositories와 PostgreSQL 17 | `backend/tests/integration/` | 권한: 비구성원 404(EX-21), 일반 팀원의 변경 403(EX-20), 관리자의 구성원 할일 수정 성공(US-14), 관리자라도 공유되지 않은 할일은 404(EX-25). 타인 할일 응답에 카테고리 없음(R2). 가입 트랜잭션 원자성(EX-01). 리프레시 토큰 회전·재사용 감지·로그아웃 후 갱신 401(EX-42, EX-43, SEC-02), `HS384` 외 알고리즘 토큰 거부(SEC-03). 카테고리 삭제 시 할일 이동 원자성(R9). 구성원 제거 시 공유 해제(R21). P1: 할일 변경과 이력이 같은 트랜잭션(EX-33). |
 | Q-03 | 프론트 단위 | 날짜와 시간대 포맷, 필터를 쿼리 파라미터로 바꾸는 함수, 권한 플래그 분기 | `frontend/src/**/` (대상 옆) | 분기가 있는 함수는 분기마다 케이스 1개 이상 |
 | Q-04 | 프론트 컴포넌트 | 권한별 화면 | 대상 옆 `*.test.tsx` | SC-03(행의 완료, 삭제 버튼 노출)과 SC-04(읽기 전용 모드)만. 나머지 화면은 수동 검증. Radix 컴포넌트용 jsdom 보완(`ResizeObserver`, `hasPointerCapture`, `scrollIntoView`)은 `src/test/setup.ts` 한 곳에 둔다. shadcn 생성 컴포넌트 자체는 테스트하지 않는다 |
 | Q-05 | E2E (`@playwright/test`) | P0 시나리오(US)의 정상 흐름과 권한 예외(EX-20, EX-21) | 루트 `e2e/` | P0 US 1개당 테스트 1개 이상(수동 검증하는 US-10 모바일 레이아웃 제외). 스크립트를 실행해 통과하면 PRD 4.3 체크박스에 표시한다. Day 2 종료 시 P0 100%(M6). Playwright MCP는 시나리오를 브라우저에서 먼저 따라가 보고 스크립트를 작성, 디버깅하는 데 쓴다. 모바일 레이아웃처럼 스크립트로 확인하기 어려운 항목은 수동으로 검증한다 [가정 G-04] |
@@ -187,16 +187,16 @@
 | 변수 | 용도 | 근거 |
 |------|------|------|
 | `DATABASE_URL` | Supabase 트랜잭션 풀러(포트 6543) 연결 문자열 [가정 G-08] | PRD §5.1 B2 |
-| `JWT_SECRET` | JWT 서명 키 [가정 G-08] | PRD §5.2 |
+| `JWT_SECRET` | JWT 서명 키. `HS384`용으로 48바이트 이상의 무작위 값이며, 짧으면 `config/env.js`가 기동을 실패시킨다 [가정 G-08] | PRD §5.2 A26 |
 
 ### 5.2 인증과 인가
 
 | ID | 원칙 | 근거 |
 |----|------|------|
 | SEC-01 | 비밀번호는 8자 이상, UTF-8 72바이트 이하를 검증한 뒤 `bcryptjs`(cost 10)로 해시해서만 저장한다. 평문과 해시는 응답과 로그에 나가지 않는다. | PRD §5.2 B4, 도메인 §3.4 |
-| SEC-02 | JWT를 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급하고 만료는 24시간이다. 리프레시 토큰은 두지 않는다. 로그아웃은 쿠키 삭제다. 탈취된 토큰은 만료까지 유효하다는 한계를 알고 있다. | PRD §5.2, 시나리오 D-03 |
-| SEC-03 | JWT 페이로드에는 사용자 ID(`sub`)와 만료 시각만 담는다. 역할, 팀, 권한을 넣지 않고, 권한은 요청마다 DB로 확인한다. | PRD §5.2, 시나리오 US-15 #2 |
-| SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`과 `/api/auth/login`을 뺀 모든 `/api/*` 라우터에 기본 적용한다. 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01·02 |
+| SEC-02 | 액세스 토큰(JWT, 15분)과 리프레시 토큰(7일 절대 만료)을 각각 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급한다. 리프레시 쿠키는 `Path=/api/auth`다. 리프레시 토큰은 원문이 아니라 SHA-256 해시만 `refresh_tokens`에 저장하고, `POST /api/auth/refresh` 때마다 회전한다(쓴 토큰 폐기 + 새 토큰 발급, 한 트랜잭션). 폐기된 토큰이 다시 오면 그 사용자의 리프레시 토큰을 모두 폐기한다. 로그아웃은 리프레시 토큰 폐기와 쿠키 삭제, 비밀번호 변경은 그 사용자의 리프레시 토큰 전체 폐기다. 탈취된 액세스 토큰은 만료(최대 15분)까지 유효하다는 한계를 알고 있다. | PRD §5.2 A25, 시나리오 D-03, EX-42–EX-44 |
+| SEC-03 | JWT 페이로드에는 사용자 ID(`sub`)와 만료 시각만 담는다. 역할, 팀, 권한을 넣지 않고, 권한은 요청마다 DB로 확인한다. 서명과 검증은 `HS384`만 쓴다(`jwt.verify`의 `algorithms: ['HS384']`). 서명 키는 48바이트 이상이다. | PRD §5.2 A26, 시나리오 US-15 #2 |
+| SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`을 뺀 모든 `/api/*` 라우터에 기본 적용한다. 갱신은 액세스 토큰이 만료된 상태에서 호출되고, 로그아웃은 만료된 상태에서도 쿠키를 지울 수 있어야 하므로 공개다(두 경로는 리프레시 쿠키로만 동작). 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01–03, PRD A25 |
 | SEC-05 | 로그인 실패는 이메일 존재 여부를 드러내지 않는다. 없는 이메일과 틀린 비밀번호는 같은 `INVALID_CREDENTIALS` 응답이다. | PRD FR-01 #5, 시나리오 EX-04 |
 | SEC-06 | 다른 사용자 할일의 응답에서는 카테고리 필드를 응답 생성 함수 한 곳에서 제거한다. 라우트마다 따로 제거하지 않는다. | 도메인 R2, PRD §5.2 |
 | SEC-07 | 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. 쿠키는 `SameSite=Lax`이고, 프론트와 API는 같은 출처(`/api/*`)에서 동작한다. CSRF 토큰과 CORS 허용 목록은 두지 않는다. | PRD §5.2 CSRF 결정 |
@@ -226,7 +226,7 @@
 | OPS-07 | 에러 응답은 `{ "error": { "code", "message", "fields"? } }` 형식 하나로 통일한다. 상태 코드, 코드, 메시지는 시나리오 §6.2 표를 따른다. | 시나리오 §6.2 C-05, PRD §5.2 |
 | OPS-08 | services는 `AppError(status, code, message)`를 던지고, HTTP 응답으로 바꾸는 일은 `error-handler.js` 한 곳에서만 한다. 예상하지 못한 예외는 500 `INTERNAL_ERROR`가 된다. | BE-02 |
 | OPS-09 | 트랜잭션이 실패하면 `ROLLBACK`한 뒤 원래 에러를 다시 던진다. 연결 반납은 `finally`에서 한다(OPS-12). | PRD K6 |
-| OPS-10 | 프론트엔드는 코드로 분기한다. 401은 SC-01로 이동(ST-01)하되, 로그인 화면의 `INVALID_CREDENTIALS`는 폼 오류로 보여준다. 403은 ST-03, 404 `NOT_FOUND`는 ST-02, 413과 5xx와 네트워크 오류는 ST-04다. 400, 409와 구성원 추가의 404 `USER_NOT_FOUND`는 폼·필드 오류로 보여준다(와이어프레임 §3.2, §4.10). 메시지는 서버의 `error.message`를 그대로 보여준다. | 와이어프레임 §3.5, §4.2 |
+| OPS-10 | 프론트엔드는 코드로 분기한다. 401은 `shared/api/client.ts`가 `POST /api/auth/refresh`로 한 번 갱신한 뒤 원래 요청을 한 번 다시 보내고(동시에 받은 401은 갱신 요청 하나로 합친다, 갱신·로그인·가입·로그아웃 요청은 제외), 갱신도 실패하면 SC-01로 이동(ST-01)하되, 로그인 화면의 `INVALID_CREDENTIALS`는 폼 오류로 보여준다. 403은 ST-03, 404 `NOT_FOUND`는 ST-02, 413과 5xx와 네트워크 오류는 ST-04다. 400, 409와 구성원 추가의 404 `USER_NOT_FOUND`는 폼·필드 오류로 보여준다(와이어프레임 §3.2, §4.10). 메시지는 서버의 `error.message`를 그대로 보여준다. | 와이어프레임 §3.5, §4.2 |
 
 ### 5.6 데이터베이스와 성능
 
@@ -235,11 +235,12 @@
 | OPS-11 | `pg.Pool`은 `config/db.js`에서 모듈 최상위에 한 번만 만든다. 설정은 `max: 5`, `idleTimeoutMillis: 10000`, `connectionTimeoutMillis: 5000`이고, 연결은 Supabase 트랜잭션 풀러(포트 6543)를 쓴다. | PRD §5.1 B2 |
 | OPS-12 | 트랜잭션은 `pool.connect()`로 얻은 클라이언트를 `try/finally`로 감싸 `release()`한다. 단건 쿼리는 `pool.query()`를 쓴다. | PRD §5.1 |
 | OPS-13 | 이름 있는 prepared statement(`name` 옵션)는 쓰지 않는다. 트랜잭션은 한 요청 안에서 끝낸다. | PRD §5.1 B3 |
-| OPS-14 | DB 세션 시간대는 `Asia/Seoul`, 일시 컬럼은 `timestamptz`를 쓴다. R4의 '오늘'은 서버에서 `User.timezone` 기준으로 계산한다. 상태 판정의 현재 시각은 서버 시각을 분 단위로 자른다. | 도메인 R5, PRD §5.3 |
+| OPS-14 | DB 세션 시간대는 `Asia/Seoul`, 일시 컬럼은 `timestamptz`를 쓴다. 트랜잭션 풀러는 연결별 `SET`을 유지하지 않으므로 Supabase 프로젝트마다 `ALTER DATABASE … SET timezone TO 'Asia/Seoul'`로 DB 기본값을 고정하고, 코드에서 `SET TIME ZONE`을 하지 않는다(PRD A28). R4의 '오늘'은 서버에서 `User.timezone` 기준으로 계산한다. 상태 판정의 현재 시각은 서버 시각을 분 단위로 자른다. | 도메인 R5, PRD §5.3 |
 | OPS-15 | 목록은 `limit`과 `offset`을 쓴다. 기본 50건, 최대 100건, 정렬은 `start_at` 오름차순이다. 응답에 필터 적용 후 `total`을 포함한다. | PRD §5.1 U-12 |
 | OPS-16 | 캘린더 조회(`GET /api/todos?from=&to=`, N-11)는 범위를 최대 42일, 결과를 최대 500건으로 제한한다. 42일을 넘는 범위는 400 `VALIDATION_ERROR`다. 결과가 상한에 걸리면 응답에 `truncated: true`를 넣는다. | PRD §5.1 U-13, 시나리오 EX-39 |
 | OPS-17 | 목록과 캘린더는 1회 쿼리에 공유 팀 같은 연관 데이터를 JOIN이나 집계로 함께 가져온다(N+1 금지). 상태는 SQL에서 계산해 필터와 정렬에 쓴다. | PRD §5.1 |
-| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))과 팀당 OWNER 1명 부분 유니크 인덱스(OPS-23), 사용자당 기본 카테고리 1개 부분 유니크 인덱스, 카테고리 복합 FK용 `UNIQUE (id, owner_id)`, 카테고리 삭제용 `idx_todos_category_id`를 포함한다. 전체 목록은 `docs/7-erd.md` 3.2다. | PRD §5.1, `docs/7-erd.md` E-02·E-04·E-12, [가정 G-07] |
+| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))과 팀당 OWNER 1명 부분 유니크 인덱스(OPS-23), 사용자당 기본 카테고리 1개 부분 유니크 인덱스, 카테고리 복합 FK용 `UNIQUE (id, owner_id)`, 카테고리 삭제용 `idx_todos_category_id`, 리프레시 토큰의 `uq_refresh_tokens_token_hash`·`idx_refresh_tokens_user_id`를 포함한다. 전체 목록은 `docs/7-erd.md` 3.2다. 스키마가 아닌 운영 작업(OPS-24의 `pg_cron` 등록)은 마이그레이션에 넣지 않고 `backend/src/db/ops/`의 SQL 파일로 남긴다. | PRD §5.1, `docs/7-erd.md` E-02·E-04·E-12, [가정 G-07] |
+| OPS-24 | 만료된 리프레시 토큰은 Supabase `pg_cron`으로 매일 04:00(DB 시간대) `DELETE FROM refresh_tokens WHERE expires_at < now()`로 지운다. 폐기됐지만 만료 전인 행은 재사용 감지(SEC-02)를 위해 남긴다. 작업 SQL은 `backend/src/db/ops/refresh-token-cleanup.sql`에 두고 운영 프로젝트에 1회 등록한다. 테스트 DB는 리셋되므로 등록하지 않는다. 앱 코드에는 정리 경로를 두지 않는다. | PRD §5.1 A27, K12 |
 | OPS-23 | 참조 무결성과 데이터 제약은 마이그레이션 SQL에 다음과 같이 둔다. ① 사용자·팀을 참조하는 FK(`todo_histories.actor_id`, `todo_shares.team_id`, `team_members.user_id`, `team_members.team_id`, `todos.owner_id`, `categories.owner_id` 등)는 `ON DELETE RESTRICT`다. ② `todo_shares.todo_id`, `todo_histories.todo_id`는 `ON DELETE CASCADE`라 할일 삭제 때 함께 지워진다. ③ 구성원 제거 때의 `todo_shares` 정리는 FK로 연쇄하지 않고 service가 같은 트랜잭션에서 직접 `DELETE`한다(BE-08). ④ 팀당 OWNER 1명은 부분 유니크 인덱스 `UNIQUE (team_id) WHERE role = 'OWNER'`로 보장한다. ⑤ 소유권 이전은 반드시 기존 소유자를 강등하거나 삭제한 뒤 새 소유자를 승격하는 순서로 처리한다(④ 때문에 반대 순서는 인덱스 위반이다). ⑥ `todos`의 카테고리 FK는 `(category_id, owner_id)` → `categories (id, owner_id)` 복합 FK이고 `ON DELETE RESTRICT`다. 카테고리 삭제는 할일을 기본 카테고리로 옮긴 뒤 지운다(R9). ⑦ 공유 팀이 소유자가 속한 팀이라는 조건(R21)은 트리거 없이 service가 검증한다. ⑧ CHECK 제약과 `updated_at` 갱신 방식은 `docs/7-erd.md` 3.3을 따른다. | 도메인 §3.9, R7, R9, R18, R21, `docs/7-erd.md` |
 
 ### 5.7 배포
@@ -249,7 +250,7 @@
 | OPS-19 | Vercel 단일 프로젝트로 배포한다. 프론트는 정적 빌드하고, `api/index.js`가 Express 앱을 함수로 노출한다. 브라우저는 `/api/*`를 같은 도메인으로 호출한다. | PRD §5.1 Q1 |
 | OPS-20 | 운영은 HTTPS만 쓴다. 쿠키 `Secure`는 운영 전제이며, 로컬 개발은 `localhost`에서 확인한다 [가정 G-13]. | PRD §5.2 |
 | OPS-21 | Day 1 오전에 빈 API(`/api/health` [가정 G-06])를 먼저 배포해 Express 함수와 콜드 스타트를 확인한다. | PRD K10 |
-| OPS-22 | 배포 순서는 마이그레이션 적용, 백엔드와 프론트 배포다. 운영 지표 M1–M5는 Vercel과 Supabase 대시보드로 확인한다. 부하 테스트는 하지 않는다. | PRD K3, Q2 [가정 G-15] |
+| OPS-22 | 배포 순서는 마이그레이션 적용, 운영 작업(OPS-24) 등록 확인, 백엔드와 프론트 배포다. 운영 지표 M1–M5는 Vercel과 Supabase 대시보드로 확인한다. 부하 테스트는 하지 않는다. | PRD K3, Q2 [가정 G-15] |
 
 ## 6. 디렉토리 구조
 
@@ -261,7 +262,7 @@ todolist-app/
 │  └─ index.js          # Vercel Functions 진입점. backend/src/app.js를 import해 export
 ├─ backend/             # Express API (JavaScript)
 ├─ frontend/            # React 19 + TypeScript SPA (Vite)
-├─ docs/                # 기획·설계 문서 1–6
+├─ docs/                # 기획·설계 문서 1–7
 ├─ e2e/                 # @playwright/test E2E (Q-05, Q-17–Q-21)
 │  ├─ fixtures/         # API로 계정, 팀, 할일을 만드는 헬퍼
 │  ├─ auth.spec.ts      # 가입, 로그인, 로그아웃
@@ -353,11 +354,11 @@ backend/
 │  │  ├─ env.js                 # 환경변수 검증
 │  │  └─ db.js                  # pg.Pool 단일 인스턴스, withTransaction
 │  ├─ middleware/
-│  │  ├─ authenticate.js        # JWT 쿠키 검증 → req.user, 실패 401
+│  │  ├─ authenticate.js        # 액세스 토큰(HS384) 쿠키 검증 → req.user, 실패 401
 │  │  └─ error-handler.js       # AppError → 에러 응답, 그 밖은 500
 │  ├─ routes/                   # HTTP 경계 (<모듈>.routes.js)
 │  │  ├─ index.js               # /api 마운트, 공개 경로 외 authenticate 적용
-│  │  ├─ auth.routes.js         # POST /api/auth/signup, login, logout
+│  │  ├─ auth.routes.js         # POST /api/auth/signup, login, refresh, logout
 │  │  ├─ users.routes.js        # GET, PATCH /api/me (P1: 비밀번호 변경 포함)
 │  │  ├─ categories.routes.js
 │  │  ├─ todos.routes.js        # 목록·캘린더(기간 필터), 등록, 수정, 삭제
@@ -378,13 +379,15 @@ backend/
 │  ├─ repositories/             # SQL 전담 (<모듈>.repo.js)
 │  │  ├─ sql/
 │  │  │  └─ access.js           # 권한 WHERE 조각 (R2, R19, R21). 이 파일에만 둔다
+│  │  ├─ auth.repo.js           # refresh_tokens
 │  │  ├─ users.repo.js
 │  │  ├─ categories.repo.js
 │  │  ├─ todos.repo.js          # todo_shares 포함
 │  │  ├─ teams.repo.js          # team_members 포함
 │  │  └─ todo-histories.repo.js     # P1
 │  └─ db/
-│     └─ migrations/            # 순번 SQL 파일 (P1 테이블 포함)
+│     ├─ migrations/            # 순번 SQL 파일 (P1 테이블 포함)
+│     └─ ops/                   # 운영 작업 SQL (pg_cron 등록, OPS-24)
 └─ tests/
    ├─ unit/                     # domain 규칙 테스트
    └─ integration/              # 실제 PostgreSQL 대상 테스트
@@ -403,6 +406,7 @@ backend/
 | `src/repositories/` | SQL 실행과 이름 변환 | config/db, repositories/sql |
 | `src/repositories/sql/access.js` | 권한 조건의 유일한 정의 | 없음 |
 | `src/db/migrations/` | 스키마 변경 이력(SQL) | 없음 |
+| `src/db/ops/` | 운영 DB에 1회 등록하는 작업 SQL(OPS-24) | 없음 |
 | `tests/unit/` | domain 단위 테스트 | domain |
 | `tests/integration/` | 실제 DB 대상 테스트 | app, services, repositories |
 
@@ -435,7 +439,7 @@ backend/
 | G-06 | API와 응답 세부 | 영문 상태 값(`NOT_STARTED` 등), 쿼리 파라미터 이름(`from`, `to`, `status`, `categoryId` 등), 권한 플래그(`canEdit`, `isOwner`), 헬스 경로(`/api/health`), 오프셋 없는 일시 거부(SEC-11). |
 | G-07 | DB 명명과 마이그레이션 | 테이블과 컬럼은 snake_case 복수형, 인덱스는 N-19 규칙을 따른다. 식별자는 `uuid`이고 기본값은 `gen_random_uuid()`다(URL의 ID 추측 방지, P-05). 마이그레이션은 순번 SQL 파일이다. ORM이 없으므로 마이그레이션 도구는 쓰지 않는다. |
 | G-08 | 환경변수 이름 | `DATABASE_URL`, `JWT_SECRET`을 쓴다. |
-| G-09 | 인증 세부 | JWT는 `jsonwebtoken`, 쿠키 파싱은 `cookie-parser`를 쓴다. 쿠키 이름은 `access_token`이다. |
+| G-09 | 인증 세부 | JWT는 `jsonwebtoken`(`HS384`), 쿠키 파싱은 `cookie-parser`를 쓴다. 쿠키 이름은 `access_token`, `refresh_token`이다. 리프레시 토큰 생성과 해시는 Node `crypto`(`randomBytes(32)`, SHA-256)로 한다. |
 | G-10 | 로깅 도구 | 요청 로그는 Vercel 기본 함수 로그로 보고, 코드의 로그는 `error-handler.js`의 `console.error`뿐이다(OPS-04, OPS-06). 구조화 로그 라이브러리는 두지 않는다. |
 | G-11 | 캘린더 라이브러리 | PRD §6이 허용한 오픈소스 캘린더 라이브러리(예: FullCalendar, react-big-calendar) 중 FullCalendar(`@fullcalendar/react`, `@fullcalendar/daygrid`, `@fullcalendar/timegrid`, MIT)를 쓴다. 날짜 라이브러리(localizer)와 시간대 플러그인 없이 월·주·일 뷰와 `+N`을 지원한다. 시간대는 FE-10, '오늘' 이동은 FE-06 예외를 따른다. 코드는 `features/todos/calendar/`에 둔다. |
 | G-12 | 커버리지 | 수치 목표는 두지 않는다. 규칙 추적(Q-08)으로 대신한다. |
@@ -459,3 +463,4 @@ backend/
 | v0.7 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.12, PRD v0.11, 사용자 시나리오 v0.9, 와이어프레임 v0.7). 기술 아키텍처(`docs/6-arch-diagram.md`) 확인 필요 T-02·T-04·T-06·T-07·T-08 결정 반영: N-11에 API 경로 추가(캘린더 `GET /api/todos?from=&to=`, 구성원 목록 재사용, 카테고리, 구성원 제거·역할 변경)와 자기 제거 경로 규칙, N-12 이력 1건 규칙, SEC-01·SEC-09 비밀번호 '8자 이상, UTF-8 72바이트 이하', OPS-16 42일 초과 400, OPS-18 부분 유니크 인덱스, OPS-23 추가(FK RESTRICT/CASCADE, 소유권 이전 순서). 6.1 `docs/` 주석을 문서 1–6으로 정정 |
 | v0.8 | 2026-11-04 | hjining | 기준 문서 버전 갱신(사용자 시나리오 v0.10, 와이어프레임 v0.8). SEC-09에 비밀번호 공백 미제거 예외(시나리오 C-23). N-11에 `GET /api/teams`(팀 목록·내 역할), `POST /api/teams`(팀 생성) 추가, 팀 단건 조회·이름 변경·삭제 경로는 두지 않음 명시 |
 | v0.9 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.13, PRD v0.12, 사용자 시나리오 v0.11, 와이어프레임 v0.9). ERD(`docs/7-erd.md`) 확인 필요 E-01–E-12 결정 반영: N-18 `password_hash`, N-19 복합·표현식 인덱스 이름과 이메일 일반 유일 제약(PK·FK·CHECK 무명), OPS-18 인덱스 추가(기본 카테고리 부분 유니크, `UNIQUE (id, owner_id)`, `idx_todos_category_id`), OPS-23 ⑥–⑧(카테고리 복합 FK·RESTRICT, 공유 팀 service 검증, CHECK·`updated_at`은 ERD 3.3) |
+| v0.10 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 사용자 시나리오 v0.12, 와이어프레임 v0.10). PRD A25–A28 반영: 1.2 인증 행, SEC-02(리프레시 토큰 회전·재사용 감지·폐기), SEC-03(`HS384` 고정, 키 48바이트), SEC-04(공개 경로에 refresh·logout), `JWT_SECRET` 길이, OPS-10(401 → 갱신 → 재시도), OPS-14(`ALTER DATABASE`로 시간대 고정), OPS-18(리프레시 토큰 인덱스, 운영 작업 SQL 위치), OPS-22, OPS-24 추가(`pg_cron` 만료 토큰 정리), Q-02 인증 테스트, BE-08 리프레시 토큰 회전, 6.3 구조(`auth.repo.js`, `db/ops/`), G-09. 6.1 `docs/` 주석을 문서 1–7로 정정(ERD 추가 반영 누락) |

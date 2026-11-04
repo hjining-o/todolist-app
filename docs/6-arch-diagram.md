@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.4 |
+| 문서 버전 | v0.5 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.12, `docs/3-user-scenario.md` v0.11, `docs/4-wireframe.md` v0.9, `docs/5-project-principle.md` v0.9 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.13, `docs/3-user-scenario.md` v0.12, `docs/4-wireframe.md` v0.10, `docs/5-project-principle.md` v0.10 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`A`, `B`, `K`, `M`), 시나리오 `US-xx`·`EX-xx`·`C-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `SC`·`ST`·`DLG`·`U-xx`, 프로젝트 원칙 `P-xx`·`BE-xx`·`FE-xx`·`SEC-xx`·`OPS-xx`·`G-xx`.
@@ -36,11 +36,12 @@
 | 5.7 | 팀 구성원 추가·제거와 공유 해제 | sequenceDiagram |
 | 5.8 | 소유자의 팀 나가기: 다음 소유자 지정 (P1) | sequenceDiagram |
 | 5.9 | 변경 이력 조회: 보는 사람별 필터링 (P1) | sequenceDiagram |
+| 5.10 | 토큰 갱신·로그아웃: 리프레시 토큰 회전과 폐기 | sequenceDiagram |
 
 ## 2. 시스템 전체 기술 아키텍처
 
 - 배포는 Vercel 단일 프로젝트이고, 프론트엔드 정적 빌드와 Express API(Vercel Functions)가 한 도메인(`/api/*`)에 있다(PRD §5.1, OPS-19).
-- PostgreSQL 17은 Supabase를 DB로만 쓴다. Supabase Auth와 자동 생성 API는 쓰지 않는다(B1). 인증은 앱이 직접 발급하는 JWT 쿠키다(PRD §5.2).
+- PostgreSQL 17은 Supabase를 DB로만 쓴다. Supabase Auth와 자동 생성 API는 쓰지 않는다(B1). 인증은 앱이 직접 발급하는 액세스 토큰(`HS384` JWT, 15분)과 리프레시 토큰(7일, DB에 해시) 쿠키다(PRD §5.2). 예외로 만료 리프레시 토큰 정리에 `pg_cron`을 쓴다(PRD A27, OPS-24).
 - 문서에 명시된 외부 인증 서비스는 없다. 소셜 로그인, 알림, 외부 캘린더 연동은 범위 밖이다(도메인 §7).
 
 ```mermaid
@@ -70,6 +71,7 @@ flowchart TB
     subgraph DS["데이터 저장소 (Supabase, DB로만 사용)"]
         SUP["Supavisor 커넥션 풀러<br/>트랜잭션 모드, 포트 6543"]
         PG[("PostgreSQL 17")]
+        CRON["pg_cron<br/>매일 04:00 만료 refresh_tokens 삭제"]
     end
 
     NOEXT["외부 인증 서비스 없음<br/>Supabase Auth, 자동 생성 API 미사용"]
@@ -85,6 +87,7 @@ flowchart TB
     RS --> POOL
     POOL -->|"pg, parameterized query"| SUP
     SUP --> PG
+    CRON -.-> PG
     ENV -.-> FN
     FN -.-> LOG
     FN -.- NOEXT
@@ -216,6 +219,7 @@ ERD는 `docs/7-erd.md`로 분리했다. 엔티티 관계, 컬럼 타입, FK `ON 
 | 5.7 | 구성원 추가·제거 | 소유자 전용, 중복·미가입 검사, 자기 제거 거부, 제거와 공유 해제의 원자성, 역할 변경 즉시 반영 | FR-09 #2·#8, FR-11 #5, R18, R21, EX-27, EX-28, EX-34, US-15 |
 | 5.8 | 팀 나가기 (P1) | 소유자 위임·제거·공유 해제를 한 번에 처리, 위임 불가 조건과 검사 순서, 기존 소유자 삭제 → 새 소유자 승격 순서 | FR-09 #12, R18, R21, C-11, EX-29, EX-36, EX-40, EX-41 |
 | 5.9 | 이력 조회 (P1) | 보는 사람에 따라 카테고리·공유 팀 변경을 걸러내고 빈 이력은 숨김 | FR-10 #4·#6, R20, C-17 |
+| 5.10 | 토큰 갱신·로그아웃 | 401 후 자동 갱신·재시도, 회전의 원자성, 재사용 감지, 로그아웃 폐기 | FR-01 #7·#10, PRD A25, SEC-02, OPS-10, EX-42, EX-43 |
 
 ### 5.1 공통 요청 처리: 인증·권한 판정·에러 변환
 
@@ -237,9 +241,10 @@ sequenceDiagram
     alt 공개 경로 (signup, login)
         AM->>RT: 인증 없이 통과
     else 보호 경로
-        alt 쿠키 없음, 서명 오류, 만료(24시간), 로그아웃으로 삭제됨
+        alt 쿠키 없음, 서명 오류, HS384가 아닌 알고리즘, 만료(15분), 로그아웃으로 삭제됨
             AM-->>CL: 401 UNAUTHENTICATED
-            CL->>U: ST-01 로그인 화면으로 이동 (?next= 보존)
+            CL->>CL: 토큰 갱신 후 한 번 재시도 (5.10)
+            CL->>U: 갱신도 실패하면 ST-01 로그인 화면으로 이동 (?next= 보존)
         else 토큰 유효
             AM->>RT: req.user = 사용자 ID만 (역할과 팀은 토큰에 없음)
         end
@@ -279,7 +284,7 @@ sequenceDiagram
     participant FE as SignupPage SC-02
     participant RT as auth.routes
     participant SV as auth.service
-    participant RP as users.repo, categories.repo
+    participant RP as users.repo, categories.repo, auth.repo
     participant DB as PostgreSQL
 
     U->>FE: 이메일, 비밀번호, 이름 입력 후 가입
@@ -307,9 +312,10 @@ sequenceDiagram
                 SV-->>RT: Error
                 RT-->>FE: 500 INTERNAL_ERROR
             else 성공
+                SV->>RP: 리프레시 토큰 해시 INSERT (7일)
                 SV->>DB: COMMIT
                 SV-->>RT: 사용자
-                RT-->>FE: 성공 + Set-Cookie access_token (httpOnly, Secure, SameSite=Lax, 24시간)
+                RT-->>FE: 성공 + Set-Cookie access_token (HS384, 15분), refresh_token (7일, Path=/api/auth). 둘 다 httpOnly, Secure, SameSite=Lax
                 FE->>U: SC-03 할일 목록으로 이동 (별도 로그인 없음)
             end
         end
@@ -775,6 +781,55 @@ sequenceDiagram
     end
 ```
 
+### 5.10 토큰 갱신·로그아웃: 리프레시 토큰 회전과 폐기
+
+근거: 액세스 토큰은 15분, 리프레시 토큰은 7일 절대 만료이고 DB에는 해시만 저장한다(PRD §5.2 A25). 보호 API가 401을 주면 클라이언트가 한 번 갱신한 뒤 원래 요청을 다시 보낸다(OPS-10, EX-42). 갱신마다 쓴 토큰을 폐기하고 새 토큰을 주며(회전), 폐기된 토큰이 다시 오면 그 사용자의 리프레시 토큰을 모두 폐기한다(SEC-02, EX-43). 폐기와 발급은 한 트랜잭션이고, 조건부 `UPDATE … RETURNING`으로 같은 토큰의 동시 갱신 중 하나만 성공한다. 만료 행 정리는 앱이 아니라 `pg_cron`이 한다(OPS-24).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 사용자
+    participant CL as 브라우저 shared/api/client.ts
+    participant RT as auth.routes
+    participant SV as auth.service
+    participant RP as auth.repo
+    participant DB as PostgreSQL
+
+    U->>CL: 화면 조작
+    CL->>RT: 보호 API 요청 (access_token 만료)
+    RT-->>CL: 401 UNAUTHENTICATED (authenticate)
+    Note over CL: 동시에 받은 401은 갱신 요청 하나로 합친다
+    CL->>RT: POST /api/auth/refresh (쿠키 refresh_token, Path=/api/auth)
+    RT->>SV: refresh
+    SV->>DB: BEGIN (withTransaction)
+    SV->>RP: 해시로 폐기 UPDATE (revoked_at 없음, 만료 전 조건) RETURNING
+    alt 1행 (유효)
+        SV->>RP: 새 리프레시 토큰 해시 INSERT (기존 expires_at 유지)
+        SV->>DB: COMMIT
+        SV-->>RT: 사용자 ID
+        RT-->>CL: Set-Cookie access_token (HS384, 15분), refresh_token
+        CL->>RT: 원래 요청 1회 재시도
+    else 0행, 해시가 이미 폐기된 토큰 (재사용)
+        SV->>RP: 그 사용자의 유효한 리프레시 토큰 전부 폐기
+        SV->>DB: COMMIT
+        SV-->>RT: AppError 401 UNAUTHENTICATED
+        RT-->>CL: 401, 쿠키 2개 삭제
+        CL->>U: ST-01 로그인 화면으로 이동
+    else 0행, 없거나 만료
+        SV->>DB: ROLLBACK
+        RT-->>CL: 401, 쿠키 2개 삭제
+        CL->>U: ST-01 로그인 화면으로 이동
+    end
+    opt 로그아웃
+        U->>CL: 로그아웃 버튼
+        CL->>RT: POST /api/auth/logout (공개 경로)
+        RT->>SV: 쿠키의 리프레시 토큰 폐기 (있으면)
+        RT-->>CL: 쿠키 2개 삭제
+        CL->>U: SC-01로 이동
+    end
+    Note over SV,DB: 어느 경로든 finally에서 client.release()
+```
+
 ## 6. 확인 필요 사항
 
 T-01–T-08은 모두 이해관계자 확인(2026-11-04)으로 결정해 기준 문서에 반영했다. 남은 확인 필요 사항은 없다. 각 항목의 원래 문제 뒤에 결정 내용을 적었다.
@@ -805,3 +860,4 @@ T-01–T-08은 모두 이해관계자 확인(2026-11-04)으로 결정해 기준 
 | v0.2 | 2026-11-04 | hjining | 확인 필요 T-01–T-08 결정 반영(6장을 '결정됨'으로 갱신, 기준 문서 버전 갱신). 시퀀스 수정: 5.3 일반 팀원의 소유자 지정 403·대리 등록 시간대, 5.4 이력 action 결정·CASCADE, 5.5 경로(`GET /api/todos?from=&to=`)·42일 초과 400, 5.7 경로 구체화·자기 제거 400·공유 직접 삭제·역할 변경 범위, 5.8 비소유자 403·INVALID_OWNER·기존 소유자 삭제 후 승격 순서. 4장 ER 주석에 FK RESTRICT/CASCADE·부분 유니크 인덱스 추가, 5.2 비밀번호 길이 표기 |
 | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(사용자 시나리오 v0.10, 와이어프레임 v0.8, 프로젝트 원칙 v0.8). 5.2 비밀번호는 공백 제거 없이 검사(시나리오 C-23) |
 | v0.4 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.13, PRD v0.12, 사용자 시나리오 v0.11, 와이어프레임 v0.9, 프로젝트 원칙 v0.9). 5.6에 카테고리 삭제 이동은 이력을 남기지 않는다는 Note 추가(ERD E-14). 4장의 erDiagram과 FK·인덱스 주석을 `docs/7-erd.md`로 분리하고 4장은 링크만 남김. 1.2 다이어그램 목록 4행 수정 |
+| v0.5 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 사용자 시나리오 v0.12, 와이어프레임 v0.10, 프로젝트 원칙 v0.10). PRD A25–A27 반영: 2장 인증 설명과 `pg_cron` 노드, 5.1 401 분기에 갱신·재시도와 `HS384`·15분, 5.2 가입 응답 쿠키 2종과 리프레시 토큰 INSERT, 5.10 토큰 갱신·로그아웃 시퀀스 추가(1.2, 5.0 목록) |

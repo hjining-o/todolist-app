@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.2 |
+| 문서 버전 | v0.3 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.12, `docs/4-wireframe.md` v0.9, `docs/5-project-principle.md` v0.9, `docs/6-arch-diagram.md` v0.4 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.13, `docs/4-wireframe.md` v0.10, `docs/5-project-principle.md` v0.10, `docs/6-arch-diagram.md` v0.5 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`, 프로젝트 원칙 `N-xx`·`G-xx`·`OPS-xx`·`P-xx`.
@@ -19,7 +19,7 @@
 ## 1. 개요
 
 ### 1.1 범위
-도메인 정의서 3장의 엔티티 7개를 PostgreSQL 17 테이블로 옮긴 논리·물리 혼합 모델이다. P1 테이블(`todo_histories`)도 Day 1에 한 번에 만든다(P-08). DDL은 `backend/src/db/migrations/`의 순번 SQL 파일로 쓴다(OPS-18, G-07). 이 문서는 DDL이 아니다.
+도메인 정의서 3장의 엔티티 7개와 인증용 기술 테이블 `refresh_tokens` 1개(PRD §5.2 A25, 도메인 엔티티 아님)를 PostgreSQL 17 테이블로 옮긴 논리·물리 혼합 모델이다. P1 테이블(`todo_histories`)도 Day 1에 한 번에 만든다(P-08). DDL은 `backend/src/db/migrations/`의 순번 SQL 파일로 쓴다(OPS-18, G-07). 이 문서는 DDL이 아니다.
 
 ### 1.2 공통 결정
 
@@ -29,7 +29,8 @@
 | 일시 | 모든 일시 컬럼은 `timestamptz`, DB 세션 시간대는 `Asia/Seoul` | PRD §5.3, OPS-14, R5 |
 | 상태 | `status` 컬럼은 만들지 않는다. 저장하는 값은 `completed`, `start_at`, `end_at`뿐이다 | 도메인 §5.1, N-18, P-04 |
 | 비밀번호 | 평문을 저장하지 않고 bcrypt 해시만 저장한다 | 도메인 §3.4, PRD §5.2 |
-| 삭제 | 사용자·팀·카테고리는 삭제 시 참조되면 막고(RESTRICT), 할일 삭제만 이력·공유를 함께 지운다 | 도메인 §3.9, OPS-23 |
+| 삭제 | 사용자·팀·카테고리는 삭제 시 참조되면 막고(RESTRICT), 할일 삭제만 이력·공유를 함께 지운다. `refresh_tokens`의 만료 행은 `pg_cron`이 매일 지운다(3.6) | 도메인 §3.9, OPS-23, OPS-24 |
+| 시간대 | DB 기본 시간대는 `ALTER DATABASE … SET timezone TO 'Asia/Seoul'`로 고정한다. 풀러 트랜잭션 모드라 연결별 `SET`은 쓰지 않는다 | PRD §5.3 A28, OPS-14 |
 
 ## 2. ERD
 
@@ -44,6 +45,7 @@ erDiagram
     teams ||--o{ todo_shares : "team_id"
     todos ||--o{ todo_histories : "todo_id"
     users ||--o{ todo_histories : "actor_id"
+    users ||--o{ refresh_tokens : "user_id"
 
     users {
         uuid id PK "NOT NULL, 기본 gen_random_uuid()"
@@ -96,9 +98,17 @@ erDiagram
         jsonb changes "NOT NULL, 필드명별 old와 new"
         timestamptz changed_at "NOT NULL, 기본 now()"
     }
+    refresh_tokens {
+        uuid id PK "NOT NULL, 기본 gen_random_uuid()"
+        uuid user_id FK "NOT NULL, RESTRICT"
+        text token_hash "UK, NOT NULL, SHA-256 해시, 원문 저장 안 함"
+        timestamptz expires_at "NOT NULL, 발급 후 7일, 회전해도 유지"
+        timestamptz revoked_at "NULL 허용, 폐기 시각"
+        timestamptz created_at "NOT NULL, 기본 now()"
+    }
 ```
 
-- 관계 9개는 모두 부모 1(필수) 대 자식 0개 이상이다. `todos`는 `categories` 정확히 1개와 `users`(소유자) 정확히 1개에 속하고, `todo_shares`와 `todo_histories`는 0개 이상이다(도메인 §3.1, R7, R21).
+- 관계 10개는 모두 부모 1(필수) 대 자식 0개 이상이다. `todos`는 `categories` 정확히 1개와 `users`(소유자) 정확히 1개에 속하고, `todo_shares`와 `todo_histories`는 0개 이상이다(도메인 §3.1, R7, R21).
 - `users`와 `teams`는 `team_members`로, `todos`와 `teams`는 `todo_shares`로 N 대 M 연결된다(도메인 §3.1).
 - 컬럼 이름은 도메인 속성명의 snake_case 변환이다(N-18). 예외로 도메인 `User.password`는 평문이 아님을 드러내도록 `password_hash`로 한다(E-07). `todo_histories.changes`는 도메인 속성명 그대로다.
 
@@ -117,6 +127,7 @@ erDiagram
 | `todo_shares.team_id` | `teams.id` | RESTRICT | 도메인 §3.9, OPS-23 ① |
 | `todo_histories.todo_id` | `todos.id` | CASCADE | R12, R20, 도메인 §3.9, OPS-23 ② |
 | `todo_histories.actor_id` | `users.id` | RESTRICT | 도메인 §3.9, OPS-23 ① |
+| `refresh_tokens.user_id` | `users.id` | RESTRICT | OPS-23 ①, PRD A25 (E-15) |
 
 - 회원 탈퇴와 팀 삭제는 범위 밖이라 `users`·`teams` 행이 삭제되는 경우는 없다(도메인 §7).
 - 구성원 제거 때의 `todo_shares` 정리는 FK 연쇄가 아니다. service가 같은 트랜잭션에서 직접 `DELETE`한다(R21, OPS-23 ③, BE-08).
@@ -144,6 +155,8 @@ erDiagram
 | `todo_histories` 이력 조회 | 일반 | `idx_todo_histories_todo_id_changed_at`: `(todo_id, changed_at)` | PRD §5.1, OPS-18 |
 | 사용자당 `is_default` true 1개 | 부분 유니크 | `uq_categories_owner_id_default`: `UNIQUE (owner_id) WHERE is_default` | 도메인 §3.5, R6, R8 (E-02) |
 | 카테고리별 할일 | 일반 | `idx_todos_category_id`: `(category_id)`. 카테고리 삭제 때 할일 이동 `UPDATE`(R9)가 쓴다 | R9 (E-12) |
+| 리프레시 토큰 조회 | 유일 | `uq_refresh_tokens_token_hash`: `UNIQUE (token_hash)`. 갱신·로그아웃 때 해시로 찾는다 | PRD A25, SEC-02 (E-15) |
+| 사용자별 리프레시 토큰 | 일반 | `idx_refresh_tokens_user_id`: `(user_id)`. 재사용 감지·비밀번호 변경 때 전체 폐기가 쓴다 | PRD A25, SEC-02 (E-15) |
 
 - 소유권 이전은 위 부분 유니크 인덱스 때문에 기존 소유자를 삭제(또는 강등)한 뒤 새 소유자를 승격하는 순서로만 처리한다(OPS-23 ⑤, 도메인 §3.9).
 - 사용자당 기본 카테고리 '최대 1개'는 부분 유니크 인덱스가, '최소 1개'는 가입 트랜잭션(R6)과 기본 카테고리 삭제 금지(R8)가 보장한다.
@@ -201,6 +214,16 @@ erDiagram
 | 공유 팀 | 팀 ID 배열. 조회 때 보는 사람이 속한 팀 ID만 남기고, 남은 차이가 없으면 그 필드를 뺀다 | R20, R21, 6-arch 5.9 |
 | 카테고리 | 키는 `category`이고 값은 그 시점의 `{ "id", "name" }`이다. 카테고리가 나중에 이름이 바뀌거나 삭제돼도 이력에는 기록 당시 이름이 남는다(E-13). 할일 소유자가 아닌 사람의 조회 응답에서는 `category`를 뺀다. 필드가 하나도 남지 않은 이력은 숨긴다 | R2, R20 |
 
+### 3.6 `refresh_tokens` 보존 규칙
+
+| 항목 | 규칙 | 근거 |
+|------|------|------|
+| 저장 값 | 토큰 원문은 저장하지 않고 SHA-256 해시만 저장한다 | PRD §5.2, P-06 |
+| 회전 | 갱신 때 쓴 행에 `revoked_at`을 채우고 새 행을 INSERT한다. 새 행의 `expires_at`은 쓴 행의 값을 그대로 쓴다(7일 절대 만료) | PRD A25, SEC-02 |
+| 폐기 행 | 만료 전까지 남긴다. 다시 오면 재사용으로 판정해 그 사용자의 유효 행을 모두 폐기한다 | SEC-02 |
+| 정리 | `pg_cron`이 매일 04:00 `expires_at < now()` 행을 삭제한다. 마이그레이션이 아니라 운영 작업 SQL(`backend/src/db/ops/`)이다. `expires_at` 인덱스는 두지 않는다(느려지면 추가) | PRD A27, OPS-24, K12 |
+| 사용자 삭제 | 회원 탈퇴가 범위 밖이라 생기지 않는다. FK는 RESTRICT | 도메인 §7, OPS-23 ① |
+
 ## 4. 코드·문서 대응
 
 | 도메인 엔티티 (도메인 §3) | 테이블 | 모듈 위치 (N-01, 6-arch 3.3) |
@@ -212,10 +235,11 @@ erDiagram
 | Todo | `todos` | `todos` |
 | TodoShare | `todo_shares` | `todos` (상위 모듈) |
 | TodoHistory | `todo_histories` | `todo-histories` |
+| (도메인 엔티티 아님, 인증) | `refresh_tokens` | `auth` (`auth.repo.js`) |
 
 ## 5. 확인 필요 사항
 
-E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반영했다. E-13, E-14는 문서 정합성 검토에서 찾아 이해관계자 확인(2026-11-04)으로 결정했다. 남은 확인 필요 사항은 없다.
+E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반영했다. E-13, E-14는 문서 정합성 검토에서 찾아 이해관계자 확인(2026-11-04)으로 결정했다. E-15는 PRD v0.13의 리프레시 토큰 결정(A25)을 반영한 것이다. 남은 확인 필요 사항은 없다.
 
 | ID | 원래 문제 | 결정 | 반영 위치 |
 |----|-----------|------|-----------|
@@ -231,6 +255,7 @@ E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반�
 | E-10 | 이메일 소문자 저장을 DB가 강제할지 | **CHECK `email = lower(email)`**, 유일 제약은 일반 `UNIQUE (email)` | 3.2–3.4, N-19 |
 | E-11 | `updated_at` 갱신 방식 | **기본값 `now()`, repository의 `UPDATE` 문에서 `updated_at = now()`** (트리거 없음) | 3.3 |
 | E-12 | PRD 목록 밖 FK 인덱스 | **`idx_todos_category_id`만 추가** | 3.2, OPS-18 |
+| E-15 | 리프레시 토큰 저장 테이블이 없었다(PRD A25로 도입) | **`refresh_tokens` 추가**: 해시 유일, `user_id` RESTRICT·인덱스, 만료 행은 `pg_cron` 정리, 폐기 행은 만료까지 보존 | 1.1, 2장, 3.1, 3.2, 3.6, 4장, OPS-18, OPS-24 |
 
 | ID | 원래 문제 | 관련 문서·위치 | 상태 |
 |----|-----------|----------------|------|
@@ -243,3 +268,4 @@ E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반�
 |------|------|--------|-----------|
 | v0.1 | 2026-11-04 | hjining | 최초 작성. `docs/6-arch-diagram.md` v0.3 4장의 erDiagram을 분리해 물리 이름(snake_case)·타입·NOT NULL·기본값으로 구체화(도메인 정의서 v0.12, PRD v0.11, 프로젝트 구조 설계 원칙 v0.8 기반). FK ON DELETE, 유일 제약·인덱스, CHECK, 정규화 비교 표, 확인 필요 사항 E-01–E-12 |
 | v0.2 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.12, 와이어프레임 v0.9 추가). 문서 정합성 검토로 찾은 E-13·E-14 결정 반영: 이력의 카테고리 변경은 그 시점 `{ id, name }`(3.5), 카테고리 삭제로 인한 할일 이동은 이력을 남기지 않음. 구버전 Mermaid(9.x) 호환: 키는 `PK`·`FK`만, `UK`·복합 PK의 FK·문자열 길이는 주석으로 이동. 확인 필요 E-01–E-12 결정 반영(도메인 v0.13, 프로젝트 원칙 v0.9에도 반영): 카테고리 복합 FK·RESTRICT, 기본 카테고리 부분 유니크, `changes` 구조(3.5 신설), 완료 일관성·공백·이메일 소문자 CHECK, `password_hash`, `text`+CHECK, 인덱스 이름, `updated_at` 갱신, `idx_todos_category_id` |
+| v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 와이어프레임 v0.10, 프로젝트 원칙 v0.10, 기술 아키텍처 v0.5). PRD A25·A27·A28 반영(E-15): `refresh_tokens` 테이블(1.1, 2장 다이어그램, 관계 10개), FK `user_id` RESTRICT(3.1), `uq_refresh_tokens_token_hash`·`idx_refresh_tokens_user_id`(3.2), 보존 규칙 3.6 신설, 4장 모듈 `auth`, 1.2 삭제·시간대 행 |
