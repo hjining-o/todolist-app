@@ -48,3 +48,41 @@ export async function findTodoForViewer(client, { todoId, viewerId }) {
   );
   return rows[0] ? toRow(rows[0]) : null;
 }
+
+// 상태 SQL 정의는 여기 한 곳(API-03 #2). getStatus와 같은 순서(S1→S2→S3→S4)·같은 경계, now는 분 절삭
+export const todoStatusSql = (n) => `(CASE WHEN t.completed THEN 'COMPLETED'
+  WHEN date_trunc('minute', $${n}::timestamptz) > t.end_at THEN 'OVERDUE'
+  WHEN date_trunc('minute', $${n}::timestamptz) < t.start_at THEN 'NOT_STARTED'
+  ELSE 'IN_PROGRESS' END)`;
+
+// 목록·캘린더 공용 1쿼리(OPS-17). 보는 사람 = $1. 자리표시자 번호만 템플릿에 끼운다(BE-07)
+export async function listTodosForViewer(
+  client,
+  { viewerId, now, teamId, userId, categoryId, status, from, to, limit, offset },
+) {
+  const params = [viewerId];
+  const where = [todoVisible(1)];
+  // 보는 사람이 속하지 않은 팀은 빈 결과(S-04)
+  if (teamId) {
+    where.push(`EXISTS (SELECT 1 FROM todo_shares s JOIN teams tm ON tm.id = s.team_id
+      WHERE s.todo_id = t.id AND s.team_id = $${params.push(teamId)} AND ${shareTeamVisible(1)})`);
+  }
+  if (userId) where.push(`u.id = $${params.push(userId)}`); // 소유자 필터. u.id는 t.owner_id와 같다(access.test 단일 출처 검사 회피)
+  if (categoryId) where.push(`${todoIsOwner(1)} AND t.category_id = $${params.push(categoryId)}`); // 본인 할일에만(R2)
+  if (status) where.push(`${todoStatusSql(params.push(now))} = $${params.push(status)}`);
+  if (from) where.push(`t.start_at < $${params.push(to)} AND t.end_at >= $${params.push(from)}`); // R15 겹침
+  const w = where.join(' AND ');
+  // shortcut: COUNT(*) OVER()라 shared_teams 서브쿼리가 LIMIT 전 필터 결과 전체에 돈다, 사용자당 할일이 수천 건을 넘으면 id만 먼저 페이지네이션 후 조인
+  const { rows } = await client.query(
+    `SELECT ${viewCols(1)}, COUNT(*) OVER() AS total
+     FROM todos t JOIN users u ON u.id = t.owner_id JOIN categories c ON c.id = t.category_id
+     WHERE ${w} ORDER BY t.start_at, t.id LIMIT $${params.push(limit)} OFFSET $${params.push(offset)}`,
+    params,
+  );
+  let total = rows.length ? Number(rows[0].total) : 0;
+  // 마지막 쪽을 넘긴 offset은 행이 없어 창 함수로 total을 못 얻으므로 한 번 더 센다
+  if (!rows.length && offset > 0) {
+    total = (await client.query(`SELECT count(*)::int AS n FROM todos t WHERE ${w}`, params.slice(0, -2))).rows[0].n;
+  }
+  return { rows: rows.map(toRow), total };
+}

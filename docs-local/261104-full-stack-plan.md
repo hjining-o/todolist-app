@@ -45,7 +45,7 @@
 | 백엔드 | API-07 | 카테고리 CRUD | P0 | API-06 | ✅ 완료 |
 | 백엔드 | API-08 | 팀·구성원 관리 | P0 | API-06 | 🔶 일부 |
 | 백엔드 | API-09 | 할일 등록 | P0 | API-03, API-04, API-07, API-08 | ✅ 완료 |
-| 백엔드 | API-10 | 할일 목록·캘린더·단건 조회 | P0 | API-09 |  |
+| 백엔드 | API-10 | 할일 목록·캘린더·단건 조회 | P0 | API-09 | ✅ 완료 |
 | 백엔드 | API-11 | 할일 수정·완료·삭제 | P0 | API-10 |  |
 | 백엔드 | API-12 | [P1] 내 정보 수정 | P1 | API-06 |  |
 | 백엔드 | API-13 | [P1] 변경 이력 기록·조회 | P1 | API-11 |  |
@@ -115,7 +115,7 @@ flowchart LR
 | 일자·시간대 | Task |
 |-------------|------|
 | Day 1 (11/04) 오전 | CM-01 ✅, DB-01 🔶, DB-02 ✅, API-01 ✅, DB-03 ✅, DB-04 ✅, DB-05 🔶, CM-02 ⏸, API-02 ✅, API-03 ✅, API-04 ✅ |
-| Day 1 오후 | API-05 ✅, API-06 ✅, API-07 ✅, API-08 🔶, API-09 ✅, API-10, API-11 |
+| Day 1 오후 | API-05 ✅, API-06 ✅, API-07 ✅, API-08 🔶, API-09 ✅, API-10 ✅, API-11 |
 | Day 1 저녁 | UI-01, UI-02, UI-03 |
 | Day 2 (11/05) 오전 | UI-04, UI-05, UI-06, UI-07 |
 | Day 2 오후 | UI-08, UI-09, CM-03 |
@@ -485,19 +485,20 @@ flowchart LR
   4. 응답 생성 함수 1개(todos.service): `id`, `title`, `description`, `startAt`, `endAt`(요청자 `timezone` 오프셋의 ISO 8601), `completed`, `completedAt`, `status`, `owner { id, name }`, `sharedTeams [{ id, name }]`(보는 사람의 팀만), `canEdit`, `isOwner`, 그리고 소유자 본인일 때만 `category { id, name }`.
   5. 응답 필드 목록을 프론트 `shared/types`의 기준으로 확정해 이 Task의 산출물로 남긴다(UI-02와 계약).
 - **완료 조건**
-  - [ ] 공유 없는 A의 할일을 B·D가 조회하면 404(EX-21), 목록에도 나오지 않는다(FR-11 #2)
-  - [ ] 관리자 B도 공유되지 않은 C의 할일은 404(EX-25)
-  - [ ] 남의 할일 응답에 `category` 필드가 없다(R2, SEC-06)
-  - [ ] 공유 팀 목록에 보는 사람이 속하지 않은 팀이 없다(FR-11 #6)
-  - [ ] 기한 지나 완료한 할일은 `status=COMPLETED`에만, 기한 초과 미완료는 `status=OVERDUE`에만 나온다(EX-12, EX-13)
-  - [ ] 카테고리 + 상태 필터가 AND로 적용된다(F3)
-  - [ ] 상태 필터 후 페이지네이션: 120건 중 조건에 맞는 70건이면 `total=70`, 1쪽 50건, 2쪽 20건
-  - [ ] `limit=101`은 400, 허용 목록 밖 `status` 값은 400
-  - [ ] 11월 월 뷰 범위(10/26–12/06)에 10/30–11/02 할일이 포함된다(FR-08 #3)
-  - [ ] 43일 범위는 400 `VALIDATION_ERROR`(EX-39), 501건이면 500건 + `truncated: true`
-  - [ ] 응답의 일시가 요청자 시간대 오프셋을 가진다(`+09:00`)
-  - [ ] SQL 상태 `CASE`와 `todo-status.js`가 같은 데이터에 같은 상태를 낸다
-  - [ ] 목록 1회 요청의 쿼리 수가 데이터 건수와 무관하게 일정하다
+  - [x] 공유 없는 A의 할일을 B·D가 조회하면 404(EX-21), 목록에도 나오지 않는다(FR-11 #2)
+  - [x] 관리자 B도 공유되지 않은 C의 할일은 404(EX-25)
+  - [x] 남의 할일 응답에 `category` 필드가 없다(R2, SEC-06)
+  - [x] 공유 팀 목록에 보는 사람이 속하지 않은 팀이 없다(FR-11 #6)
+  - [x] 기한 지나 완료한 할일은 `status=COMPLETED`에만, 기한 초과 미완료는 `status=OVERDUE`에만 나온다(EX-12, EX-13)
+  - [x] 카테고리 + 상태 필터가 AND로 적용된다(F3)
+  - [x] 상태 필터 후 페이지네이션: 120건 중 조건에 맞는 70건이면 `total=70`, 1쪽 50건, 2쪽 20건
+  - [x] `limit=101`은 400, 허용 목록 밖 `status` 값은 400
+  - [x] 11월 월 뷰 범위(10/26–12/06)에 10/30–11/02 할일이 포함된다(FR-08 #3)
+  - [x] 43일 범위는 400 `VALIDATION_ERROR`(EX-39), 501건이면 500건 + `truncated: true`
+  - [x] 응답의 일시가 요청자 시간대 오프셋을 가진다(`+09:00`)
+  - [x] SQL 상태 `CASE`와 `todo-status.js`가 같은 데이터에 같은 상태를 낸다
+  - [x] 목록 1회 요청의 쿼리 수가 데이터 건수와 무관하게 일정하다
+- **구현 메모**: 응답 필드 = id, title, description, startAt, endAt, completed, completedAt, status, owner{id,name}, sharedTeams[{id,name}], canEdit, isOwner (+ 소유자일 때만 category{id,name}). 목록 `{items,total}`, 캘린더 `{items,truncated}`. from·to의 `+`는 `%2B`로 인코딩(URLSearchParams).
 
 ### API-11 할일 수정·완료·삭제
 - **선행 Task**: API-10

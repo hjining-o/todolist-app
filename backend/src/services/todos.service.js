@@ -1,11 +1,13 @@
-import { withTransaction } from '../config/db.js';
+import { pool, withTransaction } from '../config/db.js';
 import { AppError } from '../domain/errors.js';
-import { formatOffset, normalizePeriod } from '../domain/period.js';
+import { calendarDays, formatOffset, normalizePeriod } from '../domain/period.js';
 import { getStatus } from '../domain/todo-status.js';
 import * as todosRepo from '../repositories/todos.repo.js';
 import * as categoriesService from './categories.service.js';
 import * as teamsService from './teams.service.js';
 import * as usersService from './users.service.js';
+
+const CALENDAR_MAX = 500;
 
 // 할일 응답은 반드시 이 함수로 만든다. 비소유자 category 제거는 여기 한 곳(SEC-06)
 function toTodoResponse(row, timezone, now) {
@@ -72,4 +74,37 @@ export async function createTodo(requesterId, input) {
     return todosRepo.findTodoForViewer(client, { todoId: id, viewerId: requesterId });
   });
   return toTodoResponse(row, timezone, now);
+}
+
+export async function listTodos(requesterId, q) {
+  const { timezone } = await usersService.getMe(requesterId);
+  const now = new Date();
+  const calendar = q.from !== undefined;
+  const from = calendar ? new Date(q.from) : undefined;
+  const to = calendar ? new Date(q.to) : undefined;
+  if (calendar && calendarDays(from, to, timezone) > 42) {
+    throw AppError.of('VALIDATION_ERROR', { to: '조회 기간은 42일 이하여야 합니다.' }); // EX-39, S-03
+  }
+  const { rows, total } = await todosRepo.listTodosForViewer(pool, {
+    viewerId: requesterId,
+    now,
+    teamId: q.teamId,
+    userId: q.userId,
+    categoryId: q.categoryId,
+    status: q.status,
+    from,
+    to,
+    limit: calendar ? CALENDAR_MAX + 1 : (q.limit ?? 50),
+    offset: calendar ? 0 : (q.offset ?? 0),
+  });
+  // 필터(SQL)와 표시(getStatus)가 같은 now를 써서 한 요청 안에서 어긋나지 않는다
+  const items = rows.slice(0, CALENDAR_MAX).map((r) => toTodoResponse(r, timezone, now));
+  return calendar ? { items, truncated: rows.length > CALENDAR_MAX } : { items, total };
+}
+
+export async function getTodo(requesterId, todoId) {
+  const { timezone } = await usersService.getMe(requesterId);
+  const row = await todosRepo.findTodoForViewer(pool, { todoId, viewerId: requesterId });
+  if (!row) throw AppError.of('NOT_FOUND'); // 없음과 볼 수 없음을 구분하지 않는다(R2, EX-21)
+  return toTodoResponse(row, timezone, new Date());
 }

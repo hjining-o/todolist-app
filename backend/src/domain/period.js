@@ -38,6 +38,13 @@ function dayOf(date, tz) {
   return [p.year, p.month, p.day];
 }
 
+// 요청자 시간대 달력 날짜 수. [from, to) 반열린 구간이라 to 직전 순간의 날짜까지 센다(S-03, 서머타임에도 시간 수로 세지 않음)
+export function calendarDays(from, to, tz) {
+  const [y1, m1, d1] = dayOf(from, tz);
+  const [y2, m2, d2] = dayOf(new Date(to.getTime() - 1), tz);
+  return (Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000 + 1;
+}
+
 export function normalizePeriod({ startAt, endAt }, timezone, now) {
   const toDate = (v, h, m) => {
     if (v == null) return null;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AppError } from '../../src/domain/errors.js';
-import { formatOffset, normalizePeriod } from '../../src/domain/period.js';
+import { calendarDays, formatOffset, normalizePeriod } from '../../src/domain/period.js';
 import { getStatus } from '../../src/domain/todo-status.js';
 
 const d = (s) => new Date(s);
@@ -148,5 +148,23 @@ describe('formatOffset', () => {
 
   it('UTC도 Z가 아니라 +00:00', () => {
     expect(formatOffset(d('2026-11-04T00:00Z'), 'UTC')).toBe('2026-11-04T00:00+00:00');
+  });
+});
+
+describe('calendarDays (S-03)', () => {
+  const NY = 'America/New_York';
+  it.each([
+    ['서울 42일', '2026-10-26T00:00+09:00', '2026-12-07T00:00+09:00', SEOUL, 42],
+    ['서울 43일', '2026-10-26T00:00+09:00', '2026-12-08T00:00+09:00', SEOUL, 43],
+    ['뉴욕 서머타임 해제 포함 1,009시간도 42일', '2026-10-25T00:00-04:00', '2026-12-06T00:00-05:00', NY, 42],
+    [
+      '같은 순간이라도 뉴욕에서는 10/25 11:00~12/06 09:59라 43일',
+      '2026-10-26T00:00+09:00',
+      '2026-12-07T00:00+09:00',
+      NY,
+      43,
+    ],
+  ])('%s', (_n, from, to, tz, days) => {
+    expect(calendarDays(d(from), d(to), tz)).toBe(days);
   });
 });

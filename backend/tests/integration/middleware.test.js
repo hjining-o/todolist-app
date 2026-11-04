@@ -93,8 +93,8 @@ describe('authenticate - 대조군', () => {
     expect(res.body).toEqual({ id: 'user-123' });
   });
 
-  it('유효 토큰이면 app GET /api/todos는 404 NOT_FOUND JSON', async () => {
-    const res = await withToken(request(app).get('/api/todos'), sign());
+  it('유효 토큰이면 없는 경로 app GET /api/__none은 404 NOT_FOUND JSON', async () => {
+    const res = await withToken(request(app).get('/api/__none'), sign());
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: '찾을 수 없습니다.' } });
   });
