@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.10 |
+| 문서 버전 | v0.11 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.13, `docs/3-user-scenario.md` v0.12, `docs/4-wireframe.md` v0.10 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/3-user-scenario.md` v0.13, `docs/4-wireframe.md` v0.11 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`SC`, `A`, `B`, `K`, `M`, `Q1`–`Q4`), 시나리오 `US-xx`·`EX-xx`·`C-xx`·`D-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `ST-xx`·`DLG-xx`·`U-xx`.
@@ -118,7 +118,7 @@
 | N-11 | API 경로 | `/api/` 아래 소문자 kebab-case 복수형 명사. 중첩은 최대 2단계. 동작은 HTTP 메서드로 나타낸다. 동사 경로는 로그인처럼 메서드로 나타낼 수 없는 동작에만 쓴다. 소유자가 팀을 나가는 일은 `POST /api/teams/:teamId/leave`로만 처리하고, 구성원 제거 경로에 자기 자신을 지정하면 400 `VALIDATION_ERROR`다. 예외: 로그인한 사용자 자신의 정보는 `/api/me`로 쓴다(ID를 경로에 받지 않아 다른 사용자 접근 경로가 생기지 않는다). | `GET`, `POST /api/todos`; `PATCH`, `DELETE /api/todos/:todoId`; `GET /api/todos/:todoId/histories`; `POST /api/teams/:teamId/members`; `POST /api/teams/:teamId/leave`; `GET /api/todos?from=&to=`(캘린더 조회. 목록 API에 기간 필터를 더한 것이며 별도 경로를 만들지 않는다); `GET /api/teams/:teamId/members`(구성원 목록. F4 사용자 선택지도 이 경로를 재사용한다); `GET`, `POST /api/categories`; `PATCH`, `DELETE /api/categories/:categoryId`; `DELETE /api/teams/:teamId/members/:userId`(구성원 제거); `PATCH /api/teams/:teamId/members/:userId`(역할 변경); `GET /api/teams`(내가 속한 팀 목록과 내 역할. SC-08, SC-09의 팀 이름·내 역할도 이 결과를 쓴다); `POST /api/teams`(팀 생성. 생성자가 OWNER, DLG-03). 팀 단건 조회·이름 변경·삭제 경로는 두지 않는다(요구사항 없음, 팀 삭제는 도메인 7장 범위 밖) | PRD §5.1, [가정 G-06] |
 | N-12 | 완료 처리 | 별도 경로를 만들지 않는다. `PATCH /api/todos/:todoId`의 `completed` 필드로 처리하고, `completedAt`은 서버가 설정한다. 이력은 요청 1건에 1건이다. 완료 여부가 바뀐 요청은 `COMPLETED`/`UNCOMPLETED`, 그 밖은 `UPDATED`이고 함께 바뀐 필드도 모두 `changes`에 담는다. | — | 도메인 R14, R20, §3.6, §3.8 |
 | N-13 | HTTP 메서드 | `GET`은 상태를 바꾸지 않는다. 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. | — | PRD §5.2 CSRF |
-| N-14 | JSON 필드, 쿼리 파라미터 | camelCase. 일시는 ISO 8601 + 오프셋 형식이다. 목록 파라미터는 `limit`, `offset`을 쓴다. | `startAt: "2026-11-04T09:00+09:00"` | PRD §5.1, §5.3 |
+| N-14 | JSON 필드, 쿼리 파라미터 | camelCase. 일시는 ISO 8601 + 오프셋 형식이다(요청에서 날짜만 보낸 값은 SEC-11 예외). 목록 파라미터는 `limit`, `offset`을 쓴다. | `startAt: "2026-11-04T09:00+09:00"` | PRD §5.1, §5.3 |
 | N-15 | 권한 플래그 | 할일 응답에 `canEdit`(수정·완료·삭제 가능), `isOwner`(소유자 본인 여부)를 넣는다. 다른 사용자 할일의 응답에는 카테고리 필드를 넣지 않는다. | — | 와이어프레임 §4.5.2, PRD §5.2 [가정 G-06] |
 | N-16 | 에러 코드 | UPPER_SNAKE_CASE. 시나리오 §6.2 표의 코드만 쓴다. 새 코드는 §6.2에 먼저 추가한다. | `INVALID_PERIOD`, `FORBIDDEN` | 시나리오 §6.2 |
 | N-17 | DB 테이블 | snake_case 복수형. | `users`, `categories`, `todos`, `todo_shares`, `teams`, `team_members`, `todo_histories` | [가정 G-07] |
@@ -196,7 +196,7 @@
 | SEC-01 | 비밀번호는 8자 이상, UTF-8 72바이트 이하를 검증한 뒤 `bcryptjs`(cost 10)로 해시해서만 저장한다. 평문과 해시는 응답과 로그에 나가지 않는다. | PRD §5.2 B4, 도메인 §3.4 |
 | SEC-02 | 액세스 토큰(JWT, 15분)과 리프레시 토큰(7일 절대 만료)을 각각 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급한다. 리프레시 쿠키는 `Path=/api/auth`다. 리프레시 토큰은 원문이 아니라 SHA-256 해시만 `refresh_tokens`에 저장하고, `POST /api/auth/refresh` 때마다 회전한다(쓴 토큰 폐기 + 새 토큰 발급, 한 트랜잭션). 폐기된 토큰이 다시 오면 그 사용자의 리프레시 토큰을 모두 폐기한다. 로그아웃은 리프레시 토큰 폐기와 쿠키 삭제, 비밀번호 변경은 그 사용자의 리프레시 토큰 전체 폐기다. 탈취된 액세스 토큰은 만료(최대 15분)까지 유효하다는 한계를 알고 있다. | PRD §5.2 A25, 시나리오 D-03, EX-42–EX-44 |
 | SEC-03 | JWT 페이로드에는 사용자 ID(`sub`)와 만료 시각만 담는다. 역할, 팀, 권한을 넣지 않고, 권한은 요청마다 DB로 확인한다. 서명과 검증은 `HS384`만 쓴다(`jwt.verify`의 `algorithms: ['HS384']`). 서명 키는 48바이트 이상이다. | PRD §5.2 A26, 시나리오 US-15 #2 |
-| SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`을 뺀 모든 `/api/*` 라우터에 기본 적용한다. 갱신은 액세스 토큰이 만료된 상태에서 호출되고, 로그아웃은 만료된 상태에서도 쿠키를 지울 수 있어야 하므로 공개다(두 경로는 리프레시 쿠키로만 동작). 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01–03, PRD A25 |
+| SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`, `GET /api/health`를 뺀 모든 `/api/*` 라우터에 기본 적용한다. 갱신은 액세스 토큰이 만료된 상태에서 호출되고, 로그아웃은 만료된 상태에서도 쿠키를 지울 수 있어야 하므로 공개다(두 경로는 리프레시 쿠키로만 동작). 헬스는 배포 확인(OPS-21)을 쿠키 없이 하기 위해 공개이고, 응답은 `200 {"status":"ok"}`로 고정해 내부 정보를 담지 않는다. 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01–03, PRD A25 |
 | SEC-05 | 로그인 실패는 이메일 존재 여부를 드러내지 않는다. 없는 이메일과 틀린 비밀번호는 같은 `INVALID_CREDENTIALS` 응답이다. | PRD FR-01 #5, 시나리오 EX-04 |
 | SEC-06 | 다른 사용자 할일의 응답에서는 카테고리 필드를 응답 생성 함수 한 곳에서 제거한다. 라우트마다 따로 제거하지 않는다. | 도메인 R2, PRD §5.2 |
 | SEC-07 | 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. 쿠키는 `SameSite=Lax`이고, 프론트와 API는 같은 출처(`/api/*`)에서 동작한다. CSRF 토큰과 CORS 허용 목록은 두지 않는다. | PRD §5.2 CSRF 결정 |
@@ -208,7 +208,7 @@
 | SEC-08 | 모든 입력은 서버에서 검증한다. 필수 여부, 형식, 길이는 routes에서 검증하고, 도메인 규칙(R3, R7, R19, R21)은 services와 domain에서 검증한다. | PRD §5.2 신뢰 경계 |
 | SEC-09 | 길이는 앞뒤 공백을 제거한 뒤 센다. 단, 비밀번호는 공백을 제거하지 않고 입력값 그대로 검사·해시한다(시나리오 C-23). 이메일 254자, 비밀번호 8자 이상·UTF-8 72바이트 이하(하한은 글자 수, 상한은 bcrypt가 72바이트까지만 쓰므로 바이트 수로 검사), 이름, 카테고리 이름, 팀 이름 1–50자, 할일 제목 1–200자, 설명 0–2,000자다. | 시나리오 §6.3 |
 | SEC-10 | 요청 본문은 100KB로 제한한다(`express.json({ limit: '100kb' })`). 초과는 413 `PAYLOAD_TOO_LARGE`다. | PRD §5.2 A19 |
-| SEC-11 | 일시는 ISO 8601 + 오프셋 형식만 받는다. 오프셋이 없으면 400이다 [가정 G-06]. | PRD §5.3 A20 |
+| SEC-11 | 일시는 ISO 8601 + 오프셋 형식만 받는다. 오프셋이 없으면 400이다 [가정 G-06]. 예외로 날짜만(`YYYY-MM-DD`) 보낸 값은 받고, 서버(`period.js`)가 요청자 시간대 기준 시작 00:00, 종료 23:59를 채운다(R5). | PRD §5.3 A20, 도메인 R5 |
 | SEC-12 | 정렬, 필터, 역할 같은 열거 값은 허용 목록에 있는 값만 받는다. 목록에 없는 값은 400이다. | BE-07 |
 
 ### 5.4 로깅
@@ -436,7 +436,7 @@ backend/
 | G-03 | 빌드 도구 | 프론트 빌드는 Vite다(PRD §6, §8.1 근거). |
 | G-04 | 테스트 도구, 테스트 DB | 단위 테스트는 Vitest, 백엔드 통합 테스트는 Vitest와 supertest, E2E 회귀는 `@playwright/test`(루트 `e2e/`), Playwright MCP는 탐색과 스크립트 작성 보조(Q-05, Q-17–Q-21). 통합 테스트와 E2E는 운영과 분리한 Supabase 테스트 전용 프로젝트(PostgreSQL 17)를 쓴다. 연결 문자열은 커밋하지 않는 `.env.test`의 `DATABASE_URL`에 두고, 스키마는 운영과 같은 마이그레이션(OPS-18)으로 만든다. Docker는 쓰지 않는다. |
 | G-05 | 린트, 포맷 | ESLint와 Prettier를 루트 설정으로 공유한다. 레이어 규칙은 lint 규칙으로 옮긴다. 테스트 파일 명명은 N-05를 따른다. |
-| G-06 | API와 응답 세부 | 영문 상태 값(`NOT_STARTED` 등), 쿼리 파라미터 이름(`from`, `to`, `status`, `categoryId` 등), 권한 플래그(`canEdit`, `isOwner`), 헬스 경로(`/api/health`), 오프셋 없는 일시 거부(SEC-11). |
+| G-06 | API와 응답 세부 | 영문 상태 값(`NOT_STARTED` 등), 쿼리 파라미터 이름(`from`, `to`, `status`, `categoryId` 등), 권한 플래그(`canEdit`, `isOwner`), 헬스 경로(`/api/health`, 공개, SEC-04), 오프셋 없는 일시 거부와 날짜만 보낸 값 예외(SEC-11). |
 | G-07 | DB 명명과 마이그레이션 | 테이블과 컬럼은 snake_case 복수형, 인덱스는 N-19 규칙을 따른다. 식별자는 `uuid`이고 기본값은 `gen_random_uuid()`다(URL의 ID 추측 방지, P-05). 마이그레이션은 순번 SQL 파일이다. ORM이 없으므로 마이그레이션 도구는 쓰지 않는다. |
 | G-08 | 환경변수 이름 | `DATABASE_URL`, `JWT_SECRET`을 쓴다. |
 | G-09 | 인증 세부 | JWT는 `jsonwebtoken`(`HS384`), 쿠키 파싱은 `cookie-parser`를 쓴다. 쿠키 이름은 `access_token`, `refresh_token`이다. 리프레시 토큰 생성과 해시는 Node `crypto`(`randomBytes(32)`, SHA-256)로 한다. |
@@ -464,3 +464,4 @@ backend/
 | v0.8 | 2026-11-04 | hjining | 기준 문서 버전 갱신(사용자 시나리오 v0.10, 와이어프레임 v0.8). SEC-09에 비밀번호 공백 미제거 예외(시나리오 C-23). N-11에 `GET /api/teams`(팀 목록·내 역할), `POST /api/teams`(팀 생성) 추가, 팀 단건 조회·이름 변경·삭제 경로는 두지 않음 명시 |
 | v0.9 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.13, PRD v0.12, 사용자 시나리오 v0.11, 와이어프레임 v0.9). ERD(`docs/7-erd.md`) 확인 필요 E-01–E-12 결정 반영: N-18 `password_hash`, N-19 복합·표현식 인덱스 이름과 이메일 일반 유일 제약(PK·FK·CHECK 무명), OPS-18 인덱스 추가(기본 카테고리 부분 유니크, `UNIQUE (id, owner_id)`, `idx_todos_category_id`), OPS-23 ⑥–⑧(카테고리 복합 FK·RESTRICT, 공유 팀 service 검증, CHECK·`updated_at`은 ERD 3.3) |
 | v0.10 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 사용자 시나리오 v0.12, 와이어프레임 v0.10). PRD A25–A28 반영: 1.2 인증 행, SEC-02(리프레시 토큰 회전·재사용 감지·폐기), SEC-03(`HS384` 고정, 키 48바이트), SEC-04(공개 경로에 refresh·logout), `JWT_SECRET` 길이, OPS-10(401 → 갱신 → 재시도), OPS-14(`ALTER DATABASE`로 시간대 고정), OPS-18(리프레시 토큰 인덱스, 운영 작업 SQL 위치), OPS-22, OPS-24 추가(`pg_cron` 만료 토큰 정리), Q-02 인증 테스트, BE-08 리프레시 토큰 회전, 6.3 구조(`auth.repo.js`, `db/ops/`), G-09. 6.1 `docs/` 주석을 문서 1–7로 정정(ERD 추가 반영 누락) |
+| v0.11 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11). API 명세(`docs/8-swagger.yaml`) 확인 필요 결정 반영: SEC-04 공개 경로에 `GET /api/health` 추가(응답 고정), SEC-11에 날짜만 보낸 값 예외(근거에 R5 추가), N-14에 같은 예외 연결, G-06에 헬스 공개와 날짜만 예외 명시 |

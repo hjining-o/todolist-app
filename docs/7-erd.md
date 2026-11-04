@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.3 |
+| 문서 버전 | v0.4 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.13, `docs/4-wireframe.md` v0.10, `docs/5-project-principle.md` v0.10, `docs/6-arch-diagram.md` v0.5 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/4-wireframe.md` v0.11, `docs/5-project-principle.md` v0.11, `docs/6-arch-diagram.md` v0.6 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`, 프로젝트 원칙 `N-xx`·`G-xx`·`OPS-xx`·`P-xx`.
@@ -269,3 +269,4 @@ E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반�
 | v0.1 | 2026-11-04 | hjining | 최초 작성. `docs/6-arch-diagram.md` v0.3 4장의 erDiagram을 분리해 물리 이름(snake_case)·타입·NOT NULL·기본값으로 구체화(도메인 정의서 v0.12, PRD v0.11, 프로젝트 구조 설계 원칙 v0.8 기반). FK ON DELETE, 유일 제약·인덱스, CHECK, 정규화 비교 표, 확인 필요 사항 E-01–E-12 |
 | v0.2 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.12, 와이어프레임 v0.9 추가). 문서 정합성 검토로 찾은 E-13·E-14 결정 반영: 이력의 카테고리 변경은 그 시점 `{ id, name }`(3.5), 카테고리 삭제로 인한 할일 이동은 이력을 남기지 않음. 구버전 Mermaid(9.x) 호환: 키는 `PK`·`FK`만, `UK`·복합 PK의 FK·문자열 길이는 주석으로 이동. 확인 필요 E-01–E-12 결정 반영(도메인 v0.13, 프로젝트 원칙 v0.9에도 반영): 카테고리 복합 FK·RESTRICT, 기본 카테고리 부분 유니크, `changes` 구조(3.5 신설), 완료 일관성·공백·이메일 소문자 CHECK, `password_hash`, `text`+CHECK, 인덱스 이름, `updated_at` 갱신, `idx_todos_category_id` |
 | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 와이어프레임 v0.10, 프로젝트 원칙 v0.10, 기술 아키텍처 v0.5). PRD A25·A27·A28 반영(E-15): `refresh_tokens` 테이블(1.1, 2장 다이어그램, 관계 10개), FK `user_id` RESTRICT(3.1), `uq_refresh_tokens_token_hash`·`idx_refresh_tokens_user_id`(3.2), 보존 규칙 3.6 신설, 4장 모듈 `auth`, 1.2 삭제·시간대 행 |
+| v0.4 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6). 프로젝트 원칙 v0.10·기술 아키텍처 v0.5를 가리키던 낡은 참조 정정. 테이블·제약 변경 없음 |

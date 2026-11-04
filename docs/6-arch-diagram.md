@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.5 |
+| 문서 버전 | v0.6 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.13, `docs/3-user-scenario.md` v0.12, `docs/4-wireframe.md` v0.10, `docs/5-project-principle.md` v0.10 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/3-user-scenario.md` v0.13, `docs/4-wireframe.md` v0.11, `docs/5-project-principle.md` v0.11 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`A`, `B`, `K`, `M`), 시나리오 `US-xx`·`EX-xx`·`C-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `SC`·`ST`·`DLG`·`U-xx`, 프로젝트 원칙 `P-xx`·`BE-xx`·`FE-xx`·`SEC-xx`·`OPS-xx`·`G-xx`.
@@ -238,7 +238,7 @@ sequenceDiagram
 
     U->>CL: 화면 조작
     CL->>AM: /api/* 요청 (쿠키 access_token)
-    alt 공개 경로 (signup, login)
+    alt 공개 경로 (signup, login, refresh, logout, health)
         AM->>RT: 인증 없이 통과
     else 보호 경로
         alt 쿠키 없음, 서명 오류, HS384가 아닌 알고리즘, 만료(15분), 로그아웃으로 삭제됨
@@ -343,7 +343,7 @@ sequenceDiagram
     U->>FE: 팀 선택 (없음 = 개인 할일), 필요하면 소유자 선택, 입력 후 저장
     Note over FE: 소유자 필드와 카테고리 활성 여부는 편의 기능이며 서버가 최종 판정 (P-02)
     FE->>RT: POST /api/todos (팀, 소유자, 제목, 설명, 시작, 종료, 카테고리, 공유 팀)
-    RT->>RT: 필수, 길이 (제목 1-200, 설명 2000), ISO 8601 오프셋 형식 검증
+    RT->>RT: 필수, 길이 (제목 1-200, 설명 2000), ISO 8601 오프셋 형식 검증 (날짜만은 SEC-11 예외)
     alt 검증 실패
         RT-->>FE: 400 VALIDATION_ERROR
     else 통과
@@ -861,3 +861,4 @@ T-01–T-08은 모두 이해관계자 확인(2026-11-04)으로 결정해 기준 
 | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(사용자 시나리오 v0.10, 와이어프레임 v0.8, 프로젝트 원칙 v0.8). 5.2 비밀번호는 공백 제거 없이 검사(시나리오 C-23) |
 | v0.4 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.13, PRD v0.12, 사용자 시나리오 v0.11, 와이어프레임 v0.9, 프로젝트 원칙 v0.9). 5.6에 카테고리 삭제 이동은 이력을 남기지 않는다는 Note 추가(ERD E-14). 4장의 erDiagram과 FK·인덱스 주석을 `docs/7-erd.md`로 분리하고 4장은 링크만 남김. 1.2 다이어그램 목록 4행 수정 |
 | v0.5 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 사용자 시나리오 v0.12, 와이어프레임 v0.10, 프로젝트 원칙 v0.10). PRD A25–A27 반영: 2장 인증 설명과 `pg_cron` 노드, 5.1 401 분기에 갱신·재시도와 `HS384`·15분, 5.2 가입 응답 쿠키 2종과 리프레시 토큰 INSERT, 5.10 토큰 갱신·로그아웃 시퀀스 추가(1.2, 5.0 목록) |
+| v0.6 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11). 5.1 공개 경로를 SEC-04와 맞춤(refresh, logout, health 추가). 5.3 등록 시퀀스의 일시 형식 검증에 날짜만 보낸 값 예외(SEC-11) 표시 |

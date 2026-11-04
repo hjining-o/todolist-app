@@ -1,0 +1,2154 @@
+# =============================================================================
+# TodoList API 명세 (OpenAPI 3.1 / Swagger)
+# -----------------------------------------------------------------------------
+# 문서 버전   : v0.3
+# 상태        : 초안
+# 최종 수정일 : 2026-11-04
+# 작성자      : hjining
+# 기준 문서   :
+#   - docs/1-domain-definition.md  v0.13  (도메인 정의서)
+#   - docs/2-prd.md                v0.14  (PRD)
+#   - docs/3-user-scenario.md      v0.13  (사용자 시나리오)
+#   - docs/4-wireframe.md          v0.11  (와이어프레임)
+#   - docs/5-project-principle.md  v0.11  (프로젝트 구조 설계 원칙)
+#   - docs/6-arch-diagram.md       v0.6   (기술 아키텍처)
+#   - docs/7-erd.md                v0.4   (ERD)
+# 참고 자료(로컬, git 추적 제외):
+#   - docs-local/261104-full-stack-plan.md  (풀스택 실행 계획 WBS, 작성일 2026-11-04)
+#   - docs-local/schema.sql                 (초안 DDL, ERD v0.3 기준)
+#   docs/와 다르면 docs/를 따른다. docs/에 없는 API 세부는 참고 자료를 채택하고 근거로 적었다.
+#
+# [버전 일치] 이 주석의 '문서 버전', info.version, info.description 변경 이력 표의
+#             최신 버전은 항상 같아야 한다. 하나를 고치면 셋을 함께 고친다.
+#
+# 변경 이력
+# | 버전 | 날짜       | 작성자  | 내용      |
+# |------|------------|---------|-----------|
+# | v0.1 | 2026-11-04 | hjining | 최초 작성 |
+# | v0.2 | 2026-11-04 | hjining | 확인 필요 결정 반영: S-16 헬스 공개·응답 고정, S-07 대리 등록 `sharedTeamIds` 거부(400), S-03 42일을 달력 날짜로 판정, S-12 자동 로그인 확인. 문서 간 불일치 해소 표시, 기준 문서 버전 갱신 |
+# | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6, ERD v0.4). 문서 정합성 검토로 해소한 불일치 표시(PRD FR-01 #6·시나리오 EX-05 공개 경로, PRD §5.3 날짜만 예외). API 변경 없음 |
+# =============================================================================
+openapi: 3.1.0
+info:
+  title: TodoList API
+  # 위 주석의 '문서 버전'과 같은 값이어야 한다.
+  version: v0.3
+  description: |
+    인증된 사용자가 기간(시작·종료 일시)이 있는 할일을 카테고리별로 관리하고, 팀과 공유해
+    목록·캘린더(월·주·일)로 보며, 변경 이력을 추적하는 웹 TodoList의 REST API다.
+
+    - 상태: 초안 / 최종 수정일: 2026-11-04 / 작성자: hjining
+    - 기준 문서: 도메인 정의서 v0.13, PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11,
+      프로젝트 원칙 v0.11, 기술 아키텍처 v0.6, ERD v0.4
+    - 참고 자료(로컬, git 추적 제외): `docs-local/261104-full-stack-plan.md`(이하 '실행 계획', Task ID `API-nn`·`CM-nn`·`UI-nn`),
+      `docs-local/schema.sql`. 기준 문서와 다르면 기준 문서를 따르고, 기준 문서에 없는 API 세부는 실행 계획을 채택했다.
+    - 근거 표기: 도메인(`FR`, `R`, `S`, `F`, `UC`), PRD(`A`, `B`, `K`, `M`, `SC`, `PRD §n`),
+      시나리오(`US`, `EX`, `C`, `시나리오 §6.2`), 와이어프레임(`U`, `ST`, `DLG`),
+      프로젝트 원칙(`N`, `SEC`, `OPS`, `G`), 아키텍처(`T`, `6-arch 5.n`), ERD(`E`), 실행 계획(`API-nn`, `CM-nn`, `UI-nn`, `W-nn`).
+    - 이 명세에서 정한 사항(기준 문서·실행 계획 모두에 API 세부가 없던 부분)은 `S-xx`로 표시하고 아래 '확인 필요 사항'에 모았다.
+
+    ## 변경 이력
+
+    | 버전 | 날짜 | 작성자 | 내용 |
+    |------|------|--------|------|
+    | v0.1 | 2026-11-04 | hjining | 최초 작성 |
+    | v0.2 | 2026-11-04 | hjining | 확인 필요 결정 반영: S-16 헬스 공개·응답 고정, S-07 대리 등록 `sharedTeamIds` 거부(400), S-03 42일을 달력 날짜로 판정, S-12 자동 로그인 확인. 문서 간 불일치 해소 표시, 기준 문서 버전 갱신 |
+    | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6, ERD v0.4). 문서 정합성 검토로 해소한 불일치 표시(PRD FR-01 #6·시나리오 EX-05 공개 경로, PRD §5.3 날짜만 예외). API 변경 없음 |
+
+    ## 공통 규칙
+
+    | 항목 | 규칙 | 근거 |
+    |------|------|------|
+    | 기본 경로 | 모든 경로는 같은 출처의 `/api/*`. 경로는 소문자 kebab-case 복수형 명사, 중첩 최대 2단계, 동작은 HTTP 메서드로 표현. 예외 `/api/me` | N-11, OPS-19, PRD §5.1 |
+    | 버전 관리 | 경로·헤더 버전 접두사는 기준 문서에 없어 두지 않는다 | - |
+    | 메서드 | `GET`은 상태를 바꾸지 않는다. 상태 변경은 `POST`·`PATCH`·`DELETE`만 | N-13, SEC-07 |
+    | 인증 | 액세스 토큰: `HS384` JWT, 15분, 쿠키 `access_token`(`Path=/`). 리프레시 토큰: `crypto.randomBytes(32)` 불투명 문자열, 7일 절대 만료, DB에는 SHA-256 해시만, 쿠키 `refresh_token`(`Path=/api/auth`). 두 쿠키 모두 `httpOnly; Secure; SameSite=Lax`. JWT 페이로드는 `sub`(사용자 ID)와 `exp`만 담고 권한은 요청마다 DB로 확인 | PRD §5.2 A18·A25·A26, SEC-02, SEC-03, G-09, API-06 |
+    | 공개 경로 | `POST /api/auth/signup`, `/login`, `/refresh`, `/logout`, `GET /api/health`만 인증 없이 호출. 그 밖의 모든 `/api/*`는 액세스 토큰 필요 | SEC-04, R1, API-02 |
+    | 401 처리 | 보호 API가 401 `UNAUTHENTICATED`를 주면 클라이언트는 `POST /api/auth/refresh`로 한 번 갱신한 뒤 원래 요청을 한 번 다시 보낸다. 갱신도 401이면 로그인 화면(ST-01) | OPS-10, EX-42, UI-02 |
+    | CSRF | `SameSite=Lax` + 상태 변경 GET 금지 + 동일 출처. CSRF 토큰·CORS 허용 목록 없음 | PRD §5.2, SEC-07 |
+    | JSON 이름 | 필드·쿼리 파라미터는 camelCase. 열거 값은 UPPER_SNAKE_CASE. 식별자는 `uuid` | N-09, N-14, N-20, G-07 |
+    | 일시 | ISO 8601 + 오프셋, 분 단위(예: `2026-11-04T09:00+09:00`). 응답은 요청자 `User.timezone`의 오프셋으로 보낸다. 요청에서 오프셋 없는 일시(`2026-11-04T09:00`)는 400. 날짜만(`2026-11-04`)은 예외로 받는다(S-06) | PRD §5.3 A20, SEC-11, FE-10, API-09, API-10 |
+    | 상태 | `status`는 저장하지 않는 계산값. 서버 현재 시각(분 단위 절삭)으로 S1→S2→S3→S4 순 판정. 요청 필드로 받지 않는다 | 도메인 §5, P-04, R5 |
+    | 접근 제어 | 볼 수 없는 리소스는 404(존재 비노출), 볼 수 있으나 변경 권한이 없으면 403. 다른 사람 할일 응답에는 `category` 필드가 없다 | R2, P-05, PRD §5.2 A12, SEC-06 |
+    | 입력 검증 | 길이는 앞뒤 공백 제거 후 글자 수(비밀번호는 제거하지 않음). 이메일 254, 비밀번호 8자 이상·UTF-8 72바이트 이하, 이름·카테고리·팀 이름 1–50, 제목 1–200, 설명 0–2,000. 잘못된 JSON 본문은 400 `VALIDATION_ERROR` | 시나리오 §6.3, SEC-09, C-23, API-02 |
+    | 본문 크기 | 요청 본문 100KB 초과는 413 `PAYLOAD_TOO_LARGE` | PRD A19, SEC-10 |
+    | 목록 페이지네이션 | `limit`/`offset`, 기본 50·최대 100(`limit=101`은 400), 시작 일시 오름차순, 응답 `{ items, total }`(`total`은 필터 적용 후 전체 건수) | PRD §5.1 A16·U-12, OPS-15, API-10, UI-02 |
+    | 캘린더 조회 | `GET /api/todos?from=&to=`. 최대 42일(43일은 400), 최대 500건, 응답 `{ items, truncated }` | PRD §5.1 U-13, OPS-16, EX-39, API-10 |
+    | Rate limit·캐시 | 기준 문서에 정의가 없어 명세하지 않는다 | - |
+
+    ## 에러 응답
+
+    본문은 항상 `{ "error": { "code", "message", "fields"? } }`이다. `fields`는 입력 오류일 때 필드별 메시지를 담을 수 있다.
+    메시지는 한국어이며 프론트엔드는 `code`로 분기하고 `message`를 그대로 표시한다(OPS-07, OPS-10, 시나리오 §6.2).
+    새 코드는 시나리오 §6.2에 먼저 추가한 뒤 쓴다(N-16).
+
+    | 상태 | code | 메시지 | 사용처 |
+    |------|------|--------|--------|
+    | 400 | `VALIDATION_ERROR` | 입력값을 확인해 주세요. | 필수값 누락, 형식·길이 위반, 공백만 있는 이름, 42일 초과 캘린더 기간, 구성원 제거 API로 자기 자신 지정 |
+    | 400 | `INVALID_PERIOD` | 종료 일시는 시작 일시보다 빠를 수 없습니다. | 종료 < 시작 |
+    | 400 | `INVALID_SHARE_TEAM` | 속한 팀에만 공유할 수 있습니다. | 속하지 않은 팀 공유 |
+    | 400 | `INVALID_OWNER` | 선택한 팀의 구성원만 소유자로 지정할 수 있습니다. | 대리 등록 시 비구성원 지정, 팀 나가기의 다음 소유자가 다른 구성원이 아님 |
+    | 400 | `WRONG_PASSWORD` | 현재 비밀번호가 올바르지 않습니다. | 비밀번호 변경 |
+    | 401 | `UNAUTHENTICATED` | 로그인이 필요합니다. | 미인증, 액세스 토큰 만료, 리프레시 토큰 만료·폐기·재사용 |
+    | 401 | `INVALID_CREDENTIALS` | 이메일 또는 비밀번호가 올바르지 않습니다. | 로그인 실패(이메일 존재 여부 비노출) |
+    | 403 | `FORBIDDEN` | 권한이 없습니다. | 볼 수 있으나 변경 권한 없음, 일반 팀원의 소유자 지정, 비소유자의 팀 나가기 |
+    | 403 | `DEFAULT_CATEGORY_PROTECTED` | 기본 카테고리는 삭제하거나 이름을 바꿀 수 없습니다. | 기본 카테고리 변경·삭제 |
+    | 404 | `NOT_FOUND` | 찾을 수 없습니다. | 볼 수 없거나 없는 할일·카테고리·팀 |
+    | 404 | `USER_NOT_FOUND` | 가입되지 않은 이메일입니다. | 구성원 추가 |
+    | 409 | `EMAIL_TAKEN` | 이미 가입된 이메일입니다. | 회원가입 |
+    | 409 | `CATEGORY_NAME_TAKEN` | 같은 이름의 카테고리가 있습니다. | 카테고리 추가·이름 변경 |
+    | 409 | `TEAM_NAME_TAKEN` | 같은 이름의 팀이 있습니다. | 팀 생성 |
+    | 409 | `ALREADY_MEMBER` | 이미 팀 구성원입니다. | 구성원 추가 |
+    | 409 | `OWNER_MUST_TRANSFER` | 다음 소유자를 지정한 뒤 나갈 수 있습니다. | 팀 나가기, 다음 소유자 미지정(`NO_NEXT_OWNER` 다음 순서) |
+    | 409 | `NO_NEXT_OWNER` | 다음 소유자로 지정할 구성원이 없습니다. | 팀 나가기, 다른 구성원 없음(가장 먼저 검사) |
+    | 413 | `PAYLOAD_TOO_LARGE` | 요청이 너무 큽니다. | 본문 100KB 초과 |
+    | 500 | `INTERNAL_ERROR` | 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. | 서버 오류(내부 정보 비노출) |
+
+    ## 실행 계획에서 채택한 API 세부
+
+    기준 문서에 없고 실행 계획(`docs-local/261104-full-stack-plan.md`)이 정한 항목이다. 해당 위치에는 Task ID로 근거를 적었다.
+
+    | 항목 | 내용 | 근거 |
+    |------|------|------|
+    | 할일 단건 조회 | `GET /api/todos/{todoId}`, 볼 수 없거나 없으면 404 | API-10 #3 |
+    | 할일 응답 필드 | `id`, `title`, `description`, `startAt`, `endAt`, `completed`, `completedAt`, `status`, `owner { id, name }`, `sharedTeams [{ id, name }]`(보는 사람의 팀만), `canEdit`, `isOwner`, 소유자 본인일 때만 `category { id, name }` | API-10 #4 |
+    | 목록·캘린더 응답 | 목록 `{ items, total }`, 캘린더 `{ items, truncated }` | UI-02 #3, API-10 |
+    | 목록 파라미터 | F4 `teamId` \| `userId` \| 없음(전체), F2 `categoryId`, F1 `status`, `limit`·`offset`, 캘린더 `from`·`to` | API-10 #1 |
+    | 캘린더 겹침 | `startAt < to AND endAt >= from` | API-10 #1 |
+    | 등록 요청 필드 | `teamId?`, `ownerId?`, `title`, `description?`, `startAt?`, `endAt?`, `categoryId?`, `sharedTeamIds?` | API-09 #1 |
+    | 수정 요청 필드 | `title`, `description`, `startAt`, `endAt`, `completed`, `categoryId`, `sharedTeamIds` 중 보낸 것만 | API-11 #1 |
+    | 내 정보 | `GET /api/me` 응답 `id`, `email`, `name`, `timezone`. `PATCH /api/me` 필드 `name`, `timezone`, `currentPassword`, `newPassword`. 비밀번호 변경 시 그 사용자 리프레시 토큰 전체 폐기 + 현재 브라우저에 토큰 2종 재발급 | API-06 #6, API-12 |
+    | 토큰 갱신 실패 | 401 `UNAUTHENTICATED`와 함께 쿠키 2개 삭제 | API-06 #4 |
+    | 역할 변경 | `MANAGER` ↔ `MEMBER`만, `OWNER` 지정은 400 | API-08 #4 |
+    | 팀 나가기 본문 | `nextOwnerId` | API-14 #1 |
+    | 이력 | 실제 변경이 없는 PATCH는 이력을 남기지 않는다 | API-13 #2 |
+    | 헬스 | `GET /api/health`는 200 | CM-02, API-01 |
+
+    ## 확인 필요 사항
+
+    기준 문서와 실행 계획 모두 API 세부(경로, 상태 코드, 필드 이름 등)를 정하지 않아 이 명세에서 정한 항목이다. 해당 위치의 description에 `S-xx`로 표시했다.
+
+    | ID | 내용 | 위치 |
+    |----|------|------|
+    | S-01 | 성공 상태 코드: 생성은 `201`(본문에 생성된 리소스), 수정은 `200`(본문에 갱신된 리소스), 삭제·로그아웃·토큰 갱신·팀 나가기는 `204`(본문 없음). 로그인은 `200` | 전체 |
+    | S-02 | 카테고리·팀·구성원·이력 목록도 할일 목록과 같이 배열을 `{ items }`에 담는다 | 목록 응답 |
+    | S-03 | 캘린더 모드 세부: `from`·`to`를 둘 다 주면 캘린더 모드. 범위는 반열린 구간 `[from, to)`이고 `from < to`이고 `from`의 날짜부터 `to` 직전 날짜까지 요청자 `User.timezone` 기준 달력 날짜로 42일 이하(시간 수로 세지 않는다. 서머타임 시간대에서 6주 달력이 1,007·1,009시간이 될 수 있음). 하나만 주거나 `from >= to`면 400 `VALIDATION_ERROR`. 캘린더 모드에 `limit`·`offset`을 보내면 400. 화면은 F4만 쓰지만 API는 `status`·`categoryId`도 AND로 받는다. 정렬은 시작 일시 오름차순 | `GET /api/todos` |
+    | S-04 | F4 세부: `teamId`와 `userId`를 함께 주면 400 `VALIDATION_ERROR`. 내가 고를 수 없는 팀·사용자·카테고리 ID는 오류 없이 빈 결과(볼 수 있는 할일 안에서만 거르므로 존재를 드러내지 않음). uuid 형식이 아니면 400 | `GET /api/todos` |
+    | S-05 | `offset`은 0 이상 정수(음수는 400). `limit` 0 이하도 400. 같은 시작 일시 안에서는 `id` 오름차순으로 순서를 고정한다(페이지 간 누락·중복 방지, FR-05 #6). 정렬 파라미터는 문서에 없어 두지 않는다 | `GET /api/todos` |
+    | S-06 | 일시 요청에 날짜만(`YYYY-MM-DD`)도 받는다. 날짜만 보내면 요청자 `User.timezone` 기준으로 시작 00:00, 종료 23:59를 서버가 채운다(R5). 시각이 있으면 오프셋 필수(SEC-11), 초는 생략 또는 `:00`만 | `startAt`, `endAt` |
+    | S-07 | 할일 등록 기본값: `ownerId` 생략 시 본인, `sharedTeamIds` 생략 시 `teamId`가 있으면 `[teamId]`, 없으면 `[]`. 대리 등록에서는 `sharedTeamIds`를 받지 않는다(보내면 400 `VALIDATION_ERROR`, 서버가 `[teamId]`로 고정). `teamId` 없이 `ownerId`를 본인이 아닌 사람으로 보내면 400 `VALIDATION_ERROR` | `POST /api/todos` |
+    | S-08 | 할일 수정: 빈 본문은 400 `VALIDATION_ERROR`. 소유자가 아닌 사람이 `categoryId` 또는 `sharedTeamIds` 필드를 보내면 값과 관계없이 403. `title`·`startAt`·`endAt`·`completed`는 `null` 불가, `description`은 `null`로 비운다. `sharedTeamIds`는 공유 팀 전체를 그 목록으로 바꾼다 | `PATCH /api/todos/{todoId}` |
+    | S-09 | 프론트엔드는 수정 요청에 바뀐 필드만 보낸다. 요청 본문의 정의되지 않은 필드(`status`, `completedAt`, `email` 등)는 400 `VALIDATION_ERROR`(모든 요청 스키마 `additionalProperties: false`). 실행 계획 API-12는 `email`을 '무시 또는 400'으로 두어 400으로 정했다 | 모든 요청 본문 |
+    | S-10 | 이력 항목 필드 `id`, `action`, `actor { id, name }`(할일 응답의 `owner`와 같은 형태), `changedAt`, `changes`. 최신순, 페이지네이션 없음(전체 반환) | `GET /api/todos/{todoId}/histories` |
+    | S-11 | 내 정보 수정: `newPassword`를 보내면 `currentPassword` 필수(없으면 400 `VALIDATION_ERROR`). 응답은 수정된 `Me` | `PATCH /api/me` |
+    | S-12 | 가입·로그인 응답 본문은 `Me`(`GET /api/me`와 같은 형태). 가입도 토큰 쿠키 2종을 발급한다(가입 후 자동 로그인, R16·C-01 확인). 로그아웃은 쿠키가 없거나 무효여도 `204`이고 두 쿠키를 삭제한다 | `/api/auth/*` |
+    | S-13 | 팀 목록 항목 `id`, `name`, `role`(요청자의 역할). 구성원 항목에 `userId`를 더한다(경로 `{userId}`에 필요). 팀 목록은 이름 오름차순, 구성원은 소유자 → 관리자 → 일반 팀원, 같은 역할 안에서 이름 오름차순 | `GET /api/teams`, `GET /api/teams/{teamId}/members` |
+    | S-14 | 역할 변경 대상이 소유자(요청자 자신)이면 400 `VALIDATION_ERROR`, 대상이 그 팀 구성원이 아니면 404 `NOT_FOUND`. 성공 시 `200`과 갱신된 구성원 | `PATCH /api/teams/{teamId}/members/{userId}` |
+    | S-15 | 구성원 제거 대상이 그 팀 구성원이 아니면 404 `NOT_FOUND` | `DELETE /api/teams/{teamId}/members/{userId}` |
+    | S-16 | 헬스는 공개 경로이고 응답은 `200 {"status":"ok"}`로 고정한다(내부 정보 없음). SEC-04 v0.11에 반영 | `GET /api/health` |
+    | S-17 | 카테고리 응답 필드 `id`, `name`, `isDefault`. 목록은 기본 카테고리 먼저(U-18 [제안] 채택), 그다음 이름 오름차순 | `/api/categories` |
+
+    ## 문서 간 불일치(참고)
+
+    | 내용 | 이 명세의 처리 |
+    |------|----------------|
+    | N-11 API 경로 예시에 할일 단건 조회가 없지만 US-07 #4·US-12 #6·EX-21·FR-06 #2는 ID 직접 조회를 전제한다 | 실행 계획 API-10 #3의 `GET /api/todos/{todoId}` 채택 |
+    | SEC-11·API-09는 오프셋 없는 일시를 400으로 거부하지만, R5·`period.js`(서버)는 '시각을 입력하지 않은' 값에 00:00/23:59를 채워야 한다. 시각 없는 값을 보내는 형식이 어느 문서에도 없다 | S-06(날짜만 허용). SEC-11 v0.11, PRD v0.14 §5.3·A20에 예외로 반영해 해소 |
+    | SEC-04·API-02의 공개 경로 4개에 `/api/health`가 없어 인증이 필요한데, CM-02는 '배포 URL에서 `GET /api/health`가 200'을 완료 조건으로 둔다(인증 없이 호출하는 것으로 읽힘) | SEC-04 v0.11에서 헬스를 공개 경로로 추가해 해소(S-16) |
+    | PRD FR-01 #6·시나리오 EX-05는 '회원가입·로그인 외 API는 인증 없이 401'이라, 갱신·로그아웃·헬스를 공개로 둔 SEC-04(와 PRD §5.2 ③ 갱신)와 맞지 않았다 | PRD v0.14 FR-01 #6(공개 경로 목록은 SEC-04), 시나리오 v0.13 EX-05를 고쳐 해소 |
+    | 6-arch 5.1 시퀀스는 공개 경로를 `signup, login`만 적었고, SEC-04·6-arch 5.10은 `refresh`, `logout`도 공개다 | 6-arch v0.6에서 5.1을 SEC-04와 맞춰 해소 |
+    | 실행 계획 API-06은 쿠키 `Secure`를 '운영'에서만 붙이지만, SEC-02는 항상 `Secure`, G-13은 개발 환경 예외 코드를 두지 않는다고 정한다 | 기준 문서를 따라 항상 `Secure`. 실행 계획 API-06을 고쳐 해소 |
+    | 실행 계획 API-08 #6은 '비구성원 404 → 소유자 아님 403 → 검증' 순서지만, 6-arch 5.1은 routes의 형식·길이 검증(400)을 서비스 권한 판정보다 먼저 한다 | 기준 문서를 따라 형식 400을 먼저 검사. 실행 계획 API-08 #6을 고쳐 해소 |
+    | `docs-local/schema.sql` 주석은 '세션 시간대 Asia/Seoul은 연결 설정으로 맞춘다'인데, PRD A28·OPS-14는 연결별 `SET`을 쓰지 않고 `ALTER DATABASE`로 고정한다 | API와 무관. `schema.sql` 주석을 고쳐 해소 |
+
+servers:
+  - url: /
+    description: 같은 출처(Vercel 단일 프로젝트, 한 도메인). 경로는 `/api/*`(OPS-19).
+
+tags:
+  - name: auth
+    description: 회원가입, 로그인, 토큰 갱신, 로그아웃 (FR-01, UC-01–UC-03)
+  - name: me
+    description: 내 정보 조회·수정 (FR-03, UC-04, 수정은 P1)
+  - name: categories
+    description: 본인 카테고리 CRUD (FR-02, UC-05)
+  - name: todos
+    description: 할일 등록·조회·수정·완료·삭제, 목록 필터, 캘린더 조회, 팀 공유 (FR-02, FR-04–FR-09, FR-11)
+  - name: todo-histories
+    description: 할일 변경 이력 조회 (FR-10, UC-12, P1)
+  - name: teams
+    description: 팀 생성·목록, 구성원 관리, 팀 나가기 (FR-09, UC-13, UC-14)
+  - name: health
+    description: 배포 확인용 헬스 경로 (OPS-21)
+
+security:
+  - accessTokenCookie: []
+
+paths:
+  /api/auth/signup:
+    post:
+      tags: [auth]
+      operationId: signup
+      summary: 회원가입
+      description: |
+        이메일·비밀번호·이름으로 가입한다. 계정과 이름이 '기본'인 기본 카테고리 1개를 한 트랜잭션에서 만들고,
+        둘 중 하나라도 실패하면 둘 다 만들지 않는다. 가입에 성공하면 바로 로그인된다(액세스·리프레시 토큰 쿠키 발급).
+
+        - 이메일은 앞뒤 공백 제거 후 소문자로 바꿔 저장·비교한다. 시간대는 기본값 `Asia/Seoul`.
+        - 비밀번호는 공백을 제거하지 않고 그대로 검사해 bcrypt(cost 10)로 해시만 저장한다.
+        - 근거: FR-01 #1–#4·#8, R6, R16, UC-01, C-01, C-23, SEC-01, SEC-09, EX-01–EX-03, EX-37, 6-arch 5.2, API-06 #1·#3
+        - S-01(201), S-12(응답 본문)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            example:
+              email: a@example.com
+              password: password1234
+              name: 홍길동
+      responses:
+        '201':
+          description: 가입 성공. 계정과 기본 카테고리가 생성되고 인증 쿠키 2개가 발급된다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetAuthCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 이메일 형식, 비밀번호 8자 미만·UTF-8 72바이트 초과, 이름 공백만·길이 초과(EX-03, EX-37)'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: '`EMAIL_TAKEN` — 이미 가입된 이메일(대소문자 무시, EX-02)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+          description: '`INTERNAL_ERROR` — 기본 카테고리 생성 실패 포함. 계정은 생성되지 않는다(EX-01)'
+
+  /api/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: 로그인
+      description: |
+        이메일·비밀번호로 로그인하고 액세스 토큰(`HS384` JWT, 15분)과 리프레시 토큰(7일) 쿠키를 발급한다.
+
+        - 이메일은 소문자로 바꿔 비교한다(대소문자 무시).
+        - 없는 이메일과 틀린 비밀번호는 같은 `INVALID_CREDENTIALS` 응답이다(이메일 존재 여부 비노출).
+        - 이 경로의 401은 로그인 화면 이동 신호가 아니라 폼 오류로 표시한다(OPS-10).
+        - 근거: FR-01 #5·#9, R1, R16, UC-02, A8, C-02, SEC-05, EX-04, US-02, API-06 #2
+        - S-01(200), S-12(응답 본문)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: A@Example.com
+              password: password1234
+      responses:
+        '200':
+          description: 로그인 성공. 인증 쿠키 2개가 발급된다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetAuthCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 이메일 또는 비밀번호가 비어 있음'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: '`INVALID_CREDENTIALS` — 없는 이메일 또는 틀린 비밀번호(두 경우 동일, EX-04)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/auth/refresh:
+    post:
+      tags: [auth]
+      operationId: refreshToken
+      summary: 액세스 토큰 갱신(리프레시 토큰 회전)
+      description: |
+        쿠키 `refresh_token`(`Path=/api/auth`)으로 새 액세스 토큰과 새 리프레시 토큰을 발급한다.
+        쓴 리프레시 토큰은 폐기한다(회전, 한 트랜잭션). 새 리프레시 토큰은 쓴 토큰의 만료 시각을 그대로 쓴다(7일 절대 만료, 연장 안 함).
+        같은 토큰으로 동시에 두 번 갱신하면 한 번만 성공한다.
+
+        - 이미 폐기된 토큰이 다시 오면 재사용으로 판정해 그 사용자의 리프레시 토큰을 모두 폐기하고 401이다(EX-43).
+        - 실패한 401 응답은 두 쿠키를 삭제한다.
+        - 액세스 토큰이 만료된 상태에서 호출하므로 공개 경로다(SEC-04).
+        - 여러 탭이 거의 동시에 갱신하면 늦은 쪽이 재사용으로 판정될 수 있다(K11). 클라이언트는 한 탭 안의 401을 갱신 요청 하나로 합친다(OPS-10).
+        - 근거: FR-01 #10, PRD §5.2 A25, SEC-02, SEC-04, OPS-10, EX-42, EX-43, ERD 3.6, 6-arch 5.10, API-06 #4
+        - S-01(204)
+      security:
+        - refreshTokenCookie: []
+      responses:
+        '204':
+          description: 갱신 성공. 새 `access_token`, `refresh_token` 쿠키가 발급된다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetAuthCookies'
+        '401':
+          description: '`UNAUTHENTICATED` — 리프레시 토큰 없음·만료·폐기·재사용. 두 쿠키를 삭제한다(API-06 #4).'
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/ClearAuthCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                UNAUTHENTICATED:
+                  $ref: '#/components/examples/ErrUnauthenticated'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: 로그아웃
+      description: |
+        쿠키의 리프레시 토큰을 폐기하고(있으면) 두 인증 쿠키를 삭제한다. 액세스 토큰이 만료돼도 쿠키를 지울 수 있도록 공개 경로다.
+        이미 발급된 액세스 토큰은 만료(최대 15분)까지 유효하다(인증 한계, PRD §5.2).
+
+        - 근거: FR-01 #7, UC-03, US-02 #3, EX-06, PRD §5.2 A25, SEC-02, SEC-04, 6-arch 5.10, API-06 #5
+        - S-01(204), S-12(쿠키가 없거나 무효여도 204)
+      security:
+        - refreshTokenCookie: []
+        - {}
+      responses:
+        '204':
+          description: 로그아웃 완료. 두 쿠키를 삭제한다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/ClearAuthCookies'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/me:
+    get:
+      tags: [me]
+      operationId: getMe
+      summary: 내 정보 조회
+      description: |
+        로그인한 사용자 자신의 정보를 조회한다. 경로에 사용자 ID를 받지 않아 다른 사용자 정보에 접근하는 경로가 없다(N-11 예외).
+
+        - 프론트 인증 가드, 공통 레이아웃의 사용자 이름(SC-00), 시간대 표시, 내 정보(SC-07)에 쓴다.
+        - 근거: UC-04, R17, N-11, SC-00, SC-07, API-06 #6
+      responses:
+        '200':
+          description: 내 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [me]
+      operationId: updateMe
+      summary: 내 정보 수정(이름·시간대·비밀번호, P1)
+      description: |
+        이름, 시간대, 비밀번호를 수정한다. 보낸 필드만 바꾼다. 이메일은 수정할 수 없다. 다른 사람의 프로필은 수정할 수 없다(경로 없음).
+
+        - 시간대는 `Intl.supportedValuesOf('timeZone')`에 있는 IANA 이름만 받는다. 바꾸면 이후 모든 일시 응답의 오프셋과 '오늘' 판정(R4)이 새 시간대 기준이다.
+        - 비밀번호를 바꿀 때는 현재 비밀번호를 확인한다. 틀리면 400 `WRONG_PASSWORD`(401이 아님, 401은 로그인 화면 이동 신호).
+        - 비밀번호를 바꾸면 같은 트랜잭션에서 그 사용자의 리프레시 토큰을 모두 폐기하고, 이 요청에 토큰 2종을 새로 발급해 변경한 브라우저의 로그인을 유지한다.
+        - 이름·시간대 저장과 비밀번호 변경은 화면에서 별도 폼이지만 같은 경로를 쓴다(U-17).
+        - 근거: FR-03 #1–#5, R5, R17, UC-04, A9, U-17, C-23, SEC-02, SEC-09, EX-30, EX-31, EX-44, US-16, API-12
+        - S-01(200), S-08(빈 본문 400과 같은 방식), S-09, S-11
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMeRequest'
+            examples:
+              profile:
+                summary: 이름·시간대 저장
+                value:
+                  name: 홍길동
+                  timezone: America/New_York
+              password:
+                summary: 비밀번호 변경
+                value:
+                  currentPassword: password1234
+                  newPassword: newpassword5678
+      responses:
+        '200':
+          description: 수정된 내 정보. 비밀번호를 바꾼 경우 새 인증 쿠키 2개를 함께 발급한다.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetAuthCookies'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 이름 길이, IANA가 아닌 시간대, 새 비밀번호 규칙 위반, 현재 비밀번호 누락, 정의되지 않은 필드(`email` 등). `WRONG_PASSWORD` — 현재 비밀번호 불일치(EX-30)'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/categories:
+    get:
+      tags: [categories]
+      operationId: listCategories
+      summary: 내 카테고리 목록
+      description: |
+        본인 카테고리만 조회한다(`isDefault` 포함). 기본 카테고리가 항상 1개 있으므로 빈 목록은 없다.
+        SC-06, SC-04 카테고리 선택, F2 카테고리 필터 선택지에 쓴다.
+
+        - 근거: FR-02, R2, R6, UC-05, SC-06, F2, API-07 #1
+        - S-02(`items`), S-17(필드, 정렬)
+      responses:
+        '200':
+          description: 내 카테고리 목록
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryList'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [categories]
+      operationId: createCategory
+      summary: 카테고리 추가
+      description: |
+        본인 카테고리를 추가한다. 이름은 앞뒤 공백을 제거해 저장하며, 같은 사용자 안에서 `lower(btrim(name))`로 비교해 중복될 수 없다.
+        다른 사용자와는 이름이 같아도 된다.
+
+        - 근거: FR-02 #2·#3, R10, R11, UC-05, EX-15–EX-17, API-07 #2
+        - S-01(201), S-09, S-17
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreateRequest'
+            example:
+              name: Work
+      responses:
+        '201':
+          description: 생성된 카테고리
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 이름 누락·공백만·50자 초과(EX-17)'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: '`CATEGORY_NAME_TAKEN` — 같은 이름(앞뒤 공백 제거, 대소문자 무시, EX-15)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/categories/{categoryId}:
+    parameters:
+      - $ref: '#/components/parameters/CategoryId'
+    patch:
+      tags: [categories]
+      operationId: updateCategory
+      summary: 카테고리 이름 변경
+      description: |
+        본인 카테고리의 이름을 바꾼다. 기본 카테고리는 이름을 바꿀 수 없다.
+
+        - 다른 사용자의 카테고리 ID는 '없음'(404)으로 처리한다(존재 비노출).
+        - 근거: FR-02 #2·#4·#6, R2, R8, R10, R11, UC-05, EX-15, EX-17–EX-19, API-07
+        - S-01(200), S-09, S-17
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateRequest'
+            example:
+              name: 스터디
+      responses:
+        '200':
+          description: 이름이 바뀐 카테고리
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 이름 누락·공백만·50자 초과, `categoryId`가 uuid 형식이 아님'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`DEFAULT_CATEGORY_PROTECTED` — 기본 카테고리 이름 변경(EX-18)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 없거나 다른 사용자의 카테고리(EX-19)'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: '`CATEGORY_NAME_TAKEN` — 같은 이름의 카테고리가 있음'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [categories]
+      operationId: deleteCategory
+      summary: 카테고리 삭제
+      description: |
+        본인 카테고리를 삭제한다. 그 안의 할일은 삭제하지 않고 소유자의 기본 카테고리로 옮긴다(한 트랜잭션, 할일 수 불변).
+        이 이동은 사용자의 할일 수정 요청이 아니므로 변경 이력을 남기지 않는다. 기본 카테고리는 삭제할 수 없다.
+
+        - 근거: FR-02 #4·#5·#6, R2, R8, R9, R20, UC-05, E-14, EX-18, EX-19, US-03, 6-arch 5.6, API-07 #3·#4
+        - S-01(204)
+      responses:
+        '204':
+          description: 삭제 완료. 할일은 기본 카테고리로 옮겨졌다.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — `categoryId`가 uuid 형식이 아님'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`DEFAULT_CATEGORY_PROTECTED` — 기본 카테고리 삭제(EX-18)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 없거나 다른 사용자의 카테고리(EX-19)'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/todos:
+    get:
+      tags: [todos]
+      operationId: listTodos
+      summary: 할일 목록·캘린더 조회
+      description: |
+        내가 볼 수 있는 할일(내 할일 + 내가 속한 팀에 공유된 할일)을 조회한다. 한 경로가 두 모드를 가진다(N-11).
+
+        **목록 모드**(`from`·`to` 없음, SC-03)
+        - F4(`teamId`/`userId`), F2(`categoryId`), F1(`status`)을 AND로 적용한다(F3). 아무것도 고르지 않으면 볼 수 있는 전체다.
+        - 상태 필터는 서버(SQL)에서 적용한 뒤 페이지네이션한다. 시작 일시 오름차순, 기본 50건·최대 100건, `total`은 필터 적용 후 전체 건수
+          (예: 120건 중 조건에 맞는 70건이면 `total=70`, 1쪽 50건, 2쪽 20건).
+
+        **캘린더 모드**(`from`·`to` 모두 있음, SC-05)
+        - `startAt < to AND endAt >= from`인 할일, 즉 조회 범위와 기간이 하루라도 겹치는 할일을 모두 돌려준다(R15).
+        - 범위 최대 42일(43일은 400 `VALIDATION_ERROR`, EX-39), 결과 최대 500건, 넘으면 500건과 `truncated: true`.
+
+        **공통**
+        - `status`는 서버 현재 시각(분 단위 절삭)으로 S1→S2→S3→S4 순 계산한다(R5, 도메인 §5).
+        - 다른 사람 할일에는 `category`가 없다(R2, SEC-06). `sharedTeams`는 보는 사람이 속한 팀만 담는다(R21).
+        - 행마다 `canEdit`, `isOwner`로 버튼 노출과 카테고리 필드 활성 여부를 정한다(FE-07, N-15).
+        - 일시는 요청자 `User.timezone` 오프셋이다.
+        - 근거: FR-05 #1–#6, FR-08 #2–#4, FR-09 #3·#7·#11, FR-11 #2·#6, R2, R5, R15, R21, S1–S4, F1–F4, UC-07, UC-11, A16, U-12, U-13, OPS-15–OPS-17, SEC-12, EX-10–EX-14, EX-39, US-08, US-09, 6-arch 5.5, API-10
+        - S-03, S-04, S-05
+      parameters:
+        - name: teamId
+          in: query
+          required: false
+          description: 'F4 팀 하나. 그 팀에 공유된 할일만(API-10 #1). `userId`와 함께 쓸 수 없다(S-04).'
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: query
+          required: false
+          description: 'F4 사용자 하나. 내가 속한 팀들의 구성원 또는 본인("내 할일"). 그 사용자의 할일 중 내가 볼 수 있는 것만(API-10 #1, U-01, C-06). `teamId`와 함께 쓸 수 없다(S-04).'
+          schema:
+            type: string
+            format: uuid
+        - name: categoryId
+          in: query
+          required: false
+          description: 'F2 카테고리 필터. 본인 카테고리이며 본인 할일에만 적용된다(F2, R2, API-10 #1). 본인 것이 아니면 빈 결과(S-04).'
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          description: 'F1 상태 필터. 하나만 고른다. 허용 목록 밖 값은 400(SEC-12, API-10).'
+          schema:
+            $ref: '#/components/schemas/TodoStatus'
+        - name: limit
+          in: query
+          required: false
+          description: '목록 모드 페이지 크기. 기본 50, 최대 100(`limit=101`은 400, API-10). 캘린더 모드에서는 보내면 400(S-03, S-05).'
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          description: '목록 모드 건너뛸 건수. 기본 0. 캘린더 모드에서는 보내면 400(S-03, S-05).'
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: from
+          in: query
+          required: false
+          description: '캘린더 조회 시작(포함). ISO 8601 + 오프셋(API-10). `to`와 함께 보내야 한다(S-03).'
+          schema:
+            $ref: '#/components/schemas/DateTimeOffset'
+          example: '2026-10-25T00:00+09:00'
+        - name: to
+          in: query
+          required: false
+          description: '캘린더 조회 끝(제외). ISO 8601 + 오프셋. `from`부터 `to`까지 요청자 시간대 기준 달력 날짜로 42일 이하(OPS-16, S-03).'
+          schema:
+            $ref: '#/components/schemas/DateTimeOffset'
+          example: '2026-12-06T00:00+09:00'
+      responses:
+        '200':
+          description: 목록 모드는 `TodoPage`, 캘린더 모드는 `TodoCalendar`.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TodoPage'
+                  - $ref: '#/components/schemas/TodoCalendar'
+              examples:
+                list:
+                  summary: 목록 모드
+                  value:
+                    items:
+                      - id: 0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+                        title: 분기 기획안 v2
+                        description: null
+                        startAt: '2026-11-10T09:00+09:00'
+                        endAt: '2026-11-12T18:00+09:00'
+                        completed: false
+                        completedAt: null
+                        status: NOT_STARTED
+                        owner:
+                          id: 7e9a1c3b-5d2f-4e6a-8b0c-1d2e3f4a5b6c
+                          name: 홍길동
+                        category:
+                          id: 3f0c2a8e-6a51-4c47-9f61-2f1b1d7e9a10
+                          name: Work
+                        sharedTeams:
+                          - id: 8b6d3c1e-2f4a-4e9b-a1c7-5d0e9f3b2a64
+                            name: 마케팅팀
+                        canEdit: true
+                        isOwner: true
+                    total: 70
+                calendar:
+                  summary: 캘린더 모드
+                  value:
+                    items: []
+                    truncated: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 허용 목록 밖 `status`, uuid가 아닌 ID, `teamId`·`userId` 동시 지정, `limit`·`offset` 범위 위반, `from`·`to` 한쪽만·순서 오류·42일 초과(EX-39)'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [todos]
+      operationId: createTodo
+      summary: 할일 등록
+      description: |
+        할일을 등록한다. 먼저 어느 팀 할일인지(`teamId`, 없으면 개인 할일) 정하고, 그 팀의 관리자(소유자 포함)이면 소유자를 그 팀 구성원 중에서 고를 수 있다(기본값 본인).
+
+        - **소유자 = 본인**: 카테고리를 지정하지 않으면 기본 카테고리. 다른 사람 카테고리나 없는 ID는 404. 공유 팀은 내가 속한 팀 중에서 고르고, 기본값은 고른 팀(없으면 공유 없음 = 본인만 조회).
+        - **소유자 ≠ 본인(대리 등록)**: 카테고리는 소유자의 기본 카테고리, 공유 팀은 고른 팀으로 고정. `categoryId`를 보내면 403.
+        - **일시(R4)**: 둘 다 없음 → 오늘 00:00–23:59, 시작만 → 종료 = 시작 날짜 23:59, 종료만 → 시작 = min(오늘 00:00, 종료). '오늘'은 요청자(대리 등록이면 관리자)의 `User.timezone` 기준.
+        - 종료 < 시작은 400 `INVALID_PERIOD`(같은 일시 허용). 완료 여부는 받지 않고 `completed = false`로 저장한다(U-07).
+        - FR-10 구현 후 `CREATED` 이력 1건(변경자 = 요청자)을 같은 트랜잭션에서 기록한다.
+        - 검사 순서(6-arch 5.3, API-09 #2): 형식 400 → 고른 팀 비구성원 400 `INVALID_SHARE_TEAM` → 일반 팀원의 소유자 지정 403 → 소유자 비구성원 400 `INVALID_OWNER` → 대리 등록 카테고리 403 → 카테고리 404 → 공유 팀 400 `INVALID_SHARE_TEAM` → 기간 400 `INVALID_PERIOD`.
+        - 근거: FR-02 #1, FR-04 #2–#5, FR-07 #5, FR-09 #4·#5·#10, FR-11 #1–#3, FR-10 #1·#2, R3–R5, R7, R19–R21, UC-06, A13, C-16, C-19, U-07, U-21, EX-07–EX-09, EX-22, EX-24, EX-26, EX-37, EX-38, US-01, US-04, US-12, US-13, 6-arch 5.3, API-09
+        - S-01(201), S-06, S-07, S-09
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoCreateRequest'
+            examples:
+              personal:
+                summary: 개인 할일, 제목만(R4 기본 일시)
+                value:
+                  title: 주간 보고서
+              withPeriod:
+                summary: 시작 일시만, 카테고리 지정
+                value:
+                  title: 분기 기획안
+                  startAt: '2026-11-10T09:00+09:00'
+                  categoryId: 3f0c2a8e-6a51-4c47-9f61-2f1b1d7e9a10
+              proxy:
+                summary: 관리자가 팀 구성원 할일 대리 등록(종료 날짜만)
+                value:
+                  teamId: 8b6d3c1e-2f4a-4e9b-a1c7-5d0e9f3b2a64
+                  ownerId: 1c9e7b52-3d8f-4a26-b0e4-7f5a6c2d9e18
+                  title: 보도자료 초안
+                  endAt: '2026-11-07'
+      responses:
+        '201':
+          description: 등록된 할일(요청자 기준 응답. 대리 등록이면 `category` 없음)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+              examples:
+                own:
+                  $ref: '#/components/examples/TodoOwnValue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 제목 누락·공백만·길이 초과, 설명 2,000자 초과, 일시 형식(오프셋 없음 포함), 정의되지 않은 필드, `teamId` 없이 다른 소유자 지정, 대리 등록에서 `sharedTeamIds` 지정(S-07). `INVALID_PERIOD`(EX-07). `INVALID_SHARE_TEAM` — 속하지 않은 팀(EX-22). `INVALID_OWNER` — 고른 팀 비구성원을 소유자로 지정(EX-26)'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`FORBIDDEN` — 일반 팀원이 다른 사람을 소유자로 지정(EX-38), 대리 등록에서 `categoryId` 지정(C-15)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 없거나 다른 사용자의 카테고리 지정(FR-02 #6, EX-19)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/todos/{todoId}:
+    parameters:
+      - $ref: '#/components/parameters/TodoId'
+    get:
+      tags: [todos]
+      operationId: getTodo
+      summary: 할일 단건 조회
+      description: |
+        볼 수 있는 할일 하나를 조회한다. SC-04 편집·읽기 전용 화면 진입에 쓴다(`canEdit`로 모드 결정).
+
+        - 볼 수 없거나(공유 없음, 비구성원) 없는 할일은 404로 존재를 드러내지 않는다. 삭제한 할일도 404.
+        - 다른 사람 할일에는 `category`가 없고, `sharedTeams`는 보는 사람이 속한 팀만 담는다.
+        - 근거: FR-06 #2, FR-07 #6·#7, FR-08 #5, FR-09 #3, FR-11 #2·#6, R2, R12, R21, C-14, EX-21, EX-25, US-07 #4, US-12 #4–#6, 와이어프레임 5.2, API-10 #3·#4
+      responses:
+        '200':
+          description: 할일
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+              examples:
+                own:
+                  $ref: '#/components/examples/TodoOwnValue'
+                others:
+                  $ref: '#/components/examples/TodoOthersValue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — `todoId`가 uuid 형식이 아님'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 볼 수 없거나 없는 할일(EX-21, EX-25)'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [todos]
+      operationId: updateTodo
+      summary: 할일 수정·완료 처리
+      description: |
+        할일을 수정한다. 보낸 필드만 바꾼다. 완료·완료 해제도 별도 경로 없이 이 경로의 `completed`로 처리하고, `completedAt`은 서버가 설정한다(완료 시 서버 현재 시각, 해제 시 `null`).
+
+        - 수정 가능: 소유자 본인, 그 할일의 공유 팀 중 한 곳에서라도 관리자(소유자 포함)인 사람. 볼 수만 있는 일반 팀원은 403, 볼 수 없으면 404.
+        - `categoryId`, `sharedTeamIds`는 소유자만 바꿀 수 있다(관리자 포함 비소유자는 403). 공유 팀은 소유자가 속한 팀만(아니면 400 `INVALID_SHARE_TEAM`).
+        - 카테고리를 보내지 않으면 기존 카테고리를 유지한다(R7). 수정 후 기간도 R3을 검증한다. 시작 전이라도 완료할 수 있다(R14).
+        - 검사 순서(API-11 #1): 형식 400 → 볼 수 없음 404 → 수정 권한 없음 403 → 비소유자의 카테고리·공유 팀 변경 403 → 카테고리 404 → 공유 팀 400 → 기간 400 `INVALID_PERIOD`.
+        - FR-10 구현 후 요청 1건에 이력 1건을 같은 트랜잭션에서 기록한다. 완료 여부가 바뀌면 `COMPLETED`/`UNCOMPLETED`, 아니면 `UPDATED`이고 함께 바뀐 필드도 모두 `changes`에 담는다. 실제 변경이 없으면 이력을 남기지 않는다(API-13 #2).
+        - 역할은 요청마다 DB로 확인하므로 관리자 해제·구성원 제거가 즉시 반영된다(US-15 #2).
+        - 근거: FR-07 #1–#7, FR-09 #4·#6, FR-10 #1·#2, FR-11 #1·#4, R2, R3, R7, R13, R14, R19–R21, UC-08, UC-09, N-12, A12, C-14, C-15, C-20, EX-07, EX-12, EX-20, EX-22–EX-25, EX-33, US-05, US-06, US-14, 6-arch 5.4, API-11
+        - S-01(200), S-06, S-08, S-09
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoUpdateRequest'
+            examples:
+              complete:
+                summary: 완료 체크
+                value:
+                  completed: true
+              edit:
+                summary: 제목·종료 일시 수정
+                value:
+                  title: 분기 기획안 v2
+                  endAt: '2026-11-12T18:00+09:00'
+              share:
+                summary: 소유자가 공유 팀 변경
+                value:
+                  sharedTeamIds:
+                    - 8b6d3c1e-2f4a-4e9b-a1c7-5d0e9f3b2a64
+      responses:
+        '200':
+          description: 수정된 할일(요청자 기준 응답)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 빈 본문, 제목 공백만·길이 초과, 일시 형식, `null` 불가 필드에 `null`, 정의되지 않은 필드(`status` 등). `INVALID_PERIOD`(EX-07). `INVALID_SHARE_TEAM`(EX-22)'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`FORBIDDEN` — 일반 팀원의 변경(EX-20), 비소유자의 카테고리 변경(EX-24)·공유 팀 변경(EX-23)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 볼 수 없거나 없는 할일(EX-21, EX-25), 없거나 다른 사용자의 카테고리 지정(EX-19)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [todos]
+      operationId: deleteTodo
+      summary: 할일 삭제
+      description: |
+        할일을 영구 삭제한다. 공유와 변경 이력도 함께 삭제되며(FK CASCADE) 복구할 수 없다. 같은 ID로 다시 조회하면 404다.
+
+        - 삭제 가능: 소유자 본인, 공유 팀의 관리자(소유자 포함). 일반 팀원은 403, 볼 수 없으면 404.
+        - 검사 순서: 404 → 403 → 삭제. 다른 관리자가 먼저 삭제해 삭제 행이 0이어도 404다(API-11 #2).
+        - 근거: FR-06 #2·#3, FR-09 #4·#6, FR-10 #5, R2, R12, R19, R20, UC-10, A12, EX-20, EX-21, US-07, US-14 #5, 6-arch 5.4, API-11 #2
+        - S-01(204)
+      responses:
+        '204':
+          description: 삭제 완료
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — `todoId`가 uuid 형식이 아님'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`FORBIDDEN` — 볼 수 있으나 삭제 권한 없음(일반 팀원, EX-20)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 볼 수 없거나 없는 할일(FR-06 #3, EX-21)'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/todos/{todoId}/histories:
+    parameters:
+      - $ref: '#/components/parameters/TodoId'
+    get:
+      tags: [todo-histories]
+      operationId: listTodoHistories
+      summary: 할일 변경 이력 조회(P1)
+      description: |
+        그 할일을 볼 수 있는 사용자가 변경 이력을 조회한다. 이력의 수정·삭제 API는 없다.
+
+        - 보는 사람이 할일 소유자가 아니면 `changes`에서 `category`를 뺀다(`CREATED`의 처음 값 포함).
+        - `sharedTeamIds` 변경은 보는 사람이 속한 팀 ID만 남기고, 남은 차이가 없으면 그 필드를 뺀다.
+        - 걸러낸 뒤 남는 변경이 없는 이력은 응답에서 뺀다.
+        - 근거: FR-10 #3·#4·#6, R2, R20, R21, UC-12, C-17, E-03, E-13, U-16, EX-32, US-17, ERD 3.5, 6-arch 5.9, API-13 #1·#3
+        - S-02(`items`), S-10
+      responses:
+        '200':
+          description: 보는 사람 기준으로 걸러낸 이력(최신순)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoHistoryList'
+              example:
+                items:
+                  - id: 5a1f2e3d-4c5b-4a69-8e7d-9f0a1b2c3d4e
+                    action: COMPLETED
+                    actor:
+                      id: 2d4f6a8c-1b3e-4c5d-9e7f-0a1b2c3d4e5f
+                      name: 이관리
+                    changedAt: '2026-11-05T10:30+09:00'
+                    changes:
+                      completed:
+                        old: false
+                        new: true
+                  - id: 6b2a3f4e-5d6c-4b7a-9f8e-0a1b2c3d4e5f
+                    action: UPDATED
+                    actor:
+                      id: 7e9a1c3b-5d2f-4e6a-8b0c-1d2e3f4a5b6c
+                      name: 홍길동
+                    changedAt: '2026-11-05T10:12+09:00'
+                    changes:
+                      category:
+                        old:
+                          id: 9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a
+                          name: 기본
+                        new:
+                          id: 3f0c2a8e-6a51-4c47-9f61-2f1b1d7e9a10
+                          name: Work
+                      sharedTeamIds:
+                        old: []
+                        new:
+                          - 8b6d3c1e-2f4a-4e9b-a1c7-5d0e9f3b2a64
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — `todoId`가 uuid 형식이 아님'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 볼 수 없거나 없는(삭제된 포함) 할일'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/teams:
+    get:
+      tags: [teams]
+      operationId: listTeams
+      summary: 내가 속한 팀 목록과 내 역할
+      description: |
+        내가 속한 팀과 각 팀에서의 내 역할을 조회한다. SC-08 목록, SC-09의 팀 이름·내 역할, 등록 화면의 팀·공유 팀 선택지,
+        F4 팀 선택지에 이 결과를 쓴다. 팀 단건 조회·이름 변경·삭제 경로는 두지 않는다.
+
+        - 근거: FR-09, R18, UC-13, SC-08, SC-09, N-11, API-08 #1
+        - S-02(`items`), S-13
+      responses:
+        '200':
+          description: 내 팀 목록(속한 팀이 없으면 빈 배열)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamList'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [teams]
+      operationId: createTeam
+      summary: 팀 생성
+      description: |
+        팀을 만든다. 같은 트랜잭션에서 만든 사용자를 그 팀의 소유자(`OWNER`)로 넣는다. 팀 이름은 `lower(btrim(name))`로 시스템 전체에서 유일하다.
+
+        - 근거: FR-09 #1·#9, R18, UC-13, C-09, DLG-03, U-09, EX-35, US-11 #1, API-08 #1
+        - S-01(201), S-09, S-13(응답의 `role`)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamCreateRequest'
+            example:
+              name: 마케팅팀
+      responses:
+        '201':
+          description: 생성된 팀(`role`은 `OWNER`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 이름 누락·공백만·50자 초과'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: '`TEAM_NAME_TAKEN` — 시스템 전체에서 같은 이름(EX-35)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/teams/{teamId}/members:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      tags: [teams]
+      operationId: listTeamMembers
+      summary: 팀 구성원 목록
+      description: |
+        그 팀 구성원의 이름·이메일·역할을 조회한다. 이메일은 같은 팀 구성원에게 역할과 관계없이 보인다(U-11).
+        F4 사용자 선택지와 대리 등록의 소유자 선택지도 내가 속한 팀마다 이 경로를 호출한다(W-04).
+
+        - 그 팀 구성원이 아니면 404.
+        - 근거: FR-09 #10·#11, R18, R19, F4, UC-14, C-06, C-16, U-11, SC-09, N-11, 6-arch 5.5, API-08 #2, W-04
+        - S-02(`items`), S-13
+      responses:
+        '200':
+          description: 구성원 목록(소유자 1명은 항상 포함)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMemberList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — `teamId`가 uuid 형식이 아님'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 없거나 속하지 않은 팀'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [teams]
+      operationId: addTeamMember
+      summary: 구성원 추가(소유자 전용)
+      description: |
+        이메일로 가입한 사용자를 팀에 추가한다. 초대 수락 절차 없이 즉시 구성원이 된다. 역할을 고르지 않으면 `MEMBER`다.
+
+        - 이메일은 앞뒤 공백 제거 후 소문자로 비교한다.
+        - 검사 순서: 형식 400 → 팀 비구성원 404 `NOT_FOUND` → 소유자 아님 403 → 미가입 이메일 404 `USER_NOT_FOUND` → 이미 구성원 409(6-arch 5.1·5.7).
+        - 근거: FR-09 #2·#8, R18, UC-14, C-10, EX-27, EX-28, EX-34, US-11 #2, 6-arch 5.7, API-08 #3
+        - S-01(201), S-09, S-13
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamMemberCreateRequest'
+            example:
+              email: b@example.com
+              role: MANAGER
+      responses:
+        '201':
+          description: 추가된 구성원
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMember'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 이메일 누락·형식·254자 초과, `role`이 `MANAGER`/`MEMBER`가 아님'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`FORBIDDEN` — 소유자가 아닌 구성원의 요청(EX-28)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 없거나 속하지 않은 팀. `USER_NOT_FOUND` — 가입되지 않은 이메일(EX-27)'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: '`ALREADY_MEMBER` — 이미 팀 구성원(EX-34)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/teams/{teamId}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/MemberUserId'
+    patch:
+      tags: [teams]
+      operationId: updateTeamMemberRole
+      summary: 관리자 지정·해제(소유자 전용)
+      description: |
+        구성원의 역할을 `MEMBER` ↔ `MANAGER`로 바꾼다. `OWNER` 지정은 400이며 `OWNER` 승격은 팀 나가기에서만 일어난다.
+        역할은 요청마다 DB로 확인하므로 다음 요청부터 즉시 반영된다(토큰 재발급 없이).
+
+        - 근거: FR-09 #2, R18, R19, UC-14, U-10, EX-28, US-11 #3, US-15 #1·#2, SEC-03, 6-arch 5.7, API-08 #4
+        - S-01(200), S-09, S-14
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamMemberUpdateRequest'
+            example:
+              role: MEMBER
+      responses:
+        '200':
+          description: 역할이 바뀐 구성원
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMember'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — `role`이 `MANAGER`/`MEMBER`가 아님(`OWNER` 포함, API-08 #4), 대상이 소유자 자신(S-14)'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`FORBIDDEN` — 소유자가 아닌 구성원의 요청(EX-28)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 없거나 속하지 않은 팀, 대상이 그 팀 구성원이 아님(S-14)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [teams]
+      operationId: removeTeamMember
+      summary: 구성원 제거(소유자 전용)
+      description: |
+        구성원을 팀에서 제거한다. 그 사람 소유 할일의 이 팀 공유도 같은 트랜잭션에서 해제되어 다른 구성원에게 더 이상 보이지 않는다(다른 팀 공유는 남는다).
+        소유자 자신은 이 경로로 제거할 수 없고 `POST /api/teams/{teamId}/leave`로만 나간다.
+
+        - 근거: FR-09 #2·#12, FR-11 #5, R18, R21, UC-14, C-22, U-10, DLG-05, EX-28, EX-29, US-15 #3–#6, N-11, OPS-23 ③, 6-arch 5.7, API-08 #5
+        - S-01(204), S-15
+      responses:
+        '204':
+          description: 제거 완료(공유 해제 포함)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — 대상이 요청자 자신(EX-29), uuid 형식이 아님'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`FORBIDDEN` — 소유자가 아닌 구성원의 요청(EX-28)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 없거나 속하지 않은 팀, 대상이 그 팀 구성원이 아님(S-15)'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/teams/{teamId}/leave:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    post:
+      tags: [teams]
+      operationId: leaveTeam
+      summary: 다음 소유자 지정 후 팀 나가기(소유자 전용, P1)
+      description: |
+        소유자가 다음 소유자를 다른 구성원 중에서 지정하고 팀을 나간다. 기존 소유자 제거 → 다음 소유자 `OWNER` 승격 → 기존 소유자 할일의 이 팀 공유 해제를 이 순서로 한 트랜잭션에서 처리한다.
+        소유자가 아닌 구성원의 팀 나가기는 범위 밖이다(API는 403).
+
+        - 검사 순서: 팀 비구성원 404 `NOT_FOUND` → 소유자 아님 403 `FORBIDDEN` → 다른 구성원 없음 409 `NO_NEXT_OWNER` → 다음 소유자 미지정 409 `OWNER_MUST_TRANSFER` → 지정한 사람이 그 팀의 다른 구성원이 아님 400 `INVALID_OWNER`.
+        - 근거: FR-09 #12, R18, R21, UC-14, C-11, C-21, C-22, T-05, T-06, DLG-04, EX-29, EX-36, EX-40, EX-41, US-18, OPS-23 ⑤, 6-arch 5.8, API-14
+        - S-01(204), S-09
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamLeaveRequest'
+            example:
+              nextOwnerId: 2d4f6a8c-1b3e-4c5d-9e7f-0a1b2c3d4e5f
+      responses:
+        '204':
+          description: 팀 나가기 완료. 이 팀은 요청자의 팀 목록에서 사라진다.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: '`VALIDATION_ERROR` — `nextOwnerId`가 uuid 형식이 아님. `INVALID_OWNER` — 지정한 사람이 그 팀의 다른 구성원이 아님(EX-41)'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: '`FORBIDDEN` — 소유자가 아닌 구성원의 요청(EX-40)'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 없거나 속하지 않은 팀(EX-40 비구성원)'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: '`NO_NEXT_OWNER` — 다른 구성원 없음(EX-36, 가장 먼저 검사). `OWNER_MUST_TRANSFER` — 다음 소유자 미지정(EX-29)'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: 헬스 확인
+      description: |
+        Day 1 오전에 빈 API를 먼저 배포해 Express 함수와 콜드 스타트를 확인하는 경로다. 정상이면 200이다.
+
+        - 근거: OPS-21, G-06, PRD K10, CM-02, API-01 #4
+        - S-16(공개 경로, 응답 고정. SEC-04 v0.11)
+      security: []
+      responses:
+        '200':
+          description: 정상. 내부 정보는 담지 않는다(S-16).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    accessTokenCookie:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: |
+        액세스 토큰. `HS384`로 서명한 JWT, 만료 15분. 페이로드는 `sub`(사용자 ID)와 `exp`만 담는다.
+        검증은 `algorithms: ['HS384']`로 고정하고(HS256·`alg: none` 토큰은 401) 서명 키 `JWT_SECRET`은 48바이트 이상이다.
+        쿠키 속성 `httpOnly; Secure; SameSite=Lax; Path=/`. 근거: PRD §5.2 A25·A26, SEC-02, SEC-03, API-02, API-06 #3.
+    refreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+      description: |
+        리프레시 토큰. `crypto.randomBytes(32)` 불투명 문자열, 7일 절대 만료, DB에는 SHA-256 해시만 저장.
+        쿠키 속성 `httpOnly; Secure; SameSite=Lax; Path=/api/auth`(갱신·로그아웃 요청에만 전송). 갱신마다 회전하고 재사용을 감지한다.
+        근거: PRD §5.2 A25, SEC-02, G-09, ERD 3.6, API-06 #3.
+
+  parameters:
+    TodoId:
+      name: todoId
+      in: path
+      required: true
+      description: 할일 ID(uuid)
+      schema:
+        type: string
+        format: uuid
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      description: 카테고리 ID(uuid)
+      schema:
+        type: string
+        format: uuid
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      description: 팀 ID(uuid)
+      schema:
+        type: string
+        format: uuid
+    MemberUserId:
+      name: userId
+      in: path
+      required: true
+      description: 대상 구성원의 사용자 ID(uuid)
+      schema:
+        type: string
+        format: uuid
+
+  headers:
+    SetAuthCookies:
+      description: |
+        인증 쿠키 2개를 각각 `Set-Cookie` 헤더로 발급한다(API-06 #3).
+        - `access_token=<JWT>; HttpOnly; Secure; SameSite=Lax; Path=/` — 만료 15분
+        - `refresh_token=<불투명 문자열>; HttpOnly; Secure; SameSite=Lax; Path=/api/auth` — 만료는 처음 발급부터 7일
+        쿠키 자체의 만료 속성(`Max-Age`/`Expires`) 표기 방식은 문서에 없다.
+      schema:
+        type: string
+      example: 'access_token=eyJhbGciOiJIUzM4NCJ9...; HttpOnly; Secure; SameSite=Lax; Path=/'
+    ClearAuthCookies:
+      description: '`access_token`, `refresh_token` 쿠키를 삭제하는 `Set-Cookie` 헤더 2개(만료된 값).'
+      schema:
+        type: string
+      example: 'refresh_token=; HttpOnly; Secure; SameSite=Lax; Path=/api/auth; Max-Age=0'
+
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      example: 3f0c2a8e-6a51-4c47-9f61-2f1b1d7e9a10
+
+    DateTimeOffset:
+      type: string
+      description: 'ISO 8601 일시 + 오프셋, 분 단위(PRD §5.3 A20, N-14). 응답은 요청자 `User.timezone`의 오프셋으로 보낸다(FE-10, API-10 #4).'
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:00)?(Z|[+-]\d{2}:\d{2})$'
+      example: '2026-11-04T09:00+09:00'
+
+    DateTimeOrDateInput:
+      type: string
+      description: |
+        할일 일시 입력. 둘 중 하나.
+        - 날짜+시각+오프셋: `2026-11-10T09:00+09:00`. 오프셋 필수(SEC-11, API-09), 초는 생략 또는 `:00`만(S-06)
+        - 날짜만: `2026-11-10`. 요청자 `User.timezone` 기준으로 시작은 00:00, 종료는 23:59를 서버가 채운다(R5, S-06)
+      pattern: '^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:00)?(Z|[+-]\d{2}:\d{2}))?$'
+      example: '2026-11-10T09:00+09:00'
+
+    Email:
+      type: string
+      format: email
+      maxLength: 254
+      description: '이메일. 앞뒤 공백 제거 후 소문자로 저장·비교(R16, SEC-09).'
+      example: a@example.com
+
+    Password:
+      type: string
+      format: password
+      minLength: 8
+      maxLength: 72
+      description: '8자 이상, UTF-8 72바이트 이하. 앞뒤 공백을 제거하지 않고 그대로 검사·해시한다(도메인 §3.4, C-23, SEC-01, SEC-09). `maxLength`는 글자 수 상한이며 실제 상한은 바이트 수다(한글 25자 = 75바이트는 400).'
+
+    PersonName:
+      type: string
+      minLength: 1
+      maxLength: 50
+      description: '표시 이름. 앞뒤 공백 제거 후 1–50자, 공백만 불가(도메인 §3.4, C-03).'
+      example: 홍길동
+
+    Timezone:
+      type: string
+      description: 'IANA 시간대 이름(`Intl.supportedValuesOf(''timeZone'')`에 있는 값만, A9, E-07, API-12). 기본값 `Asia/Seoul`.'
+      example: Asia/Seoul
+
+    UserRef:
+      type: object
+      description: '사용자 참조 `{ id, name }`(API-10 #4의 `owner` 형태).'
+      required: [id, name]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+
+    Me:
+      type: object
+      description: '로그인한 사용자 자신의 정보(API-06 #6, S-12). 비밀번호·해시는 담지 않는다(P-06).'
+      required: [id, email, name, timezone]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        email:
+          $ref: '#/components/schemas/Email'
+        name:
+          $ref: '#/components/schemas/PersonName'
+        timezone:
+          $ref: '#/components/schemas/Timezone'
+      example:
+        id: 7e9a1c3b-5d2f-4e6a-8b0c-1d2e3f4a5b6c
+        email: a@example.com
+        name: 홍길동
+        timezone: Asia/Seoul
+
+    SignupRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password, name]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          $ref: '#/components/schemas/Password'
+        name:
+          $ref: '#/components/schemas/PersonName'
+
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          description: '로그인 이메일. 앞뒤 공백 제거 후 소문자로 바꿔 비교한다(R16, C-02).'
+        password:
+          type: string
+          format: password
+          description: '비밀번호. 공백을 제거하지 않는다(C-23).'
+
+    UpdateMeRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: '보낸 필드만 바꾼다(API-12). `email`은 받지 않는다(R17, S-09). `newPassword`가 있으면 `currentPassword`가 필수다(S-11).'
+      properties:
+        name:
+          $ref: '#/components/schemas/PersonName'
+        timezone:
+          $ref: '#/components/schemas/Timezone'
+        currentPassword:
+          type: string
+          format: password
+          description: 현재 비밀번호(비밀번호 변경 시 필수)
+        newPassword:
+          $ref: '#/components/schemas/Password'
+      dependentRequired:
+        newPassword: [currentPassword]
+
+    CategoryName:
+      type: string
+      minLength: 1
+      maxLength: 50
+      description: '카테고리 이름. 앞뒤 공백 제거 후 1–50자, 공백만 불가. 같은 사용자 안에서 대소문자 무시로 유일(R10, R11).'
+      example: Work
+
+    Category:
+      type: object
+      required: [id, name, isDefault]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          $ref: '#/components/schemas/CategoryName'
+        isDefault:
+          type: boolean
+          description: '기본 카테고리 여부. 사용자당 정확히 1개만 true(R6, R8).'
+      example:
+        id: 3f0c2a8e-6a51-4c47-9f61-2f1b1d7e9a10
+        name: Work
+        isDefault: false
+
+    CategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          description: '기본 카테고리 먼저, 그다음 이름 오름차순(S-17).'
+          items:
+            $ref: '#/components/schemas/Category'
+      example:
+        items:
+          - id: 9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a
+            name: 기본
+            isDefault: true
+          - id: 3f0c2a8e-6a51-4c47-9f61-2f1b1d7e9a10
+            name: Work
+            isDefault: false
+
+    CategoryCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          $ref: '#/components/schemas/CategoryName'
+
+    CategoryUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          $ref: '#/components/schemas/CategoryName'
+
+    TodoStatus:
+      type: string
+      description: |
+        할일 상태(계산값, 저장하지 않음). 위에서부터 처음 맞는 조건으로 정한다(도메인 §5.2, N-09).
+        - `COMPLETED` 완료(S1): `completed = true`
+        - `OVERDUE` 기한 초과(S2): 미완료이고 `now > endAt`
+        - `NOT_STARTED` 시작 전(S3): 미완료이고 `now < startAt`
+        - `IN_PROGRESS` 진행 중(S4): 미완료이고 `startAt ≤ now ≤ endAt`
+        `now`는 서버 현재 시각을 분 단위로 자른 값이다(R5).
+      enum: [NOT_STARTED, IN_PROGRESS, COMPLETED, OVERDUE]
+
+    TodoTitle:
+      type: string
+      minLength: 1
+      maxLength: 200
+      description: '제목. 앞뒤 공백 제거 후 1–200자, 공백만 불가(도메인 §3.6, FR-07 #5).'
+
+    TodoDescription:
+      type: [string, 'null']
+      maxLength: 2000
+      description: '설명. 선택, 최대 2,000자. 없으면 `null`(S-08).'
+
+    SharedTeamIds:
+      type: array
+      uniqueItems: true
+      description: '공유 팀 ID 목록. 할일 소유자가 속한 팀만 지정할 수 있다(R21). 빈 배열이면 소유자 본인만 볼 수 있다.'
+      items:
+        $ref: '#/components/schemas/Uuid'
+
+    TeamRef:
+      type: object
+      description: '팀 참조 `{ id, name }`(API-10 #4의 `sharedTeams` 원소).'
+      required: [id, name]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+
+    CategoryRef:
+      type: object
+      description: '카테고리 참조 `{ id, name }`.'
+      required: [id, name]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+
+    Todo:
+      type: object
+      description: |
+        할일(요청자 기준 응답, API-10 #4). 응답 생성 함수 한 곳에서 만든다(SEC-06).
+        - `category`는 요청자가 소유자일 때만 있다(R2, SEC-06).
+        - `sharedTeams`는 요청자가 속한 팀만 담는다(R21).
+        - `canEdit`: 수정·완료·삭제 가능(소유자 또는 공유 팀의 관리자·소유자). `isOwner`: 요청자가 소유자(N-15).
+      required:
+        - id
+        - title
+        - description
+        - startAt
+        - endAt
+        - completed
+        - completedAt
+        - status
+        - owner
+        - sharedTeams
+        - canEdit
+        - isOwner
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          $ref: '#/components/schemas/TodoTitle'
+        description:
+          $ref: '#/components/schemas/TodoDescription'
+        startAt:
+          $ref: '#/components/schemas/DateTimeOffset'
+        endAt:
+          $ref: '#/components/schemas/DateTimeOffset'
+        completed:
+          type: boolean
+        completedAt:
+          description: '완료 처리 일시. `completed`가 true일 때만 값이 있다(도메인 §3.6, E-05).'
+          oneOf:
+            - $ref: '#/components/schemas/DateTimeOffset'
+            - type: 'null'
+        status:
+          $ref: '#/components/schemas/TodoStatus'
+        owner:
+          allOf:
+            - $ref: '#/components/schemas/UserRef'
+          description: '할일 소유자. 화면은 내 할일이면 ''나''로 표시한다(U-06).'
+        category:
+          allOf:
+            - $ref: '#/components/schemas/CategoryRef'
+          description: '소속 카테고리. 요청자가 소유자일 때만 있다.'
+        sharedTeams:
+          type: array
+          description: '공유 팀 중 요청자가 속한 팀만.'
+          items:
+            $ref: '#/components/schemas/TeamRef'
+        canEdit:
+          type: boolean
+        isOwner:
+          type: boolean
+
+    TodoCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [title]
+      description: '할일 등록 요청(API-09 #1). `completed`·`status`는 받지 않는다(U-07, P-04, S-09).'
+      properties:
+        teamId:
+          description: '등록할 때 고른 팀(어느 팀 할일인지). 생략하거나 `null`이면 개인 할일(R19, R21, C-16). 요청자가 속한 팀이어야 한다(아니면 400 `INVALID_SHARE_TEAM`).'
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        ownerId:
+          allOf:
+            - $ref: '#/components/schemas/Uuid'
+          description: '할일 소유자. 생략하면 요청자 본인(S-07). 본인이 아니면 요청자가 `teamId` 팀의 관리자(소유자 포함)여야 하고 대상은 그 팀 구성원이어야 한다(R19).'
+        title:
+          $ref: '#/components/schemas/TodoTitle'
+        description:
+          $ref: '#/components/schemas/TodoDescription'
+        startAt:
+          allOf:
+            - $ref: '#/components/schemas/DateTimeOrDateInput'
+          description: '시작 일시. 생략하면 R4 규칙으로 채운다.'
+        endAt:
+          allOf:
+            - $ref: '#/components/schemas/DateTimeOrDateInput'
+          description: '종료 일시. 생략하면 R4 규칙으로 채운다. 시작보다 빠르면 400 `INVALID_PERIOD`.'
+        categoryId:
+          allOf:
+            - $ref: '#/components/schemas/Uuid'
+          description: '본인 카테고리. 생략하면 기본 카테고리(R7). 소유자가 본인이 아니면 보낼 수 없다(403).'
+        sharedTeamIds:
+          allOf:
+            - $ref: '#/components/schemas/SharedTeamIds'
+          description: '공유 팀. 생략하면 `teamId`가 있을 때 `[teamId]`, 없을 때 `[]`(R21, S-07). 대리 등록(`ownerId`가 본인이 아님)이면 보낼 수 없고(400 `VALIDATION_ERROR`) 서버가 `[teamId]`로 고정한다.'
+
+    TodoUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: '부분 수정(API-11 #1, S-08). 보낸 필드만 바꾼다. `completedAt`·`status`·`ownerId`는 받지 않는다(N-12, P-04, ERD 3.1 소유자 불변, S-09).'
+      properties:
+        title:
+          $ref: '#/components/schemas/TodoTitle'
+        description:
+          $ref: '#/components/schemas/TodoDescription'
+        startAt:
+          $ref: '#/components/schemas/DateTimeOrDateInput'
+        endAt:
+          $ref: '#/components/schemas/DateTimeOrDateInput'
+        completed:
+          type: boolean
+          description: '완료 여부. true면 `completedAt` = 서버 현재 시각, false면 `null`(R14, N-12).'
+        categoryId:
+          allOf:
+            - $ref: '#/components/schemas/Uuid'
+          description: '소유자만 보낼 수 있다(R7, C-15). 비소유자가 보내면 403.'
+        sharedTeamIds:
+          allOf:
+            - $ref: '#/components/schemas/SharedTeamIds'
+          description: '공유 팀 전체를 이 목록으로 바꾼다(S-08). 소유자만 보낼 수 있다(R21, FR-11 #4). 비소유자가 보내면 403.'
+
+    TodoPage:
+      type: object
+      description: '목록 모드 응답 `{ items, total }`(UI-02 #3, API-10).'
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          description: '시작 일시 오름차순, 같은 시작 일시는 `id` 오름차순(S-05).'
+          items:
+            $ref: '#/components/schemas/Todo'
+        total:
+          type: integer
+          minimum: 0
+          description: '필터 적용 후 전체 건수(U-12).'
+
+    TodoCalendar:
+      type: object
+      description: '캘린더 모드 응답 `{ items, truncated }`(UI-02 #3, API-10).'
+      required: [items, truncated]
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          description: '조회 범위와 겹치는 할일, 시작 일시 오름차순, 최대 500건.'
+          items:
+            $ref: '#/components/schemas/Todo'
+        truncated:
+          type: boolean
+          description: '결과가 500건 상한에 걸렸으면 true(U-13, OPS-16).'
+
+    TodoHistoryAction:
+      type: string
+      description: |
+        변경 종류(도메인 §3.8, N-09). 요청 1건에 이력 1건.
+        `CREATED` 등록 / `UPDATED` 수정(완료 여부 변화 없음) / `COMPLETED` 완료로 바뀜 / `UNCOMPLETED` 완료 해제로 바뀜.
+      enum: [CREATED, UPDATED, COMPLETED, UNCOMPLETED]
+
+    TodoHistoryChanges:
+      type: object
+      additionalProperties: false
+      description: |
+        바뀐 필드별 `{ old, new }`(ERD 3.5, E-03). 바뀐 필드만 담는다. `CREATED`는 모든 필드가 `old: null`, `new: 처음 값`.
+        `completedAt`은 담지 않는다. `category`는 기록 당시의 `{ id, name }`(E-13).
+        비소유자 응답에서는 `category`가 없고, `sharedTeamIds`는 보는 사람이 속한 팀만 남는다.
+      properties:
+        title:
+          type: object
+          required: [old, new]
+          properties:
+            old:
+              type: [string, 'null']
+            new:
+              type: string
+        description:
+          type: object
+          required: [old, new]
+          properties:
+            old:
+              type: [string, 'null']
+            new:
+              type: [string, 'null']
+        startAt:
+          type: object
+          required: [old, new]
+          properties:
+            old:
+              oneOf:
+                - $ref: '#/components/schemas/DateTimeOffset'
+                - type: 'null'
+            new:
+              $ref: '#/components/schemas/DateTimeOffset'
+        endAt:
+          type: object
+          required: [old, new]
+          properties:
+            old:
+              oneOf:
+                - $ref: '#/components/schemas/DateTimeOffset'
+                - type: 'null'
+            new:
+              $ref: '#/components/schemas/DateTimeOffset'
+        completed:
+          type: object
+          required: [old, new]
+          properties:
+            old:
+              type: [boolean, 'null']
+            new:
+              type: boolean
+        category:
+          type: object
+          required: [old, new]
+          properties:
+            old:
+              oneOf:
+                - $ref: '#/components/schemas/CategoryRef'
+                - type: 'null'
+            new:
+              $ref: '#/components/schemas/CategoryRef'
+        sharedTeamIds:
+          type: object
+          required: [old, new]
+          properties:
+            old:
+              oneOf:
+                - $ref: '#/components/schemas/SharedTeamIds'
+                - type: 'null'
+            new:
+              $ref: '#/components/schemas/SharedTeamIds'
+
+    TodoHistory:
+      type: object
+      required: [id, action, actor, changedAt, changes]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        action:
+          $ref: '#/components/schemas/TodoHistoryAction'
+        actor:
+          allOf:
+            - $ref: '#/components/schemas/UserRef'
+          description: '변경한 사용자(요청자). 소유자와 다를 수 있다(R20, S-10).'
+        changedAt:
+          $ref: '#/components/schemas/DateTimeOffset'
+        changes:
+          $ref: '#/components/schemas/TodoHistoryChanges'
+
+    TodoHistoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          description: '변경 일시 최신순, 전체 반환(S-10, U-16).'
+          items:
+            $ref: '#/components/schemas/TodoHistory'
+
+    TeamRole:
+      type: string
+      description: '팀 역할(도메인 §3.3, N-09). `OWNER` 소유자(팀당 1명) / `MANAGER` 관리자 / `MEMBER` 일반 팀원.'
+      enum: [OWNER, MANAGER, MEMBER]
+
+    AssignableTeamRole:
+      type: string
+      description: '구성원 추가·역할 변경에서 지정할 수 있는 역할. `OWNER` 지정은 400(API-08 #4), 승격은 팀 나가기에서만 일어난다.'
+      enum: [MANAGER, MEMBER]
+
+    TeamName:
+      type: string
+      minLength: 1
+      maxLength: 50
+      description: '팀 이름. 앞뒤 공백 제거 후 1–50자, 공백만 불가. 시스템 전체에서 대소문자 무시로 유일(도메인 §3.2, R18, C-09).'
+      example: 마케팅팀
+
+    Team:
+      type: object
+      required: [id, name, role]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          $ref: '#/components/schemas/TeamName'
+        role:
+          allOf:
+            - $ref: '#/components/schemas/TeamRole'
+          description: '이 팀에서 요청자의 역할(S-13).'
+      example:
+        id: 8b6d3c1e-2f4a-4e9b-a1c7-5d0e9f3b2a64
+        name: 마케팅팀
+        role: OWNER
+
+    TeamList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          description: '이름 오름차순(S-13).'
+          items:
+            $ref: '#/components/schemas/Team'
+
+    TeamCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          $ref: '#/components/schemas/TeamName'
+
+    TeamMember:
+      type: object
+      description: '팀 구성원(이름, 이메일, 역할: API-08 #2, `userId`: S-13).'
+      required: [userId, name, email, role]
+      properties:
+        userId:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          $ref: '#/components/schemas/PersonName'
+        email:
+          $ref: '#/components/schemas/Email'
+        role:
+          $ref: '#/components/schemas/TeamRole'
+      example:
+        userId: 2d4f6a8c-1b3e-4c5d-9e7f-0a1b2c3d4e5f
+        name: 이관리
+        email: b@example.com
+        role: MANAGER
+
+    TeamMemberList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          description: '소유자 → 관리자 → 일반 팀원, 같은 역할 안에서 이름 오름차순(S-13).'
+          items:
+            $ref: '#/components/schemas/TeamMember'
+
+    TeamMemberCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        role:
+          allOf:
+            - $ref: '#/components/schemas/AssignableTeamRole'
+          default: MEMBER
+          description: '생략하면 `MEMBER`(R18, C-10, API-08 #3).'
+
+    TeamMemberUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [role]
+      properties:
+        role:
+          $ref: '#/components/schemas/AssignableTeamRole'
+
+    TeamLeaveRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        nextOwnerId:
+          allOf:
+            - $ref: '#/components/schemas/Uuid'
+          description: '다음 소유자(나를 뺀 그 팀 구성원, API-14 #1). 생략하면 409 `OWNER_MUST_TRANSFER`(다른 구성원이 없으면 `NO_NEXT_OWNER`).'
+
+    ErrorCode:
+      type: string
+      description: '에러 코드(시나리오 §6.2, N-16). 상태 코드별 의미는 info.description의 에러 응답 표를 본다.'
+      enum:
+        - VALIDATION_ERROR
+        - INVALID_PERIOD
+        - INVALID_SHARE_TEAM
+        - INVALID_OWNER
+        - WRONG_PASSWORD
+        - UNAUTHENTICATED
+        - INVALID_CREDENTIALS
+        - FORBIDDEN
+        - DEFAULT_CATEGORY_PROTECTED
+        - NOT_FOUND
+        - USER_NOT_FOUND
+        - EMAIL_TAKEN
+        - CATEGORY_NAME_TAKEN
+        - TEAM_NAME_TAKEN
+        - ALREADY_MEMBER
+        - OWNER_MUST_TRANSFER
+        - NO_NEXT_OWNER
+        - PAYLOAD_TOO_LARGE
+        - INTERNAL_ERROR
+
+    ErrorResponse:
+      type: object
+      description: '에러 응답 형식(OPS-07, 시나리오 §6.2 C-05, API-02). 스택 트레이스 등 내부 정보는 담지 않는다(P-06, OPS-06).'
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: 한국어 메시지. 프론트엔드는 그대로 표시한다.
+            fields:
+              type: object
+              description: '입력 오류일 때 필드별 메시지(선택). 키는 요청 필드 이름(camelCase).'
+              additionalProperties:
+                type: string
+
+  examples:
+    TodoOwnValue:
+      summary: 내 할일(소유자 본인 응답)
+      value:
+        id: 0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+        title: 분기 기획안 v2
+        description: null
+        startAt: '2026-11-10T09:00+09:00'
+        endAt: '2026-11-12T18:00+09:00'
+        completed: false
+        completedAt: null
+        status: NOT_STARTED
+        owner:
+          id: 7e9a1c3b-5d2f-4e6a-8b0c-1d2e3f4a5b6c
+          name: 홍길동
+        category:
+          id: 3f0c2a8e-6a51-4c47-9f61-2f1b1d7e9a10
+          name: Work
+        sharedTeams:
+          - id: 8b6d3c1e-2f4a-4e9b-a1c7-5d0e9f3b2a64
+            name: 마케팅팀
+        canEdit: true
+        isOwner: true
+    TodoOthersValue:
+      summary: 다른 사람 할일(일반 팀원 응답, category 없음)
+      value:
+        id: 1b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e
+        title: 캠페인 일정
+        description: null
+        startAt: '2026-11-06T14:00+09:00'
+        endAt: '2026-11-06T14:00+09:00'
+        completed: false
+        completedAt: null
+        status: NOT_STARTED
+        owner:
+          id: 7e9a1c3b-5d2f-4e6a-8b0c-1d2e3f4a5b6c
+          name: 홍길동
+        sharedTeams:
+          - id: 8b6d3c1e-2f4a-4e9b-a1c7-5d0e9f3b2a64
+            name: 마케팅팀
+        canEdit: false
+        isOwner: false
+
+    ErrValidation:
+      summary: VALIDATION_ERROR
+      value:
+        error:
+          code: VALIDATION_ERROR
+          message: 입력값을 확인해 주세요.
+          fields:
+            title: 제목은 1–200자로 입력해 주세요.
+    ErrInvalidPeriod:
+      summary: INVALID_PERIOD
+      value:
+        error:
+          code: INVALID_PERIOD
+          message: 종료 일시는 시작 일시보다 빠를 수 없습니다.
+    ErrInvalidShareTeam:
+      summary: INVALID_SHARE_TEAM
+      value:
+        error:
+          code: INVALID_SHARE_TEAM
+          message: 속한 팀에만 공유할 수 있습니다.
+    ErrInvalidOwner:
+      summary: INVALID_OWNER
+      value:
+        error:
+          code: INVALID_OWNER
+          message: 선택한 팀의 구성원만 소유자로 지정할 수 있습니다.
+    ErrWrongPassword:
+      summary: WRONG_PASSWORD
+      value:
+        error:
+          code: WRONG_PASSWORD
+          message: 현재 비밀번호가 올바르지 않습니다.
+    ErrUnauthenticated:
+      summary: UNAUTHENTICATED
+      value:
+        error:
+          code: UNAUTHENTICATED
+          message: 로그인이 필요합니다.
+    ErrInvalidCredentials:
+      summary: INVALID_CREDENTIALS
+      value:
+        error:
+          code: INVALID_CREDENTIALS
+          message: 이메일 또는 비밀번호가 올바르지 않습니다.
+    ErrForbidden:
+      summary: FORBIDDEN
+      value:
+        error:
+          code: FORBIDDEN
+          message: 권한이 없습니다.
+    ErrDefaultCategoryProtected:
+      summary: DEFAULT_CATEGORY_PROTECTED
+      value:
+        error:
+          code: DEFAULT_CATEGORY_PROTECTED
+          message: 기본 카테고리는 삭제하거나 이름을 바꿀 수 없습니다.
+    ErrNotFound:
+      summary: NOT_FOUND
+      value:
+        error:
+          code: NOT_FOUND
+          message: 찾을 수 없습니다.
+    ErrUserNotFound:
+      summary: USER_NOT_FOUND
+      value:
+        error:
+          code: USER_NOT_FOUND
+          message: 가입되지 않은 이메일입니다.
+    ErrEmailTaken:
+      summary: EMAIL_TAKEN
+      value:
+        error:
+          code: EMAIL_TAKEN
+          message: 이미 가입된 이메일입니다.
+    ErrCategoryNameTaken:
+      summary: CATEGORY_NAME_TAKEN
+      value:
+        error:
+          code: CATEGORY_NAME_TAKEN
+          message: 같은 이름의 카테고리가 있습니다.
+    ErrTeamNameTaken:
+      summary: TEAM_NAME_TAKEN
+      value:
+        error:
+          code: TEAM_NAME_TAKEN
+          message: 같은 이름의 팀이 있습니다.
+    ErrAlreadyMember:
+      summary: ALREADY_MEMBER
+      value:
+        error:
+          code: ALREADY_MEMBER
+          message: 이미 팀 구성원입니다.
+    ErrOwnerMustTransfer:
+      summary: OWNER_MUST_TRANSFER
+      value:
+        error:
+          code: OWNER_MUST_TRANSFER
+          message: 다음 소유자를 지정한 뒤 나갈 수 있습니다.
+    ErrNoNextOwner:
+      summary: NO_NEXT_OWNER
+      value:
+        error:
+          code: NO_NEXT_OWNER
+          message: 다음 소유자로 지정할 구성원이 없습니다.
+    ErrPayloadTooLarge:
+      summary: PAYLOAD_TOO_LARGE
+      value:
+        error:
+          code: PAYLOAD_TOO_LARGE
+          message: 요청이 너무 큽니다.
+    ErrInternal:
+      summary: INTERNAL_ERROR
+      value:
+        error:
+          code: INTERNAL_ERROR
+          message: 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
+
+  responses:
+    BadRequest:
+      description: 잘못된 요청(400). 해당 operation에서 가능한 코드는 operation 설명을 본다.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            VALIDATION_ERROR:
+              $ref: '#/components/examples/ErrValidation'
+            INVALID_PERIOD:
+              $ref: '#/components/examples/ErrInvalidPeriod'
+            INVALID_SHARE_TEAM:
+              $ref: '#/components/examples/ErrInvalidShareTeam'
+            INVALID_OWNER:
+              $ref: '#/components/examples/ErrInvalidOwner'
+            WRONG_PASSWORD:
+              $ref: '#/components/examples/ErrWrongPassword'
+    Unauthenticated:
+      description: '인증 실패(401). 보호 API의 `UNAUTHENTICATED`는 토큰 갱신 후 재시도 신호다(OPS-10).'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            UNAUTHENTICATED:
+              $ref: '#/components/examples/ErrUnauthenticated'
+            INVALID_CREDENTIALS:
+              $ref: '#/components/examples/ErrInvalidCredentials'
+    Forbidden:
+      description: 볼 수 있으나 변경 권한 없음(403).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            FORBIDDEN:
+              $ref: '#/components/examples/ErrForbidden'
+            DEFAULT_CATEGORY_PROTECTED:
+              $ref: '#/components/examples/ErrDefaultCategoryProtected'
+    NotFound:
+      description: 없거나 볼 수 없는 리소스(404, 존재 비노출).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            NOT_FOUND:
+              $ref: '#/components/examples/ErrNotFound'
+            USER_NOT_FOUND:
+              $ref: '#/components/examples/ErrUserNotFound'
+    Conflict:
+      description: 상태 충돌(409).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            EMAIL_TAKEN:
+              $ref: '#/components/examples/ErrEmailTaken'
+            CATEGORY_NAME_TAKEN:
+              $ref: '#/components/examples/ErrCategoryNameTaken'
+            TEAM_NAME_TAKEN:
+              $ref: '#/components/examples/ErrTeamNameTaken'
+            ALREADY_MEMBER:
+              $ref: '#/components/examples/ErrAlreadyMember'
+            OWNER_MUST_TRANSFER:
+              $ref: '#/components/examples/ErrOwnerMustTransfer'
+            NO_NEXT_OWNER:
+              $ref: '#/components/examples/ErrNoNextOwner'
+    PayloadTooLarge:
+      description: '요청 본문 100KB 초과(413, A19, SEC-10).'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            PAYLOAD_TOO_LARGE:
+              $ref: '#/components/examples/ErrPayloadTooLarge'
+    InternalError:
+      description: '서버 오류(500). 내부 정보는 응답에 넣지 않는다(OPS-06).'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            INTERNAL_ERROR:
+              $ref: '#/components/examples/ErrInternal'
