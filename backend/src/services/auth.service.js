@@ -58,3 +58,20 @@ export async function logout(rawToken) {
   if (typeof rawToken !== 'string' || !rawToken) return;
   await withTransaction((client) => authRepo.revokeByHash(client, sha256(rawToken)));
 }
+
+export async function updateMe(userId, { name, timezone, currentPassword, newPassword }) {
+  let passwordHash;
+  if (newPassword !== undefined) {
+    const hash = await usersService.findPasswordHash(userId);
+    if (!hash) throw AppError.of('UNAUTHENTICATED');
+    if (!(await bcrypt.compare(currentPassword, hash))) throw AppError.of('WRONG_PASSWORD');
+    passwordHash = await bcrypt.hash(newPassword, 10); // 트랜잭션 밖에서 계산해 연결 점유 방지
+  }
+  return withTransaction(async (client) => {
+    const me = await usersService.updateUser(client, userId, { name, timezone, passwordHash });
+    if (!me) throw AppError.of('UNAUTHENTICATED');
+    if (!passwordHash) return { me, tokens: null };
+    await authRepo.deleteAllByUser(client, userId);
+    return { me, tokens: await issueTokens(client, userId) };
+  });
+}

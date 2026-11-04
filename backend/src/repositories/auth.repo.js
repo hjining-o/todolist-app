@@ -33,3 +33,8 @@ export async function revokeByHash(client, tokenHash) {
     tokenHash,
   ]);
 }
+
+// revoked_at으로 남기면 다른 기기의 갱신이 재사용 감지에 걸려 새 토큰까지 폐기되므로 지운다(EX-44)
+export async function deleteAllByUser(client, userId) {
+  await client.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
+}

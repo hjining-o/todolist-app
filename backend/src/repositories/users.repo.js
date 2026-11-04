@@ -19,3 +19,20 @@ export async function findById(client, id) {
   const { rows } = await client.query('SELECT id, email, name, timezone FROM users WHERE id = $1', [id]);
   return rows[0] ?? null;
 }
+
+export async function findPasswordHash(client, id) {
+  const { rows } = await client.query('SELECT password_hash FROM users WHERE id = $1', [id]);
+  return rows[0]?.password_hash ?? null;
+}
+
+// undefined는 null로 넘겨 COALESCE가 기존 값을 유지한다
+export async function updateUser(client, id, { name, timezone, passwordHash }) {
+  const { rows } = await client.query(
+    `UPDATE users
+        SET name = COALESCE($2, name), timezone = COALESCE($3, timezone), password_hash = COALESCE($4, password_hash)
+      WHERE id = $1
+      RETURNING id, email, name, timezone`,
+    [id, name ?? null, timezone ?? null, passwordHash ?? null],
+  );
+  return rows[0] ?? null;
+}

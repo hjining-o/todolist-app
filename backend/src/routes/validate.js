@@ -21,6 +21,8 @@ export function validate(body, rules) {
   return out;
 }
 
+export const optional = (rule) => (v) => (v === undefined ? ok(undefined) : rule(v));
+
 export const nameRule = (v) => {
   const name = typeof v === 'string' ? v.trim() : '';
   return name.length >= 1 && name.length <= 50 ? ok(name) : bad('이름은 1~50자여야 합니다.');
@@ -42,3 +44,13 @@ export function uuidParam(value, field) {
 // typeof 검사로 ['<uuid>'] 같은 배열이 문자열로 변환돼 통과하는 것을 막는다. 비교·중복 판정을 위해 소문자화
 export const uuidRule = (v) =>
   typeof v === 'string' && UUID_RE.test(v) ? ok(v.toLowerCase()) : bad('형식이 올바르지 않습니다.');
+
+export const passwordRule = (v) =>
+  typeof v === 'string' && v.length >= 8 && Buffer.byteLength(v, 'utf8') <= 72
+    ? ok(v)
+    : bad('비밀번호는 8자 이상, 72바이트 이하여야 합니다.');
+
+const TIMEZONES = new Set(Intl.supportedValuesOf('timeZone'));
+
+export const timezoneRule = (v) =>
+  typeof v === 'string' && TIMEZONES.has(v) ? ok(v) : bad('지원하지 않는 시간대입니다.');

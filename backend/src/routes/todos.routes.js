@@ -1,11 +1,9 @@
 import { Router } from 'express';
 import { AppError } from '../domain/errors.js';
 import * as svc from '../services/todos.service.js';
-import { bad, ok, uuidParam, uuidRule, validate } from './validate.js';
+import { bad, ok, optional, uuidParam, uuidRule, validate } from './validate.js';
 
 export const todosRouter = Router();
-
-const optional = (rule) => (v) => (v === undefined ? ok(undefined) : rule(v));
 
 const titleRule = (v) => {
   const title = typeof v === 'string' ? v.trim() : '';

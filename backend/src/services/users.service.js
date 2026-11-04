@@ -20,3 +20,11 @@ export async function getMe(userId) {
   if (!user) throw AppError.of('UNAUTHENTICATED');
   return user;
 }
+
+export function findPasswordHash(userId) {
+  return usersRepo.findPasswordHash(pool, userId);
+}
+
+export function updateUser(client, userId, fields) {
+  return usersRepo.updateUser(client, userId, fields);
+}

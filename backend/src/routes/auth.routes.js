@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as authService from '../services/auth.service.js';
-import { bad, emailRule, nameRule, ok, validate } from './validate.js';
+import { bad, emailRule, nameRule, ok, passwordRule, validate } from './validate.js';
 
 export const authRouter = Router();
 
@@ -8,7 +8,7 @@ const COOKIE_BASE = { httpOnly: true, secure: true, sameSite: 'lax' };
 const ACCESS_PATH = '/';
 const REFRESH_PATH = '/api/auth';
 
-function setTokenCookies(res, tokens) {
+export function setTokenCookies(res, tokens) {
   res.cookie('access_token', tokens.accessToken, { ...COOKIE_BASE, path: ACCESS_PATH, maxAge: 15 * 60 * 1000 });
   res.cookie('refresh_token', tokens.refreshToken, {
     ...COOKIE_BASE,
@@ -24,10 +24,7 @@ function clearTokenCookies(res) {
 
 const signupRules = {
   email: emailRule(true),
-  password: (v) =>
-    typeof v === 'string' && v.length >= 8 && Buffer.byteLength(v, 'utf8') <= 72
-      ? ok(v)
-      : bad('비밀번호는 8자 이상, 72바이트 이하여야 합니다.'),
+  password: passwordRule,
   name: nameRule,
 };
 
