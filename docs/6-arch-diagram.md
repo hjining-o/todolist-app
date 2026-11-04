@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.3 |
+| 문서 버전 | v0.4 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.12, `docs/2-prd.md` v0.11, `docs/3-user-scenario.md` v0.10, `docs/4-wireframe.md` v0.8, `docs/5-project-principle.md` v0.8 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.12, `docs/3-user-scenario.md` v0.11, `docs/4-wireframe.md` v0.9, `docs/5-project-principle.md` v0.9 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`A`, `B`, `K`, `M`), 시나리오 `US-xx`·`EX-xx`·`C-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `SC`·`ST`·`DLG`·`U-xx`, 프로젝트 원칙 `P-xx`·`BE-xx`·`FE-xx`·`SEC-xx`·`OPS-xx`·`G-xx`.
@@ -26,7 +26,7 @@
 | 3.1 | 요청 처리 계층 흐름 (UI → 훅 → API 클라이언트 → routes → services → repositories → DB) | flowchart |
 | 3.2 | 프론트엔드 레이어 의존 구조 | flowchart |
 | 3.3 | 백엔드 레이어 의존 구조 | flowchart |
-| 4 | 도메인 엔티티 관계 | erDiagram |
+| 4 | 도메인 엔티티 관계 | → `docs/7-erd.md`로 분리 |
 | 5.1 | 공통 요청 처리: 인증·권한 판정·에러 변환 | sequenceDiagram |
 | 5.2 | 회원가입: 계정과 기본 카테고리 동시 생성 | sequenceDiagram |
 | 5.3 | 할일 등록: 팀·소유자·공유 팀·일시 채움 | sequenceDiagram |
@@ -198,78 +198,7 @@ flowchart TB
 
 ## 4. 도메인 엔티티 관계
 
-도메인 정의서 3장 기준이다. 속성 타입은 개념 타입이고, 식별자 `uuid`는 `docs/5-project-principle.md` G-07을 따른다. `Todo.status`는 저장하지 않는 계산값이라 그리지 않는다(도메인 §5.1, P-04).
-
-```mermaid
-erDiagram
-    User ||--o{ Category : "소유 (ownerId)"
-    User ||--o{ Todo : "소유 (ownerId)"
-    User ||--o{ TeamMember : "소속"
-    Team ||--o{ TeamMember : "구성원"
-    Category ||--o{ Todo : "분류 (categoryId)"
-    Todo ||--o{ TodoShare : "공유"
-    Team ||--o{ TodoShare : "공유 팀"
-    Todo ||--o{ TodoHistory : "변경 이력"
-    User ||--o{ TodoHistory : "변경자 (actorId)"
-
-    User {
-        uuid id PK
-        string email UK "소문자 정규화, 가입 후 변경 불가"
-        string password "bcrypt 해시"
-        string name "1-50자"
-        string timezone "기본값 Asia/Seoul"
-        timestamptz createdAt
-    }
-    Team {
-        uuid id PK
-        string name UK "1-50자, 시스템 전체 유일"
-        timestamptz createdAt
-    }
-    TeamMember {
-        uuid teamId PK, FK
-        uuid userId PK, FK
-        string role "OWNER, MANAGER, MEMBER. 팀당 OWNER 1명 (부분 유니크 인덱스)"
-        timestamptz joinedAt
-    }
-    Category {
-        uuid id PK
-        uuid ownerId FK
-        string name "1-50자, 사용자 안에서 유일"
-        boolean isDefault "사용자당 1개만 true"
-    }
-    Todo {
-        uuid id PK
-        uuid ownerId FK
-        uuid categoryId FK "소유자의 카테고리"
-        string title "1-200자"
-        string description "최대 2000자"
-        timestamptz startAt
-        timestamptz endAt "endAt 이상 startAt 조건 R3"
-        boolean completed "기본값 false"
-        timestamptz completedAt "완료 시 기록, 해제 시 비움"
-        timestamptz createdAt
-        timestamptz updatedAt
-    }
-    TodoShare {
-        uuid todoId PK, FK
-        uuid teamId PK, FK "소유자가 속한 팀"
-        timestamptz sharedAt
-    }
-    TodoHistory {
-        uuid id PK
-        uuid todoId FK
-        uuid actorId FK
-        string action "CREATED, UPDATED, COMPLETED, UNCOMPLETED"
-        string changes "필드별 이전 값과 새 값"
-        timestamptz changedAt
-    }
-```
-
-- `Todo.endAt` 주석은 종료 일시가 시작 일시 이상이어야 한다는 R3이다(ER 문법상 부등호를 쓰지 않았다).
-- 할일을 삭제하면 `TodoShare`와 `TodoHistory`가 FK `ON DELETE CASCADE`로 함께 삭제된다(R12, R20, 도메인 §3.9, OPS-23).
-- 구성원이 팀에서 제거되면 그 사람 할일의 그 팀 `TodoShare`가 삭제된다(R21). FK 연쇄가 아니라 service가 같은 트랜잭션에서 직접 `DELETE`한다.
-- 사용자·팀을 참조하는 FK(`TodoHistory.actorId`, `TodoShare.teamId`, `TeamMember.userId`·`teamId`, `Todo.ownerId`, `Category.ownerId` 등)는 `ON DELETE RESTRICT`다. 회원 탈퇴·팀 삭제는 범위 밖이다(도메인 §7).
-- 팀당 `OWNER` 1명은 부분 유니크 인덱스 `UNIQUE (team_id) WHERE role = 'OWNER'`로 보장한다. 그래서 소유권 이전은 기존 소유자 삭제(강등) → 새 소유자 승격 순서다(5.8).
+ERD는 `docs/7-erd.md`로 분리했다. 엔티티 관계, 컬럼 타입, FK `ON DELETE`, 유일 제약·인덱스는 그 문서를 본다.
 
 ## 5. 복잡한 비즈니스 로직 상세 흐름
 
@@ -666,6 +595,7 @@ sequenceDiagram
                 SV->>RP: 이 카테고리의 모든 할일을 기본 카테고리로 UPDATE
                 RP->>DB: UPDATE todos
                 Note over SV,DB: 다른 구성원의 관리자가 대신 만든 할일도 소유자의 기본 카테고리이므로 영향 없음
+                Note over SV,DB: 할일 이동은 사용자의 할일 수정 요청이 아니므로 todo_histories를 남기지 않음 (R20, ERD E-14)
                 SV->>RP: 카테고리 DELETE
                 RP->>DB: DELETE categories
                 alt 이동 또는 삭제 실패
@@ -874,3 +804,4 @@ T-01–T-08은 모두 이해관계자 확인(2026-11-04)으로 결정해 기준 
 | v0.1 | 2026-11-04 | hjining | 최초 작성 (도메인 정의서 v0.11, PRD v0.10, 사용자 시나리오 v0.8, 와이어프레임 v0.6, 프로젝트 구조 설계 원칙 v0.6 기반). 시스템 아키텍처, 계층·모듈 구조(3종), 엔티티 관계, 복잡한 비즈니스 로직 시퀀스 9종, 확인 필요 사항 T-01–T-08 |
 | v0.2 | 2026-11-04 | hjining | 확인 필요 T-01–T-08 결정 반영(6장을 '결정됨'으로 갱신, 기준 문서 버전 갱신). 시퀀스 수정: 5.3 일반 팀원의 소유자 지정 403·대리 등록 시간대, 5.4 이력 action 결정·CASCADE, 5.5 경로(`GET /api/todos?from=&to=`)·42일 초과 400, 5.7 경로 구체화·자기 제거 400·공유 직접 삭제·역할 변경 범위, 5.8 비소유자 403·INVALID_OWNER·기존 소유자 삭제 후 승격 순서. 4장 ER 주석에 FK RESTRICT/CASCADE·부분 유니크 인덱스 추가, 5.2 비밀번호 길이 표기 |
 | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(사용자 시나리오 v0.10, 와이어프레임 v0.8, 프로젝트 원칙 v0.8). 5.2 비밀번호는 공백 제거 없이 검사(시나리오 C-23) |
+| v0.4 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.13, PRD v0.12, 사용자 시나리오 v0.11, 와이어프레임 v0.9, 프로젝트 원칙 v0.9). 5.6에 카테고리 삭제 이동은 이력을 남기지 않는다는 Note 추가(ERD E-14). 4장의 erDiagram과 FK·인덱스 주석을 `docs/7-erd.md`로 분리하고 4장은 링크만 남김. 1.2 다이어그램 목록 4행 수정 |

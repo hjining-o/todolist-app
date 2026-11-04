@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.8 |
+| 문서 버전 | v0.9 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.12, `docs/2-prd.md` v0.11, `docs/3-user-scenario.md` v0.10, `docs/4-wireframe.md` v0.8 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.12, `docs/3-user-scenario.md` v0.11, `docs/4-wireframe.md` v0.9 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`SC`, `A`, `B`, `K`, `M`, `Q1`–`Q4`), 시나리오 `US-xx`·`EX-xx`·`C-xx`·`D-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `ST-xx`·`DLG-xx`·`U-xx`.
@@ -122,8 +122,8 @@
 | N-15 | 권한 플래그 | 할일 응답에 `canEdit`(수정·완료·삭제 가능), `isOwner`(소유자 본인 여부)를 넣는다. 다른 사용자 할일의 응답에는 카테고리 필드를 넣지 않는다. | — | 와이어프레임 §4.5.2, PRD §5.2 [가정 G-06] |
 | N-16 | 에러 코드 | UPPER_SNAKE_CASE. 시나리오 §6.2 표의 코드만 쓴다. 새 코드는 §6.2에 먼저 추가한다. | `INVALID_PERIOD`, `FORBIDDEN` | 시나리오 §6.2 |
 | N-17 | DB 테이블 | snake_case 복수형. | `users`, `categories`, `todos`, `todo_shares`, `teams`, `team_members`, `todo_histories` | [가정 G-07] |
-| N-18 | DB 컬럼 | snake_case. 기본키는 `id`, 참조는 `<엔티티>_id`, 시각은 `*_at`, 기본 카테고리는 `is_default`. `status` 컬럼은 만들지 않는다(P-04). | `owner_id`, `start_at`, `end_at`, `completed_at`, `is_default` | [가정 G-07] |
-| N-19 | DB 제약, 인덱스 | `uq_<테이블>_<컬럼>`, `idx_<테이블>_<컬럼>`. 대소문자 무시 유일은 `lower(...)` 표현식 인덱스로 만든다. | `uq_users_email_lower` | PRD §5.1 인덱스 수준, [가정 G-07] |
+| N-18 | DB 컬럼 | snake_case. 기본키는 `id`, 참조는 `<엔티티>_id`, 시각은 `*_at`, 기본 카테고리는 `is_default`. 비밀번호 해시는 `password_hash`다. `status` 컬럼은 만들지 않는다(P-04). | `owner_id`, `start_at`, `end_at`, `completed_at`, `is_default`, `password_hash` | [가정 G-07] |
+| N-19 | DB 제약, 인덱스 | `uq_<테이블>_<컬럼>`, `idx_<테이블>_<컬럼>`. 컬럼이 여럿이면 `_`로 잇는다. 대소문자 무시 유일은 `lower(...)` 표현식 인덱스로 만들고 `_lower`를 붙인다. 단, 이메일은 소문자로만 저장하므로(`CHECK (email = lower(email))`) 일반 유일 제약이다. PK·FK·CHECK는 이름을 붙이지 않는다(ERD E-09, E-10). | `uq_users_email`, `uq_teams_name_lower`, `idx_todos_category_id` | PRD §5.1 인덱스 수준, [가정 G-07] |
 | N-20 | 이름 변환 | snake_case와 camelCase 변환은 repositories에서만 한다. API와 프론트는 camelCase만 쓴다. | — | [가정 G-07] |
 
 ## 4. 테스트 및 품질 원칙
@@ -239,8 +239,8 @@
 | OPS-15 | 목록은 `limit`과 `offset`을 쓴다. 기본 50건, 최대 100건, 정렬은 `start_at` 오름차순이다. 응답에 필터 적용 후 `total`을 포함한다. | PRD §5.1 U-12 |
 | OPS-16 | 캘린더 조회(`GET /api/todos?from=&to=`, N-11)는 범위를 최대 42일, 결과를 최대 500건으로 제한한다. 42일을 넘는 범위는 400 `VALIDATION_ERROR`다. 결과가 상한에 걸리면 응답에 `truncated: true`를 넣는다. | PRD §5.1 U-13, 시나리오 EX-39 |
 | OPS-17 | 목록과 캘린더는 1회 쿼리에 공유 팀 같은 연관 데이터를 JOIN이나 집계로 함께 가져온다(N+1 금지). 상태는 SQL에서 계산해 필터와 정렬에 쓴다. | PRD §5.1 |
-| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))과 팀당 OWNER 1명 부분 유니크 인덱스(OPS-23)를 포함한다. | PRD §5.1, [가정 G-07] |
-| OPS-23 | 참조 무결성과 데이터 제약은 마이그레이션 SQL에 다음과 같이 둔다. ① 사용자·팀을 참조하는 FK(`todo_histories.actor_id`, `todo_shares.team_id`, `team_members.user_id`, `team_members.team_id`, `todos.owner_id`, `categories.owner_id` 등)는 `ON DELETE RESTRICT`다. ② `todo_shares.todo_id`, `todo_histories.todo_id`는 `ON DELETE CASCADE`라 할일 삭제 때 함께 지워진다. ③ 구성원 제거 때의 `todo_shares` 정리는 FK로 연쇄하지 않고 service가 같은 트랜잭션에서 직접 `DELETE`한다(BE-08). ④ 팀당 OWNER 1명은 부분 유니크 인덱스 `UNIQUE (team_id) WHERE role = 'OWNER'`로 보장한다. ⑤ 소유권 이전은 반드시 기존 소유자를 강등하거나 삭제한 뒤 새 소유자를 승격하는 순서로 처리한다(④ 때문에 반대 순서는 인덱스 위반이다). | 도메인 §3.9, R18, R21 |
+| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))과 팀당 OWNER 1명 부분 유니크 인덱스(OPS-23), 사용자당 기본 카테고리 1개 부분 유니크 인덱스, 카테고리 복합 FK용 `UNIQUE (id, owner_id)`, 카테고리 삭제용 `idx_todos_category_id`를 포함한다. 전체 목록은 `docs/7-erd.md` 3.2다. | PRD §5.1, `docs/7-erd.md` E-02·E-04·E-12, [가정 G-07] |
+| OPS-23 | 참조 무결성과 데이터 제약은 마이그레이션 SQL에 다음과 같이 둔다. ① 사용자·팀을 참조하는 FK(`todo_histories.actor_id`, `todo_shares.team_id`, `team_members.user_id`, `team_members.team_id`, `todos.owner_id`, `categories.owner_id` 등)는 `ON DELETE RESTRICT`다. ② `todo_shares.todo_id`, `todo_histories.todo_id`는 `ON DELETE CASCADE`라 할일 삭제 때 함께 지워진다. ③ 구성원 제거 때의 `todo_shares` 정리는 FK로 연쇄하지 않고 service가 같은 트랜잭션에서 직접 `DELETE`한다(BE-08). ④ 팀당 OWNER 1명은 부분 유니크 인덱스 `UNIQUE (team_id) WHERE role = 'OWNER'`로 보장한다. ⑤ 소유권 이전은 반드시 기존 소유자를 강등하거나 삭제한 뒤 새 소유자를 승격하는 순서로 처리한다(④ 때문에 반대 순서는 인덱스 위반이다). ⑥ `todos`의 카테고리 FK는 `(category_id, owner_id)` → `categories (id, owner_id)` 복합 FK이고 `ON DELETE RESTRICT`다. 카테고리 삭제는 할일을 기본 카테고리로 옮긴 뒤 지운다(R9). ⑦ 공유 팀이 소유자가 속한 팀이라는 조건(R21)은 트리거 없이 service가 검증한다. ⑧ CHECK 제약과 `updated_at` 갱신 방식은 `docs/7-erd.md` 3.3을 따른다. | 도메인 §3.9, R7, R9, R18, R21, `docs/7-erd.md` |
 
 ### 5.7 배포
 
@@ -458,3 +458,4 @@ backend/
 | v0.6 | 2026-11-04 | hjining | 7장 미결 전부 확정: G-04 테스트 DB는 Supabase 테스트 전용 프로젝트(`.env.test`, Docker 미사용). ① FE-06에 캘린더 화면 이동용 브라우저 시계 예외, FE-10(캘린더 일시는 오프셋을 뗀 벽시계 값 + `timeZone: 'UTC'`, 시간대 플러그인 없음) 추가, G-11 갱신. ② N-11에 `/api/me` 예외 명시. ③ OPS-04를 요청 로그 코드 없음(Vercel 기본 로그)으로 바꾸고 G-10 갱신 |
 | v0.7 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.12, PRD v0.11, 사용자 시나리오 v0.9, 와이어프레임 v0.7). 기술 아키텍처(`docs/6-arch-diagram.md`) 확인 필요 T-02·T-04·T-06·T-07·T-08 결정 반영: N-11에 API 경로 추가(캘린더 `GET /api/todos?from=&to=`, 구성원 목록 재사용, 카테고리, 구성원 제거·역할 변경)와 자기 제거 경로 규칙, N-12 이력 1건 규칙, SEC-01·SEC-09 비밀번호 '8자 이상, UTF-8 72바이트 이하', OPS-16 42일 초과 400, OPS-18 부분 유니크 인덱스, OPS-23 추가(FK RESTRICT/CASCADE, 소유권 이전 순서). 6.1 `docs/` 주석을 문서 1–6으로 정정 |
 | v0.8 | 2026-11-04 | hjining | 기준 문서 버전 갱신(사용자 시나리오 v0.10, 와이어프레임 v0.8). SEC-09에 비밀번호 공백 미제거 예외(시나리오 C-23). N-11에 `GET /api/teams`(팀 목록·내 역할), `POST /api/teams`(팀 생성) 추가, 팀 단건 조회·이름 변경·삭제 경로는 두지 않음 명시 |
+| v0.9 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.13, PRD v0.12, 사용자 시나리오 v0.11, 와이어프레임 v0.9). ERD(`docs/7-erd.md`) 확인 필요 E-01–E-12 결정 반영: N-18 `password_hash`, N-19 복합·표현식 인덱스 이름과 이메일 일반 유일 제약(PK·FK·CHECK 무명), OPS-18 인덱스 추가(기본 카테고리 부분 유니크, `UNIQUE (id, owner_id)`, `idx_todos_category_id`), OPS-23 ⑥–⑧(카테고리 복합 FK·RESTRICT, 공유 팀 service 검증, CHECK·`updated_at`은 ERD 3.3) |
