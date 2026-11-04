@@ -1,5 +1,5 @@
 -- TodoList 스키마 DDL (PostgreSQL 17)
--- 기준: docs/7-erd.md v0.3
+-- 기준: docs/7-erd.md v0.4
 -- 세션 시간대 Asia/Seoul은 연결별 SET 없이 ALTER DATABASE ... SET timezone으로 고정한다(PRD A28, OPS-14).
 -- PK·FK·CHECK는 PostgreSQL 기본 이름, uq_·idx_만 이름을 붙인다(E-09).
 
