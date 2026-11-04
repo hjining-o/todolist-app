@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.6 |
+| 문서 버전 | v0.8 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.11, `docs/2-prd.md` v0.10, `docs/3-user-scenario.md` v0.8, `docs/4-wireframe.md` v0.6 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.12, `docs/2-prd.md` v0.11, `docs/3-user-scenario.md` v0.10, `docs/4-wireframe.md` v0.8 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`SC`, `A`, `B`, `K`, `M`, `Q1`–`Q4`), 시나리오 `US-xx`·`EX-xx`·`C-xx`·`D-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `ST-xx`·`DLG-xx`·`U-xx`.
@@ -115,8 +115,8 @@
 | N-08 | 동의어 금지 | 할일은 `todo`(task, item 금지), 카테고리는 `category`(group, tag 금지), 팀은 `team`(group, workspace 금지), 이력은 `history`(audit 금지). `log`는 운영 로깅 전용이다. | — | 도메인 §2 |
 | N-09 | 상수, enum 값 | UPPER_SNAKE_CASE. 역할 `OWNER`, `MANAGER`, `MEMBER`와 이력 동작 `CREATED`, `UPDATED`, `COMPLETED`, `UNCOMPLETED`는 도메인 값을 그대로 쓴다. 상태 값은 `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `OVERDUE`로 쓴다. | `TodoStatus.OVERDUE` | 도메인 §3.3, §3.8, [가정 G-06] |
 | N-10 | 컴포넌트 이름 | PascalCase 명사. 화면 요소는 도메인 이름을 쓴다. shadcn 컴포넌트 이름(`Button`, `AlertDialog`)과 겹치는 이름을 만들지 않는다. | `TodoRow`, `StatusBadge`, `CategorySelect`, `TeamMemberTable`, `ConfirmDialog` | 와이어프레임 §2.1 |
-| N-11 | API 경로 | `/api/` 아래 소문자 kebab-case 복수형 명사. 중첩은 최대 2단계. 동작은 HTTP 메서드로 나타낸다. 동사 경로는 로그인처럼 메서드로 나타낼 수 없는 동작에만 쓴다. 예외: 로그인한 사용자 자신의 정보는 `/api/me`로 쓴다(ID를 경로에 받지 않아 다른 사용자 접근 경로가 생기지 않는다). | `GET`, `POST /api/todos`; `PATCH`, `DELETE /api/todos/:todoId`; `GET /api/todos/:todoId/histories`; `POST /api/teams/:teamId/members`; `POST /api/teams/:teamId/leave` | PRD §5.1, [가정 G-06] |
-| N-12 | 완료 처리 | 별도 경로를 만들지 않는다. `PATCH /api/todos/:todoId`의 `completed` 필드로 처리하고, `completedAt`은 서버가 설정한다. | — | 도메인 R14, §3.6 |
+| N-11 | API 경로 | `/api/` 아래 소문자 kebab-case 복수형 명사. 중첩은 최대 2단계. 동작은 HTTP 메서드로 나타낸다. 동사 경로는 로그인처럼 메서드로 나타낼 수 없는 동작에만 쓴다. 소유자가 팀을 나가는 일은 `POST /api/teams/:teamId/leave`로만 처리하고, 구성원 제거 경로에 자기 자신을 지정하면 400 `VALIDATION_ERROR`다. 예외: 로그인한 사용자 자신의 정보는 `/api/me`로 쓴다(ID를 경로에 받지 않아 다른 사용자 접근 경로가 생기지 않는다). | `GET`, `POST /api/todos`; `PATCH`, `DELETE /api/todos/:todoId`; `GET /api/todos/:todoId/histories`; `POST /api/teams/:teamId/members`; `POST /api/teams/:teamId/leave`; `GET /api/todos?from=&to=`(캘린더 조회. 목록 API에 기간 필터를 더한 것이며 별도 경로를 만들지 않는다); `GET /api/teams/:teamId/members`(구성원 목록. F4 사용자 선택지도 이 경로를 재사용한다); `GET`, `POST /api/categories`; `PATCH`, `DELETE /api/categories/:categoryId`; `DELETE /api/teams/:teamId/members/:userId`(구성원 제거); `PATCH /api/teams/:teamId/members/:userId`(역할 변경); `GET /api/teams`(내가 속한 팀 목록과 내 역할. SC-08, SC-09의 팀 이름·내 역할도 이 결과를 쓴다); `POST /api/teams`(팀 생성. 생성자가 OWNER, DLG-03). 팀 단건 조회·이름 변경·삭제 경로는 두지 않는다(요구사항 없음, 팀 삭제는 도메인 7장 범위 밖) | PRD §5.1, [가정 G-06] |
+| N-12 | 완료 처리 | 별도 경로를 만들지 않는다. `PATCH /api/todos/:todoId`의 `completed` 필드로 처리하고, `completedAt`은 서버가 설정한다. 이력은 요청 1건에 1건이다. 완료 여부가 바뀐 요청은 `COMPLETED`/`UNCOMPLETED`, 그 밖은 `UPDATED`이고 함께 바뀐 필드도 모두 `changes`에 담는다. | — | 도메인 R14, R20, §3.6, §3.8 |
 | N-13 | HTTP 메서드 | `GET`은 상태를 바꾸지 않는다. 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. | — | PRD §5.2 CSRF |
 | N-14 | JSON 필드, 쿼리 파라미터 | camelCase. 일시는 ISO 8601 + 오프셋 형식이다. 목록 파라미터는 `limit`, `offset`을 쓴다. | `startAt: "2026-11-04T09:00+09:00"` | PRD §5.1, §5.3 |
 | N-15 | 권한 플래그 | 할일 응답에 `canEdit`(수정·완료·삭제 가능), `isOwner`(소유자 본인 여부)를 넣는다. 다른 사용자 할일의 응답에는 카테고리 필드를 넣지 않는다. | — | 와이어프레임 §4.5.2, PRD §5.2 [가정 G-06] |
@@ -193,7 +193,7 @@
 
 | ID | 원칙 | 근거 |
 |----|------|------|
-| SEC-01 | 비밀번호는 8–72자를 검증한 뒤 `bcryptjs`(cost 10)로 해시해서만 저장한다. 평문과 해시는 응답과 로그에 나가지 않는다. | PRD §5.2 B4, 도메인 §3.4 |
+| SEC-01 | 비밀번호는 8자 이상, UTF-8 72바이트 이하를 검증한 뒤 `bcryptjs`(cost 10)로 해시해서만 저장한다. 평문과 해시는 응답과 로그에 나가지 않는다. | PRD §5.2 B4, 도메인 §3.4 |
 | SEC-02 | JWT를 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급하고 만료는 24시간이다. 리프레시 토큰은 두지 않는다. 로그아웃은 쿠키 삭제다. 탈취된 토큰은 만료까지 유효하다는 한계를 알고 있다. | PRD §5.2, 시나리오 D-03 |
 | SEC-03 | JWT 페이로드에는 사용자 ID(`sub`)와 만료 시각만 담는다. 역할, 팀, 권한을 넣지 않고, 권한은 요청마다 DB로 확인한다. | PRD §5.2, 시나리오 US-15 #2 |
 | SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`과 `/api/auth/login`을 뺀 모든 `/api/*` 라우터에 기본 적용한다. 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01·02 |
@@ -206,7 +206,7 @@
 | ID | 원칙 | 근거 |
 |----|------|------|
 | SEC-08 | 모든 입력은 서버에서 검증한다. 필수 여부, 형식, 길이는 routes에서 검증하고, 도메인 규칙(R3, R7, R19, R21)은 services와 domain에서 검증한다. | PRD §5.2 신뢰 경계 |
-| SEC-09 | 길이는 앞뒤 공백을 제거한 뒤 센다. 이메일 254자, 비밀번호 8–72(bcrypt는 72바이트까지만 쓰므로 바이트 기준으로 검사), 이름, 카테고리 이름, 팀 이름 1–50자, 할일 제목 1–200자, 설명 0–2,000자다. | 시나리오 §6.3 |
+| SEC-09 | 길이는 앞뒤 공백을 제거한 뒤 센다. 단, 비밀번호는 공백을 제거하지 않고 입력값 그대로 검사·해시한다(시나리오 C-23). 이메일 254자, 비밀번호 8자 이상·UTF-8 72바이트 이하(하한은 글자 수, 상한은 bcrypt가 72바이트까지만 쓰므로 바이트 수로 검사), 이름, 카테고리 이름, 팀 이름 1–50자, 할일 제목 1–200자, 설명 0–2,000자다. | 시나리오 §6.3 |
 | SEC-10 | 요청 본문은 100KB로 제한한다(`express.json({ limit: '100kb' })`). 초과는 413 `PAYLOAD_TOO_LARGE`다. | PRD §5.2 A19 |
 | SEC-11 | 일시는 ISO 8601 + 오프셋 형식만 받는다. 오프셋이 없으면 400이다 [가정 G-06]. | PRD §5.3 A20 |
 | SEC-12 | 정렬, 필터, 역할 같은 열거 값은 허용 목록에 있는 값만 받는다. 목록에 없는 값은 400이다. | BE-07 |
@@ -237,9 +237,10 @@
 | OPS-13 | 이름 있는 prepared statement(`name` 옵션)는 쓰지 않는다. 트랜잭션은 한 요청 안에서 끝낸다. | PRD §5.1 B3 |
 | OPS-14 | DB 세션 시간대는 `Asia/Seoul`, 일시 컬럼은 `timestamptz`를 쓴다. R4의 '오늘'은 서버에서 `User.timezone` 기준으로 계산한다. 상태 판정의 현재 시각은 서버 시각을 분 단위로 자른다. | 도메인 R5, PRD §5.3 |
 | OPS-15 | 목록은 `limit`과 `offset`을 쓴다. 기본 50건, 최대 100건, 정렬은 `start_at` 오름차순이다. 응답에 필터 적용 후 `total`을 포함한다. | PRD §5.1 U-12 |
-| OPS-16 | 캘린더 조회는 범위를 최대 42일, 결과를 최대 500건으로 제한한다. 상한에 걸리면 응답에 `truncated: true`를 넣는다. | PRD §5.1 U-13 |
+| OPS-16 | 캘린더 조회(`GET /api/todos?from=&to=`, N-11)는 범위를 최대 42일, 결과를 최대 500건으로 제한한다. 42일을 넘는 범위는 400 `VALIDATION_ERROR`다. 결과가 상한에 걸리면 응답에 `truncated: true`를 넣는다. | PRD §5.1 U-13, 시나리오 EX-39 |
 | OPS-17 | 목록과 캘린더는 1회 쿼리에 공유 팀 같은 연관 데이터를 JOIN이나 집계로 함께 가져온다(N+1 금지). 상태는 SQL에서 계산해 필터와 정렬에 쓴다. | PRD §5.1 |
-| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))을 포함한다. | PRD §5.1, [가정 G-07] |
+| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))과 팀당 OWNER 1명 부분 유니크 인덱스(OPS-23)를 포함한다. | PRD §5.1, [가정 G-07] |
+| OPS-23 | 참조 무결성과 데이터 제약은 마이그레이션 SQL에 다음과 같이 둔다. ① 사용자·팀을 참조하는 FK(`todo_histories.actor_id`, `todo_shares.team_id`, `team_members.user_id`, `team_members.team_id`, `todos.owner_id`, `categories.owner_id` 등)는 `ON DELETE RESTRICT`다. ② `todo_shares.todo_id`, `todo_histories.todo_id`는 `ON DELETE CASCADE`라 할일 삭제 때 함께 지워진다. ③ 구성원 제거 때의 `todo_shares` 정리는 FK로 연쇄하지 않고 service가 같은 트랜잭션에서 직접 `DELETE`한다(BE-08). ④ 팀당 OWNER 1명은 부분 유니크 인덱스 `UNIQUE (team_id) WHERE role = 'OWNER'`로 보장한다. ⑤ 소유권 이전은 반드시 기존 소유자를 강등하거나 삭제한 뒤 새 소유자를 승격하는 순서로 처리한다(④ 때문에 반대 순서는 인덱스 위반이다). | 도메인 §3.9, R18, R21 |
 
 ### 5.7 배포
 
@@ -260,7 +261,7 @@ todolist-app/
 │  └─ index.js          # Vercel Functions 진입점. backend/src/app.js를 import해 export
 ├─ backend/             # Express API (JavaScript)
 ├─ frontend/            # React 19 + TypeScript SPA (Vite)
-├─ docs/                # 기획 문서 1–5
+├─ docs/                # 기획·설계 문서 1–6
 ├─ e2e/                 # @playwright/test E2E (Q-05, Q-17–Q-21)
 │  ├─ fixtures/         # API로 계정, 팀, 할일을 만드는 헬퍼
 │  ├─ auth.spec.ts      # 가입, 로그인, 로그아웃
@@ -359,7 +360,7 @@ backend/
 │  │  ├─ auth.routes.js         # POST /api/auth/signup, login, logout
 │  │  ├─ users.routes.js        # GET, PATCH /api/me (P1: 비밀번호 변경 포함)
 │  │  ├─ categories.routes.js
-│  │  ├─ todos.routes.js        # 목록, 캘린더, 등록, 수정, 삭제
+│  │  ├─ todos.routes.js        # 목록·캘린더(기간 필터), 등록, 수정, 삭제
 │  │  ├─ teams.routes.js        # 팀, 구성원, 나가기
 │  │  └─ todo-histories.routes.js   # P1
 │  ├─ services/                 # 유스케이스, 권한, 트랜잭션 (<모듈>.service.js)
@@ -455,3 +456,5 @@ backend/
 | v0.4 | 2026-11-04 | hjining | E2E 회귀 검증을 `@playwright/test` 스크립트로 수행: 1.2 테스트 스택, N-05 E2E 파일 명명, Q-05 개정, 4.2.1 Q-17–Q-21(실행 환경, 데이터 준비, 선택자, 시각 의존 단언 금지, 머지 전 실행), 6.1에 `e2e/`·`playwright.config.ts` 추가, G-04 갱신. Playwright MCP는 탐색과 스크립트 작성 보조로 역할 변경 |
 | v0.5 | 2026-11-04 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(PRD v0.10, 사용자 시나리오 v0.8, 와이어프레임 v0.6). 표기에 인용 ID(PRD·시나리오·와이어프레임)와 `Q-xx`·`P-xx`의 구분 추가. 인용 정정: P-03 근거(K4·K5는 PRD §9), N-05 예시(할일 등록은 US-04), Q-01 근거(EX-07), Q-02·`permissions.spec.ts`(관리자 수정 성공은 US-14, EX-25는 공유 없는 할일 404), Q-05(US-10 수동 검증 예외), OPS-10(404 `NOT_FOUND`만 ST-02, 400·409·`USER_NOT_FOUND`는 폼 오류), OPS-18 근거 열 누락, `ErrorBanner` ST-03 포함, BE-08에 구성원 제거와 공유 해제 추가. 캘린더: PRD §6 허용 범위 안에서 FullCalendar를 고른 관계 명시(1.2, G-11), `+N` 클릭 시 일 뷰(`moreLinkClick`, U-13). Vite 근거에 PRD §6 추가(1.2, G-03, 7장). 7장에 새 미결 3건 추가 |
 | v0.6 | 2026-11-04 | hjining | 7장 미결 전부 확정: G-04 테스트 DB는 Supabase 테스트 전용 프로젝트(`.env.test`, Docker 미사용). ① FE-06에 캘린더 화면 이동용 브라우저 시계 예외, FE-10(캘린더 일시는 오프셋을 뗀 벽시계 값 + `timeZone: 'UTC'`, 시간대 플러그인 없음) 추가, G-11 갱신. ② N-11에 `/api/me` 예외 명시. ③ OPS-04를 요청 로그 코드 없음(Vercel 기본 로그)으로 바꾸고 G-10 갱신 |
+| v0.7 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.12, PRD v0.11, 사용자 시나리오 v0.9, 와이어프레임 v0.7). 기술 아키텍처(`docs/6-arch-diagram.md`) 확인 필요 T-02·T-04·T-06·T-07·T-08 결정 반영: N-11에 API 경로 추가(캘린더 `GET /api/todos?from=&to=`, 구성원 목록 재사용, 카테고리, 구성원 제거·역할 변경)와 자기 제거 경로 규칙, N-12 이력 1건 규칙, SEC-01·SEC-09 비밀번호 '8자 이상, UTF-8 72바이트 이하', OPS-16 42일 초과 400, OPS-18 부분 유니크 인덱스, OPS-23 추가(FK RESTRICT/CASCADE, 소유권 이전 순서). 6.1 `docs/` 주석을 문서 1–6으로 정정 |
+| v0.8 | 2026-11-04 | hjining | 기준 문서 버전 갱신(사용자 시나리오 v0.10, 와이어프레임 v0.8). SEC-09에 비밀번호 공백 미제거 예외(시나리오 C-23). N-11에 `GET /api/teams`(팀 목록·내 역할), `POST /api/teams`(팀 생성) 추가, 팀 단건 조회·이름 변경·삭제 경로는 두지 않음 명시 |
