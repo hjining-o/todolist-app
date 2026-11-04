@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as teamsService from '../services/teams.service.js';
-import { bad, emailRule, nameRule, ok, uuidParam, validate } from './validate.js';
+import { bad, emailRule, nameRule, ok, optional, uuidParam, uuidRule, validate } from './validate.js';
 
 export const teamsRouter = Router();
 
@@ -40,5 +40,13 @@ teamsRouter.delete('/:teamId/members/:userId', async (req, res) => {
   const teamId = uuidParam(req.params.teamId, 'teamId');
   const userId = uuidParam(req.params.userId, 'userId');
   await teamsService.removeMember(req.user.id, teamId, userId);
+  res.status(204).end();
+});
+
+teamsRouter.post('/:teamId/leave', async (req, res) => {
+  const teamId = uuidParam(req.params.teamId, 'teamId');
+  // 본문 없이 오면 Express 5는 req.body가 undefined
+  const body = validate(req.body ?? {}, { nextOwnerId: optional(uuidRule) });
+  await teamsService.leaveTeam(req.user.id, teamId, body);
   res.status(204).end();
 });

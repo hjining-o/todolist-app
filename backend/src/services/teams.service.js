@@ -80,3 +80,22 @@ export async function removeMember(requesterId, teamId, userId) {
     await teamsRepo.deleteOwnerSharesInTeam(client, { teamId, ownerId: userId });
   });
 }
+
+export async function leaveTeam(requesterId, teamId, { nextOwnerId }) {
+  await assertOwner(teamId, requesterId);
+  const others = (await teamsRepo.listMembers(pool, teamId)).filter((m) => m.userId !== requesterId);
+  if (!others.length) throw AppError.of('NO_NEXT_OWNER');
+  if (!nextOwnerId) throw AppError.of('OWNER_MUST_TRANSFER');
+  if (!others.some((m) => m.userId === nextOwnerId)) throw AppError.of('INVALID_OWNER');
+  // shortcut: 같은 소유자가 구성원 제거·강등과 그 사람에게 넘기는 leave를 동시에 보내면 소유자 없는 팀이 생길 수 있다, 문제되면 트랜잭션 안에서 FOR UPDATE로 소유자 재확인
+  // 팀당 OWNER 1명 부분 유니크 인덱스 때문에 기존 소유자 삭제 → 새 소유자 승격 순서 고정(OPS-23 ⑤)
+  await withTransaction(async (client) => {
+    // 0행 = 동시 leave의 두 번째 요청
+    if (!(await teamsRepo.deleteMember(client, { teamId, userId: requesterId }))) throw AppError.of('NOT_FOUND');
+    // null = 검사 뒤 지정 대상이 제거됨, 롤백해 소유자 없는 팀을 막는다
+    if (!(await teamsRepo.updateMemberRole(client, { teamId, userId: nextOwnerId, role: 'OWNER' }))) {
+      throw AppError.of('INVALID_OWNER');
+    }
+    await teamsRepo.deleteOwnerSharesInTeam(client, { teamId, ownerId: requesterId }); // R21
+  });
+}
