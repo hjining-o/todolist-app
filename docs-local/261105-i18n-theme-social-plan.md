@@ -138,24 +138,35 @@ CREATE INDEX ix_user_identities_user ON user_identities(user_id);
 
 ## 2. 실행 계획 (WBS)
 
-> 상태: 빈칸 = 시작 전. 공통 완료 조건: 린트·테스트 통과, `console.log` 없음, Conventional Commits
+> 상태: ✅ 완료, 🔶 일부 완료(남은 항목은 2.1 참고), 빈칸 = 시작 전. 공통 완료 조건: 린트·테스트 통과, `console.log` 없음, Conventional Commits
 
 | 영역 | Task | 이름 | 선행 | 상태 |
 |------|------|------|------|------|
-| 테마 | THM-01 | ThemeProvider·토글 UI | - | |
-| 테마 | THM-02 | 다크 대비 점검·FullCalendar 토큰·스타일 가이드 | THM-01 | |
+| 테마 | THM-01 | ThemeProvider·토글 UI | - | ✅ 완료 |
+| 테마 | THM-02 | 다크 대비 점검·FullCalendar 토큰·스타일 가이드 | THM-01 | 🔶 일부 |
 | 다국어 | I18N-01 | i18n 초기화·언어 선택 UI·테스트 셋업 | - | |
 | 다국어 | I18N-02 | 문자열 추출(ko.json)·컴포넌트 치환 | I18N-01 | |
 | 다국어 | I18N-03 | 에러 코드 번역·FullCalendar locale·`<html lang>` | I18N-02 | |
 | 다국어 | I18N-04 | en·zh·ja 번역·키 누락 테스트 | I18N-02 | |
-| 소셜 | SOC-00 | Google 앱 등록, 키 발급 (**사용자 작업**) | - | |
-| 소셜 | SOC-01 | 마이그레이션 003·repo | - | |
-| 소셜 | SOC-02 | OAuth 라우트·서비스·env·에러 코드 | SOC-01 | |
-| 소셜 | SOC-03 | 기존 로그인·비밀번호 변경·`/me` 영향 처리 | SOC-01 | |
+| 소셜 | SOC-00 | Google 앱 등록, 키 발급 (**사용자 작업**) | - | ✅ 완료 |
+| 소셜 | SOC-01 | 마이그레이션 003·repo | - | ✅ 완료 |
+| 소셜 | SOC-02 | OAuth 라우트·서비스·env·에러 코드 | SOC-01 | 🔶 일부 |
+| 소셜 | SOC-03 | 기존 로그인·비밀번호 변경·`/me` 영향 처리 | SOC-01 | ✅ 완료 |
 | 소셜 | SOC-04 | 프론트 버튼·에러 배너·PasswordCard 조건부 | SOC-02, SOC-03, I18N-01 | |
 | 공통 | DOC-01 | 기준 문서 반영(`sync-docs`) | 전체 | |
 
 권장 순서: **THM(가장 작음) → I18N → SOC**. SOC-01–03(백엔드)은 I18N과 병행할 수 있다. SOC-04는 I18N-01 뒤에 해야 새 문자열을 처음부터 `t()`로 쓸 수 있다.
+
+### 2.1 진행 기록
+
+| Task | 커밋 | 메모 |
+|------|------|------|
+| THM-01 | `8252a6c` | 토글은 `AppLayout`의 `UserActions`에 넣어 헤더·모바일 Sheet에 함께 표시. 테스트 1건 추가 |
+| THM-02 | `72a4ffc` | 하드코딩 색은 캘린더 막대 `color-mix(…, black)` 1곳이었고 `--bar-ink`·`--bar-ink-y`·`--bar-mix` 변수로 교체(다크에서 노랑 글자 대비 1.94 → 통과). `--fc-*`는 이미 토큰을 참조해 추가 불필요. **남은 것**: 다크 화면 육안 확인(스크린샷), `docs/9-style-guide.md` 갱신(DOC-01로 이동). 참고: 라이트 모드 연한 막대 글자 5색이 3.82–4.43:1(기존 동작, 이번 범위 밖), 분홍 팀 점/카드 2.97:1(장식 요소라 유지) |
+| SOC-00 | - | `backend/.env`에 Google 키·`APP_URL`·`API_URL` 등록 확인 |
+| SOC-01 | `111a522` | 로컬 DB에 003 적용. 운영 DB는 **미적용**(적용 전 사용자 확인). 인덱스 이름은 계획대로 `ix_user_identities_user`(기존 `idx_` 규칙과 다름) |
+| SOC-03 | `3ff0e00` | `hasPassword`를 `/api/me`·`PATCH /api/me`·가입·로그인 응답에 포함 |
+| SOC-02 | `c66da67` | 테스트 493건 통과(제공자 fetch mock). `APP_URL`이 없으면 `CORS_ORIGINS` 첫 값, `API_URL`이 없으면 `http://localhost:PORT`를 쓴다. `oauth_state` 쿠키는 항상 SameSite=lax, fetch 타임아웃 10초. 실패 시 `OAUTH_EMAIL_REQUIRED` 외에는 모두 `OAUTH_FAILED`. **남은 것**: 실제 Google 로그인 수동 확인(신규·재로그인·자동 연결), swagger 갱신(DOC-01) |
 
 ### THM-01 ThemeProvider·토글 UI
 - 작업: `main.tsx`에 `ThemeProvider` 추가, `shared/components/ThemeToggle.tsx`(DropdownMenu 3항목) 작성, `AppLayout` 헤더·모바일 Sheet에 배치, `index.html`에 color-scheme 메타 추가
