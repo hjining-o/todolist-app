@@ -19,3 +19,4 @@
 - `docs/6-arch-diagram.md` : 기술 아키텍처 다이어그램
 - `docs/7-erd.md` : ERD (엔티티 관계 다이어그램)
 - `docs/8-swagger.yaml` : API 명세 (OpenAPI/Swagger)
+- `docs/9-style-guide.md` : 프론트엔드 스타일 가이드 (shadcn 매핑·토큰)
