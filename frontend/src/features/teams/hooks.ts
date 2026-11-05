@@ -48,3 +48,16 @@ export const useUpdateTeamMemberRole = (teamId: string) =>
 
 export const useRemoveTeamMember = (teamId: string) =>
   useMemberMutation(teamId, (userId: string) => api.del(`/api/teams/${teamId}/members/${userId}`), true)
+
+export function useLeaveTeam(teamId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (nextOwnerId: string) => api.post(`/api/teams/${teamId}/leave`, { nextOwnerId }),
+    // await 하지 않는다: 페이지가 곧 /teams 로 이동하므로 이 팀 화면이 ST-02 로 깜빡이지 않게 한다
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: queryKeys.members(teamId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.teams() })
+      void queryClient.invalidateQueries({ queryKey: ['todos'] })
+    },
+  })
+}

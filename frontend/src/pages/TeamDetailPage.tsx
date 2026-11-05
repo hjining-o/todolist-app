@@ -1,7 +1,8 @@
 // SC-09
 import { useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
+import { LeaveTeamDialog } from '@/features/teams/components/LeaveTeamDialog'
 import { TeamMemberTable } from '@/features/teams/components/TeamMemberTable'
 import {
   ROLE_LABEL,
@@ -107,6 +108,8 @@ export function TeamDetailPage() {
   const updateRole = useUpdateTeamMemberRole(teamId)
   const remove = useRemoveTeamMember(teamId)
   const [removing, setRemoving] = useState<TeamMember | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const navigate = useNavigate()
 
   const team = teams.data?.items.find((t) => t.id === teamId)
   const notFound = (members.error instanceof ApiError && members.error.status === 404) || (teams.isSuccess && !team)
@@ -134,7 +137,21 @@ export function TeamDetailPage() {
       <Link to="/teams" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
         &lt; 팀 목록
       </Link>
-      <PageHeader title={team?.name ?? '팀'} actions={team && <Badge variant="outline">내 역할: {ROLE_LABEL[team.role]}</Badge>} />
+      <PageHeader
+        title={team?.name ?? '팀'}
+        actions={
+          team && (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">내 역할: {ROLE_LABEL[team.role]}</Badge>
+              {isOwner && (
+                <Button variant="outline" onClick={() => setLeaving(true)}>
+                  팀 나가기
+                </Button>
+              )}
+            </div>
+          )
+        }
+      />
       {isOwner && <AddMemberForm teamId={teamId} />}
       <h2 className="text-lg font-semibold">구성원</h2>
       {members.isPending || !team ? (
@@ -159,6 +176,14 @@ export function TeamDetailPage() {
           description={`${removing?.name}님을 ${team.name}에서 제거할까요? ${removing?.name}님의 할일 중 이 팀에 공유된 항목의 공유가 해제됩니다.`}
           confirmLabel="제거"
           onConfirm={() => removing && remove.mutate(removing.userId)}
+        />
+      )}
+      {leaving && (
+        <LeaveTeamDialog
+          teamId={teamId}
+          candidates={(members.data?.items ?? []).filter((m) => m.userId !== me.data?.id)}
+          onOpenChange={setLeaving}
+          onLeft={() => navigate('/teams')}
         />
       )}
     </div>
