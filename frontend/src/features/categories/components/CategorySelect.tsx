@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCategories } from '@/features/categories/hooks'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 
@@ -12,11 +13,12 @@ interface CategorySelectProps {
 }
 
 export function CategorySelect({ value, onValueChange, allLabel, id, 'aria-label': ariaLabel }: CategorySelectProps) {
+  const { t } = useTranslation()
   const { data } = useCategories()
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger id={id} aria-label={ariaLabel} className="w-full">
-        <SelectValue placeholder="카테고리 선택" />
+        <SelectValue placeholder={t('category.select')} />
       </SelectTrigger>
       <SelectContent>
         {allLabel && <SelectItem value={ALL_CATEGORIES}>{allLabel}</SelectItem>}
