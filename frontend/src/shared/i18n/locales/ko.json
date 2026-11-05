@@ -25,6 +25,8 @@
     }
   },
   "common": {
+    "close": "닫기",
+    "pagination": "페이지 이동",
     "all": "전체",
     "delete": "삭제",
     "cancel": "취소",

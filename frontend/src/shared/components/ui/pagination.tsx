@@ -3,12 +3,14 @@ import { cn } from "cn"
 
 import { Button } from "@/shared/components/ui/button"
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+  const { t } = useTranslation()
   return (
     <nav
       role="navigation"
-      aria-label="pagination"
+      aria-label={t("common.pagination")}
       data-slot="pagination"
       className={cn("mx-auto flex w-full justify-center", className)}
       {...props}

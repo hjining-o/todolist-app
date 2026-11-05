@@ -11,6 +11,8 @@
     "social": { "google": "Googleで続ける", "or": "または" }
   },
   "common": {
+    "close": "閉じる",
+    "pagination": "ページ送り",
     "all": "すべて",
     "delete": "削除",
     "cancel": "キャンセル",

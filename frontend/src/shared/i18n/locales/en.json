@@ -11,6 +11,8 @@
     "social": { "google": "Continue with Google", "or": "or" }
   },
   "common": {
+    "close": "Close",
+    "pagination": "Pagination",
     "all": "All",
     "delete": "Delete",
     "cancel": "Cancel",
@@ -28,7 +30,7 @@
     "add": "Add"
   },
   "todo": {
-    "view": { "label": "View", "all": "All team", "mine": "My todos", "team": "Team", "user": "User" },
+    "view": { "label": "View", "all": "All teams", "mine": "My todos", "team": "Team", "user": "User" },
     "filter": { "open": "Filter", "category": "Category", "status": "Status", "reset": "Reset filters" },
     "status": { "COMPLETED": "Done", "OVERDUE": "Overdue", "NOT_STARTED": "Not started", "IN_PROGRESS": "In progress" },
     "incomplete": "Incomplete",
