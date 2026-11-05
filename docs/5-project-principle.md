@@ -1,12 +1,12 @@
-# TodoList 프로젝트 구조 설계 원칙
+# TodoList 프로젝트 구조 설계. 문서 정합성 검토: OPS-19의 "단일 프로젝트"를 PRD v0.15(프로젝트 구성 미결, 실행 계획 W-09)에 맞춰 삭제. G-08에 토큰 만료 환경변수 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS` 추가(기본값은 PRD §5.2의 15분·7일). `.env.example`을 루트에서 `backend/.env.example`로 이동(실제로 읽히는 `backend/.env`·`.env.test` 옆, 프론트는 UI-01에서 `frontend/.env.example`): 6.1·6.3 구조, OPS-01 |||원칙
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.12 |
+| 문서 버전 | v0.13 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/3-user-scenario.md` v0.13, `docs/4-wireframe.md` v0.11 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.15, `docs/3-user-scenario.md` v0.14, `docs/4-wireframe.md` v0.12 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`SC`, `A`, `B`, `K`, `M`, `Q1`–`Q4`), 시나리오 `US-xx`·`EX-xx`·`C-xx`·`D-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `ST-xx`·`DLG-xx`·`U-xx`.
@@ -41,9 +41,10 @@
 | 백엔드 | Node.js + JavaScript(TypeScript 아님) + Express | PRD §6 |
 | DB 접근 | `pg`(node-postgres). Prisma와 다른 ORM 금지 | PRD §6 |
 | 데이터베이스 | PostgreSQL 17, Supabase 사용. DB로만 쓰며 Supabase Auth와 자동 생성 API는 쓰지 않음 | PRD §5.1 B1 |
-| 배포 | Vercel 단일 프로젝트. 프론트 정적 빌드와 Express(Vercel Functions)를 같은 도메인 `/api/*`에 배포 | PRD §5.1 |
+| 배포 | Vercel. 프론트 정적 빌드와 Express(Vercel Functions)를 배포하고, 프론트는 `VITE_API_BASE_URL`의 API 출처로 `/api/*`를 직접 호출한다(CORS, SEC-07). 프로젝트 구성은 실행 계획 W-09 | PRD §5.1 |
 | 인증 | 액세스 토큰은 `HS384` JWT(쿠키 `access_token`, 15분), 리프레시 토큰은 불투명 문자열(쿠키 `refresh_token`, 7일, DB에 해시). `jsonwebtoken`, `cookie-parser`, Node `crypto`. 비밀번호는 `bcryptjs`, cost 10 | PRD §5.2 B4, A25, A26, [가정 G-09] |
 | 테스트 | Vitest(단위, 통합), supertest(API 통합), `@playwright/test`(E2E 회귀), Playwright MCP(E2E 탐색과 스크립트 작성 보조) | [가정 G-04] |
+| API 문서 화면 | `swagger-ui-express` + `js-yaml`(백엔드 개발 의존성). 개발 모드(`npm run dev`)에서만 Swagger UI를 `/swagger`에 붙인다. 명세 원본은 `docs/8-swagger.yaml` 하나이고, 화면에는 문자열 `description`을 뺀 명세를 보낸다(설명문은 문서에만 둔다). 배포 진입점(`api/index.js` → `app.js`)에는 없다 | `docs/8-swagger.yaml` |
 
 ## 2. 의존성 및 레이어 원칙
 
@@ -54,7 +55,7 @@
 | 레이어 | 책임 | 허용 import |
 |--------|------|-------------|
 | routes | 경로·메서드 정의, 요청 파싱, 형식·길이 검증, 서비스 호출, 응답 조립 | services, middleware, domain/errors |
-| middleware | 인증(쿠키 JWT → `req.user`), 공통 에러 응답 변환 | config/env, domain/errors |
+| middleware | CORS·Origin 검사, 인증(쿠키 JWT → `req.user`), 공통 에러 응답 변환 | config/env, domain/errors |
 | services | 유스케이스, 도메인 규칙 적용, 권한 판정 호출, 트랜잭션 경계 | domain, 같은 모듈 repositories, 다른 모듈 services |
 | domain | 순수 함수(상태 판정, 기간 정규화, 이력 diff), `AppError`와 에러 코드 상수 | 없음 |
 | repositories | SQL 실행, row를 camelCase 객체로 변환, 권한 조각 사용 | config/db, repositories/sql |
@@ -180,7 +181,7 @@
 
 | ID | 원칙 |
 |----|------|
-| OPS-01 | 시크릿(DB 연결 문자열, JWT 서명 키)은 Vercel 환경변수에만 둔다. 저장소에 커밋하지 않는다. `.env*`는 `.gitignore`에 넣고, 키 이름만 적은 `.env.example`만 커밋한다. |
+| OPS-01 | 시크릿(DB 연결 문자열, JWT 서명 키)은 Vercel 환경변수에만 둔다. 저장소에 커밋하지 않는다. `.env*`는 `.gitignore`에 넣고, 시크릿 값 없이 키를 적은 `backend/.env.example`만 커밋한다. |
 | OPS-02 | 서버 환경변수는 `config/env.js`에서만 읽는다. 값이 없거나 형식이 틀리면 기동을 실패시킨다. 다른 파일에서 `process.env`를 직접 읽지 않는다. |
 | OPS-03 | 프론트엔드 번들에 들어가는 변수(`VITE_` 접두사)는 공개 값만 둔다. |
 
@@ -194,12 +195,12 @@
 | ID | 원칙 | 근거 |
 |----|------|------|
 | SEC-01 | 비밀번호는 8자 이상, UTF-8 72바이트 이하를 검증한 뒤 `bcryptjs`(cost 10)로 해시해서만 저장한다. 평문과 해시는 응답과 로그에 나가지 않는다. | PRD §5.2 B4, 도메인 §3.4 |
-| SEC-02 | 액세스 토큰(JWT, 15분)과 리프레시 토큰(7일 절대 만료)을 각각 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급한다. 리프레시 쿠키는 `Path=/api/auth`다. 리프레시 토큰은 원문이 아니라 SHA-256 해시만 `refresh_tokens`에 저장하고, `POST /api/auth/refresh` 때마다 회전한다(쓴 토큰 폐기 + 새 토큰 발급, 한 트랜잭션). 폐기된 토큰이 다시 오면 그 사용자의 리프레시 토큰을 모두 폐기한다. 로그아웃은 리프레시 토큰 폐기와 쿠키 삭제, 비밀번호 변경은 그 사용자의 리프레시 토큰 행을 모두 삭제하고(폐기 표시가 아니라 삭제. 남겨 두면 다른 브라우저가 옛 토큰으로 갱신할 때 재사용 감지가 방금 발급한 새 토큰까지 폐기해 변경한 브라우저도 로그아웃된다, EX-44) 현재 브라우저에 토큰을 새로 발급한다. 탈취된 액세스 토큰은 만료(최대 15분)까지 유효하다는 한계를 알고 있다. | PRD §5.2 A25, 시나리오 D-03, EX-42–EX-44 |
+| SEC-02 | 액세스 토큰(JWT, 15분)과 리프레시 토큰(7일 절대 만료)을 각각 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급한다(프론트와 API가 서로 다른 사이트로 배포되면 `COOKIE_SAMESITE=none`으로 `SameSite=None`). 리프레시 쿠키는 `Path=/api/auth`다. 리프레시 토큰은 원문이 아니라 SHA-256 해시만 `refresh_tokens`에 저장하고, `POST /api/auth/refresh` 때마다 회전한다(쓴 토큰 폐기 + 새 토큰 발급, 한 트랜잭션). 폐기된 토큰이 다시 오면 그 사용자의 리프레시 토큰을 모두 폐기한다. 로그아웃은 리프레시 토큰 폐기와 쿠키 삭제, 비밀번호 변경은 그 사용자의 리프레시 토큰 행을 모두 삭제하고(폐기 표시가 아니라 삭제. 남겨 두면 다른 브라우저가 옛 토큰으로 갱신할 때 재사용 감지가 방금 발급한 새 토큰까지 폐기해 변경한 브라우저도 로그아웃된다, EX-44) 현재 브라우저에 토큰을 새로 발급한다. 탈취된 액세스 토큰은 만료(최대 15분)까지 유효하다는 한계를 알고 있다. | PRD §5.2 A25, 시나리오 D-03, EX-42–EX-44 |
 | SEC-03 | JWT 페이로드에는 사용자 ID(`sub`)와 만료 시각만 담는다. 역할, 팀, 권한을 넣지 않고, 권한은 요청마다 DB로 확인한다. 서명과 검증은 `HS384`만 쓴다(`jwt.verify`의 `algorithms: ['HS384']`). 서명 키는 48바이트 이상이다. | PRD §5.2 A26, 시나리오 US-15 #2 |
-| SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`, `GET /api/health`를 뺀 모든 `/api/*` 라우터에 기본 적용한다. 갱신은 액세스 토큰이 만료된 상태에서 호출되고, 로그아웃은 만료된 상태에서도 쿠키를 지울 수 있어야 하므로 공개다(두 경로는 리프레시 쿠키로만 동작). 헬스는 배포 확인(OPS-21)을 쿠키 없이 하기 위해 공개이고, 응답은 `200 {"status":"ok"}`로 고정해 내부 정보를 담지 않는다. 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01–03, PRD A25 |
+| SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`, `GET /api/health`를 뺀 모든 `/api/*` 라우터에 기본 적용한다. 갱신은 액세스 토큰이 만료된 상태에서 호출되고, 로그아웃은 만료된 상태에서도 쿠키를 지울 수 있어야 하므로 공개다(두 경로는 리프레시 쿠키로만 동작). 헬스는 배포 확인(OPS-21)을 쿠키 없이 하기 위해 공개이고, 응답은 서버·DB 상태만 따로 담는다: 정상 `200 {"server":"ok","db":"ok"}`, DB 연결 실패 `503 {"server":"ok","db":"error"}`. 에러 내용 등 내부 정보는 담지 않고 서버 로그에만 남긴다. 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01–03, PRD A25 |
 | SEC-05 | 로그인 실패는 이메일 존재 여부를 드러내지 않는다. 없는 이메일과 틀린 비밀번호는 같은 `INVALID_CREDENTIALS` 응답이다. | PRD FR-01 #5, 시나리오 EX-04 |
 | SEC-06 | 다른 사용자 할일의 응답에서는 카테고리 필드를 응답 생성 함수 한 곳에서 제거한다. 라우트마다 따로 제거하지 않는다. | 도메인 R2, PRD §5.2 |
-| SEC-07 | 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. 쿠키는 `SameSite=Lax`이고, 프론트와 API는 같은 출처(`/api/*`)에서 동작한다. CSRF 토큰과 CORS 허용 목록은 두지 않는다. | PRD §5.2 CSRF 결정 |
+| SEC-07 | 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. 프론트와 API는 CORS로 연결한다: 허용 출처는 환경변수 `CORS_ORIGINS`(쉼표 구분, 개발 `http://localhost:5173`)이고, 허용 출처에만 `Access-Control-Allow-Origin`(요청 출처 그대로, `*` 금지)과 `Access-Control-Allow-Credentials: true`를 준다. 허용 목록 밖 출처의 상태 변경 요청은 403 `FORBIDDEN`으로 거부한다(CSRF 방어, `SameSite=None`일 때도 유효). 같은 출처(개발 Swagger UI)와 `Origin` 없는 요청(curl)은 통과한다. CSRF 토큰은 두지 않는다. 구현은 `middleware/cors.js`(패키지 없음). | PRD §5.2 CSRF 결정(2026-11-05 개정) |
 
 ### 5.3 입력 검증
 
@@ -247,7 +248,7 @@
 
 | ID | 원칙 | 근거 |
 |----|------|------|
-| OPS-19 | Vercel 단일 프로젝트로 배포한다. 프론트는 정적 빌드하고, `api/index.js`가 Express 앱을 함수로 노출한다. 브라우저는 `/api/*`를 같은 도메인으로 호출한다. | PRD §5.1 Q1 |
+| OPS-19 | Vercel로 배포한다. 프론트는 정적 빌드하고, `api/index.js`가 Express 앱을 함수로 노출한다. 브라우저는 `VITE_API_BASE_URL`의 API 출처로 `/api/*`를 호출하고 API는 CORS로 허용한다(SEC-07). 프로젝트를 하나로 둘지 나눌지는 실행 계획 W-09 | PRD §5.1 Q1 |
 | OPS-20 | 운영은 HTTPS만 쓴다. 쿠키 `Secure`는 운영 전제이며, 로컬 개발은 `localhost`에서 확인한다 [가정 G-13]. | PRD §5.2 |
 | OPS-21 | Day 1 오전에 빈 API(`/api/health` [가정 G-06])를 먼저 배포해 Express 함수와 콜드 스타트를 확인한다. | PRD K10 |
 | OPS-22 | 배포 순서는 마이그레이션 적용, 운영 작업(OPS-24) 등록 확인, 백엔드와 프론트 배포다. 운영 지표 M1–M5는 Vercel과 Supabase 대시보드로 확인한다. 부하 테스트는 하지 않는다. | PRD K3, Q2 [가정 G-15] |
@@ -274,7 +275,6 @@ todolist-app/
 ├─ playwright.config.ts # webServer(백엔드, 프론트), Chromium, baseURL
 ├─ vercel.json          # /api/* 라우팅, SPA 경로 fallback [가정 G-01]
 ├─ package.json         # 루트 공통 스크립트와 의존성 [가정 G-01]
-├─ .env.example         # 키 이름만
 └─ .gitignore           # .env*, playwright-report/, test-results/ 포함
 ```
 
@@ -287,7 +287,7 @@ frontend/
 ├─ index.html
 ├─ components.json              # shadcn 설정. aliases를 @/shared/components/ui, @/shared/lib/utils로 지정 [가정 G-16]
 ├─ tsconfig.json                # @/ → src/ 경로 별칭
-├─ vite.config.ts               # 빌드 설정, @/ 별칭, Tailwind 플러그인, 개발 서버에서 /api 프록시 [가정 G-14]
+├─ vite.config.ts               # 빌드 설정, @/ 별칭, Tailwind 플러그인, 개발 서버 5173, API는 프록시 없이 CORS로 호출 [가정 G-14]
 └─ src/
    ├─ main.tsx                  # 진입점: QueryClientProvider, 라우터 마운트
    ├─ index.css                 # Tailwind 진입점과 shadcn 테마 변수
@@ -349,11 +349,12 @@ frontend/
 backend/
 ├─ src/
 │  ├─ app.js                    # Express 앱 조립: JSON(100kb), /api 라우터, error-handler
-│  ├─ server.js                 # 로컬 실행용 listen. 배포 진입점에서 import하지 않는다
+│  ├─ server.js                 # 로컬 실행용 listen + 개발용 Swagger UI(/swagger). 배포 진입점에서 import하지 않는다
 │  ├─ config/
 │  │  ├─ env.js                 # 환경변수 검증
 │  │  └─ db.js                  # pg.Pool 단일 인스턴스, withTransaction
 │  ├─ middleware/
+│  │  ├─ cors.js                # CORS_ORIGINS 허용 출처에 CORS 헤더, 목록 밖 출처의 상태 변경 403
 │  │  ├─ authenticate.js        # 액세스 토큰(HS384) 쿠키 검증 → req.user, 실패 401
 │  │  └─ error-handler.js       # AppError → 에러 응답, 그 밖은 500
 │  ├─ routes/                   # HTTP 경계 (<모듈>.routes.js)
@@ -388,18 +389,19 @@ backend/
 │  └─ db/
 │     ├─ migrations/            # 순번 SQL 파일 (P1 테이블 포함)
 │     └─ ops/                   # 운영 작업 SQL (pg_cron 등록, OPS-24)
-└─ tests/
-   ├─ unit/                     # domain 규칙 테스트
-   └─ integration/              # 실제 PostgreSQL 대상 테스트
+├─ tests/
+│  ├─ unit/                     # domain 규칙 테스트
+│  └─ integration/              # 실제 PostgreSQL 대상 테스트
+└─ .env.example             # 키 견본. 같은 폴더의 .env(개발)·.env.test(테스트)로 복사. 시크릿 값은 비움
 ```
 
 | 경로 | 역할 | 허용 import |
 |------|------|-------------|
 | `api/index.js` (루트) | Vercel 함수 진입점. `backend/src/app.js`를 export한다 | app |
 | `src/app.js` | Express 앱 조립. 에러 핸들러는 마지막에 등록한다 | routes, middleware, config |
-| `src/server.js` | 로컬 실행 전용 | app, config |
+| `src/server.js` | 로컬 실행 전용. 개발 모드(`npm run dev`)에서만 Swagger UI를 `/swagger`에 붙인다. 명세 원본은 `docs/8-swagger.yaml` 하나이고, 화면에는 문자열 `description`을 뺀 명세를 보낸다(설명문은 문서에만 둔다). 배포 진입점(`api/index.js` → `app.js`)에는 없다 | app, config, `swagger-ui-express`, `js-yaml` |
 | `src/config/` | 환경변수 검증, 풀, 트랜잭션 헬퍼 | 없음 |
-| `src/middleware/` | 인증과 에러 응답 변환 | config/env, domain/errors |
+| `src/middleware/` | CORS·Origin 검사, 인증, 에러 응답 변환 | config/env, domain/errors |
 | `src/routes/` | HTTP 요청과 응답. 비즈니스 규칙을 두지 않는다 | services, middleware, domain/errors |
 | `src/services/` | 유스케이스와 트랜잭션 경계 | domain, 같은 모듈 repositories, 다른 모듈 services |
 | `src/domain/` | 순수 함수와 에러 타입 | 없음 |
@@ -438,13 +440,13 @@ backend/
 | G-05 | 린트, 포맷 | ESLint와 Prettier를 루트 설정으로 공유한다. 레이어 규칙은 lint 규칙으로 옮긴다. 테스트 파일 명명은 N-05를 따른다. |
 | G-06 | API와 응답 세부 | 영문 상태 값(`NOT_STARTED` 등), 쿼리 파라미터 이름(`from`, `to`, `status`, `categoryId` 등), 권한 플래그(`canEdit`, `isOwner`), 헬스 경로(`/api/health`, 공개, SEC-04), 오프셋 없는 일시 거부와 날짜만 보낸 값 예외(SEC-11). |
 | G-07 | DB 명명과 마이그레이션 | 테이블과 컬럼은 snake_case 복수형, 인덱스는 N-19 규칙을 따른다. 식별자는 `uuid`이고 기본값은 `gen_random_uuid()`다(URL의 ID 추측 방지, P-05). 마이그레이션은 순번 SQL 파일이다. ORM이 없으므로 마이그레이션 도구는 쓰지 않는다. |
-| G-08 | 환경변수 이름 | `DATABASE_URL`, `JWT_SECRET`을 쓴다. |
+| G-08 | 환경변수 이름 | 백엔드 `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`(필수, 쉼표 구분 출처), `COOKIE_SAMESITE`(선택, `lax` 기본·`none`), `ACCESS_TOKEN_TTL_MINUTES`(선택, 기본 15), `REFRESH_TOKEN_TTL_DAYS`(선택, 기본 7). 만료 값은 1 이상 정수만 받고, 틀리면 기동 실패(OPS-02). 프론트 `VITE_API_BASE_URL`(API 출처, 개발 `http://localhost:3000`). |
 | G-09 | 인증 세부 | JWT는 `jsonwebtoken`(`HS384`), 쿠키 파싱은 `cookie-parser`를 쓴다. 쿠키 이름은 `access_token`, `refresh_token`이다. 리프레시 토큰 생성과 해시는 Node `crypto`(`randomBytes(32)`, SHA-256)로 한다. |
 | G-10 | 로깅 도구 | 요청 로그는 Vercel 기본 함수 로그로 보고, 코드의 로그는 `error-handler.js`의 `console.error`뿐이다(OPS-04, OPS-06). 구조화 로그 라이브러리는 두지 않는다. |
 | G-11 | 캘린더 라이브러리 | PRD §6이 허용한 오픈소스 캘린더 라이브러리(예: FullCalendar, react-big-calendar) 중 FullCalendar(`@fullcalendar/react`, `@fullcalendar/daygrid`, `@fullcalendar/timegrid`, MIT)를 쓴다. 날짜 라이브러리(localizer)와 시간대 플러그인 없이 월·주·일 뷰와 `+N`을 지원한다. 시간대는 FE-10, '오늘' 이동은 FE-06 예외를 따른다. 코드는 `features/todos/calendar/`에 둔다. |
 | G-12 | 커버리지 | 수치 목표는 두지 않는다. 규칙 추적(Q-08)으로 대신한다. |
 | G-13 | 로컬 쿠키 | Chrome과 Firefox는 `http://localhost`에서도 `Secure` 쿠키를 저장한다. 로컬 개발과 E2E는 Chromium 계열 브라우저로 하고, 개발 환경 예외 코드는 두지 않는다. |
-| G-14 | 개발 프록시 | 개발 서버는 `/api` 요청을 로컬 백엔드로 프록시한다. |
+| G-14 | 개발 서버 연결 | 프론트 개발 서버(Vite `http://localhost:5173`)는 프록시 없이 로컬 백엔드(`http://localhost:3000`)를 CORS로 직접 호출한다(2026-11-05 변경, SEC-07). |
 | G-15 | 배포 환경 | Vercel의 Production과 Preview 환경변수를 나눈다. 배포 순서는 OPS-22를 따른다. |
 | G-16 | shadcn 설정 | Tailwind CSS v4, shadcn 기본 스타일과 기본 색(neutral), 아이콘 `lucide-react`. `npx shadcn init` 직후, 첫 `add` 전에 `components.json`의 aliases를 `shared/components/ui`, `shared/lib/utils`로 바꾼다. 클래스 정렬은 `prettier-plugin-tailwindcss`를 쓴다. |
 
@@ -466,3 +468,4 @@ backend/
 | v0.10 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 사용자 시나리오 v0.12, 와이어프레임 v0.10). PRD A25–A28 반영: 1.2 인증 행, SEC-02(리프레시 토큰 회전·재사용 감지·폐기), SEC-03(`HS384` 고정, 키 48바이트), SEC-04(공개 경로에 refresh·logout), `JWT_SECRET` 길이, OPS-10(401 → 갱신 → 재시도), OPS-14(`ALTER DATABASE`로 시간대 고정), OPS-18(리프레시 토큰 인덱스, 운영 작업 SQL 위치), OPS-22, OPS-24 추가(`pg_cron` 만료 토큰 정리), Q-02 인증 테스트, BE-08 리프레시 토큰 회전, 6.3 구조(`auth.repo.js`, `db/ops/`), G-09. 6.1 `docs/` 주석을 문서 1–7로 정정(ERD 추가 반영 누락) |
 | v0.11 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11). API 명세(`docs/8-swagger.yaml`) 확인 필요 결정 반영: SEC-04 공개 경로에 `GET /api/health` 추가(응답 고정), SEC-11에 날짜만 보낸 값 예외(근거에 R5 추가), N-14에 같은 예외 연결, G-06에 헬스 공개와 날짜만 예외 명시 |
 | v0.12 | 2026-11-05 | hjining | 백엔드 구현(실행 계획 DB-03, API-12) 결과 반영: SEC-02 비밀번호 변경 시 리프레시 토큰을 폐기 표시가 아니라 삭제(EX-44, 재사용 감지와 충돌 방지), OPS-18 마이그레이션 적용 기록 `schema_migrations` 테이블 |
+| v0.13 | 2026-11-05 | hjining | SEC-04 헬스 응답을 서버·DB 상태 분리로 변경(정상 200 `{"server":"ok","db":"ok"}`, DB 실패 503 `{"server":"ok","db":"error"}`). 1.2·6.3에 개발 모드 전용 Swagger UI(`/swagger`, 설명문 제외, 배포 경로에 없음) 추가. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 프론트·API 연결을 CORS로 변경(PRD v0.15): 1.2 배포, 2장 middleware, SEC-02(`COOKIE_SAMESITE`), SEC-07(CORS 허용 목록·Origin 검사), OPS-19, 6.2 `vite.config.ts`, 6.3 `cors.js`, G-08 환경변수, G-14 프록시 없음 |

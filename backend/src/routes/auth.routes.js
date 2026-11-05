@@ -1,15 +1,16 @@
 import { Router } from 'express';
+import { env } from '../config/env.js';
 import * as authService from '../services/auth.service.js';
 import { bad, emailRule, nameRule, ok, passwordRule, validate } from './validate.js';
 
 export const authRouter = Router();
 
-const COOKIE_BASE = { httpOnly: true, secure: true, sameSite: 'lax' };
+const COOKIE_BASE = { httpOnly: true, secure: true, sameSite: env.cookieSameSite };
 const ACCESS_PATH = '/';
 const REFRESH_PATH = '/api/auth';
 
 export function setTokenCookies(res, tokens) {
-  res.cookie('access_token', tokens.accessToken, { ...COOKIE_BASE, path: ACCESS_PATH, maxAge: 15 * 60 * 1000 });
+  res.cookie('access_token', tokens.accessToken, { ...COOKIE_BASE, path: ACCESS_PATH, maxAge: env.accessTokenTtlMs });
   res.cookie('refresh_token', tokens.refreshToken, {
     ...COOKIE_BASE,
     path: REFRESH_PATH,

@@ -8,15 +8,14 @@ import * as authRepo from '../repositories/auth.repo.js';
 import * as categoriesService from './categories.service.js';
 import * as usersService from './users.service.js';
 
-const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const sha256 = (raw) => createHash('sha256').update(raw).digest('hex');
 const toMe = ({ id, email, name, timezone }) => ({ id, email, name, timezone });
 
-// 가입·로그인·갱신 공통. 갱신 시 expiresAt을 넘겨 7일 절대 만료를 유지한다
-async function issueTokens(client, userId, expiresAt = new Date(Date.now() + REFRESH_TTL_MS)) {
+// 가입·로그인·갱신 공통. 갱신 시 expiresAt을 넘겨 리프레시 절대 만료를 유지한다
+async function issueTokens(client, userId, expiresAt = new Date(Date.now() + env.refreshTokenTtlMs)) {
   const accessToken = jwt.sign({ sub: userId }, env.jwtSecret, {
     algorithm: 'HS384',
-    expiresIn: '15m',
+    expiresIn: env.accessTokenTtlMs / 1000,
     noTimestamp: true,
   });
   const refreshToken = randomBytes(32).toString('base64url');

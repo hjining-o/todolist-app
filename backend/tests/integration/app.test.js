@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/app.js';
 import { pool, withTransaction } from '../../src/config/db.js';
@@ -6,10 +6,21 @@ import { pool, withTransaction } from '../../src/config/db.js';
 afterAll(() => pool.end());
 
 describe('API-01', () => {
-  it('GET /api/health는 쿠키 없이 200 {"status":"ok"}', async () => {
+  it('GET /api/health는 쿠키 없이 200 { server: ok, db: ok }', async () => {
     const res = await request(app).get('/api/health');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body).toEqual({ server: 'ok', db: 'ok' });
+  });
+
+  it('GET /api/health는 DB 연결이 실패하면 503 { server: ok, db: error }, 내부 정보 없음', async () => {
+    const query = vi.spyOn(pool, 'query').mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await request(app).get('/api/health');
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ server: 'ok', db: 'error' });
+    expect(log).toHaveBeenCalled();
+    query.mockRestore();
+    log.mockRestore();
   });
 
   it('풀 세션 시간대는 Asia/Seoul이다(W-01)', async () => {

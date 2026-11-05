@@ -1,12 +1,12 @@
-# TodoList 기술 아키텍처 (아키텍처 다이어그램)
+# TodoList 기술 아키텍처 (아키텍처. 문서 정합성 검토: 2장 설명과 다이어그램의 "단일 프로젝트·한 도메인"을 PRD v0.15(CORS 연결, 프로젝트 구성 미결 W-09)에 맞춤 |다이어그램)
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.7 |
+| 문서 버전 | v0.8 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/3-user-scenario.md` v0.13, `docs/4-wireframe.md` v0.11, `docs/5-project-principle.md` v0.12 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.15, `docs/3-user-scenario.md` v0.14, `docs/4-wireframe.md` v0.12, `docs/5-project-principle.md` v0.13 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`A`, `B`, `K`, `M`), 시나리오 `US-xx`·`EX-xx`·`C-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `SC`·`ST`·`DLG`·`U-xx`, 프로젝트 원칙 `P-xx`·`BE-xx`·`FE-xx`·`SEC-xx`·`OPS-xx`·`G-xx`.
@@ -40,7 +40,7 @@
 
 ## 2. 시스템 전체 기술 아키텍처
 
-- 배포는 Vercel 단일 프로젝트이고, 프론트엔드 정적 빌드와 Express API(Vercel Functions)가 한 도메인(`/api/*`)에 있다(PRD §5.1, OPS-19).
+- 배포는 Vercel이고, 프론트엔드 정적 빌드와 Express API(Vercel Functions, `/api/*`)를 배포한다. 프론트는 `VITE_API_BASE_URL`의 API 출처를 CORS로 호출한다(PRD §5.1·§5.2, SEC-07, OPS-19). 프로젝트를 하나로 둘지 나눌지는 미결이다(실행 계획 W-09).
 - PostgreSQL 17은 Supabase를 DB로만 쓴다. Supabase Auth와 자동 생성 API는 쓰지 않는다(B1). 인증은 앱이 직접 발급하는 액세스 토큰(`HS384` JWT, 15분)과 리프레시 토큰(7일, DB에 해시) 쿠키다(PRD §5.2). 예외로 만료 리프레시 토큰 정리에 `pg_cron`을 쓴다(PRD A27, OPS-24).
 - 문서에 명시된 외부 인증 서비스는 없다. 소셜 로그인, 알림, 외부 캘린더 연동은 범위 밖이다(도메인 §7).
 
@@ -51,7 +51,7 @@ flowchart TB
         MB["모바일 브라우저 (반응형 웹)<br/>iOS Safari, Android Chrome 최신 2개 버전"]
     end
 
-    subgraph VC["Vercel 단일 프로젝트 (한 도메인, HTTPS)"]
+    subgraph VC["Vercel (HTTPS, 프론트·API 출처는 CORS로 연결)"]
         subgraph FEL["프론트엔드 계층 (정적 빌드)"]
             SPA["React 19 + TypeScript SPA<br/>빌드: Vite"]
             TQ["TanStack Query<br/>서버 상태 조회, 캐시, invalidate"]
@@ -64,7 +64,7 @@ flowchart TB
             RS["routes → services → repositories<br/>domain: 순수 규칙"]
             POOL["config/db<br/>pg.Pool (max 5), withTransaction"]
         end
-        ENV["Vercel 환경변수<br/>DATABASE_URL, JWT_SECRET"]
+        ENV["Vercel 환경변수<br/>DATABASE_URL, JWT_SECRET, CORS_ORIGINS"]
         LOG["Vercel 함수 로그, 대시보드<br/>운영 지표 M1–M5 확인"]
     end
 
@@ -81,7 +81,7 @@ flowchart TB
     SPA --> TQ
     SPA --> ZS
     SPA --> UI
-    TQ -->|"shared/api/client.ts<br/>/api/* 같은 출처, httpOnly 쿠키 JWT"| FN
+    TQ -->|"shared/api/client.ts<br/>VITE_API_BASE_URL/api/* (CORS, credentials include), httpOnly 쿠키 JWT"| FN
     FN --> MW
     MW --> RS
     RS --> POOL
@@ -863,3 +863,4 @@ T-01–T-08은 모두 이해관계자 확인(2026-11-04)으로 결정해 기준 
 | v0.5 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 사용자 시나리오 v0.12, 와이어프레임 v0.10, 프로젝트 원칙 v0.10). PRD A25–A27 반영: 2장 인증 설명과 `pg_cron` 노드, 5.1 401 분기에 갱신·재시도와 `HS384`·15분, 5.2 가입 응답 쿠키 2종과 리프레시 토큰 INSERT, 5.10 토큰 갱신·로그아웃 시퀀스 추가(1.2, 5.0 목록) |
 | v0.6 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11). 5.1 공개 경로를 SEC-04와 맞춤(refresh, logout, health 추가). 5.3 등록 시퀀스의 일시 형식 검증에 날짜만 보낸 값 예외(SEC-11) 표시 |
 | v0.7 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12). 다이어그램 변경 없음 |
+| v0.8 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13). 다이어그램 변경 없음. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 2장 다이어그램: 프론트 → API 호출을 CORS(`VITE_API_BASE_URL`, `credentials: include`)로, 환경변수에 `CORS_ORIGINS` |

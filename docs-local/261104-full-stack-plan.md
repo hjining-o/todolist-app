@@ -4,16 +4,19 @@
 |------|------|
 | 작성일 | 2026-11-04 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/3-user-scenario.md` v0.13, `docs/4-wireframe.md` v0.11, `docs/5-project-principle.md` v0.12, `docs/6-arch-diagram.md` v0.7, `docs/7-erd.md` v0.5, `docs/8-swagger.yaml` v0.4(API 경로·필드·상태 코드는 이 명세를 따른다) |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.15, `docs/3-user-scenario.md` v0.14, `docs/4-wireframe.md` v0.12, `docs/5-project-principle.md` v0.13, `docs/6-arch-diagram.md` v0.8, `docs/7-erd.md` v0.6, `docs/8-swagger.yaml` v0.5(API 경로·필드·상태 코드는 이 명세를 따른다) |
 | 목표일 | P0·P1 모두 2026-11-05(목) (PRD Q3) |
 | 초안 DDL | `docs-local/schema.sql` (ERD v0.3 기준, `refresh_tokens` 포함) |
 | 개정 | 2026-11-04 인증 방식 변경: 리프레시 토큰 추가, JWT 서명 알고리즘 HS384 (W-06, W-07). 기준 문서에 반영 완료(PRD A25–A28, 6.1) |
 | 개정 | 2026-11-04 API 명세(`docs/8-swagger.yaml` v0.3) 결정 반영: `GET /api/health` 공개·응답 고정(SEC-04), 날짜만 보낸 일시 허용(SEC-11, S-06), 대리 등록 `sharedTeamIds` 거부(S-07), 캘린더 42일을 달력 날짜로 판정(S-03), 쿠키 항상 `Secure`, API-08 검사 순서 |
 | 개정 | 2026-11-05 백엔드(API-01–API-14) 구현 결과를 기준 문서에 반영(`sync-docs`): 마이그레이션 적용 기록 `schema_migrations`(W-02, OPS-18, ERD 1장), 비밀번호 변경 시 리프레시 토큰 삭제(W-06, SEC-02, ERD 3.6, swagger `PATCH /api/me`), `offset` 최대 999,999,999(swagger). 구현 중 정한 것과 알아 둘 점은 6.2 |
+| 개정 | 2026-11-05 백엔드 완료 뒤 추가 변경: `GET /api/health`를 서버·DB 상태 분리 응답으로 변경(SEC-04 v0.13, swagger v0.5 S-16, CM-02·API-01 반영), 개발 모드 전용 Swagger UI `/swagger` 추가(프로젝트 원칙 1.2·6.3). 6.2 BD-10·BD-11 |
+| 개정 | 2026-11-05 프론트·API 연결을 Vite 프록시·동일 출처에서 **CORS**로 변경(사용자 결정): 백엔드 `middleware/cors.js`, 환경변수 `CORS_ORIGINS`·`COOKIE_SAMESITE`, 프론트 `VITE_API_BASE_URL`·`credentials: 'include'`. PRD v0.15, SEC-07, G-14 반영. CM-02·CM-05·UI-01·UI-02 수정. 6.2 BD-12, 6장 W-09(미결) |
 
 > 표기
 > - Task ID: 데이터베이스 `DB-nn`, 백엔드 `API-nn`, 프론트엔드 `UI-nn`, 세 영역에 걸친 공통 작업 `CM-nn`. 프로젝트 원칙의 규칙 ID(`BE-xx`, `FE-xx`)와 겹치지 않도록 다른 접두사를 썼다.
 > - 근거는 기준 문서의 ID로만 적는다(FR, R, S, F, US, EX, SC, DLG, ST, P-, BE-, FE-, N-, Q-, SEC-, OPS-, E-).
+> - 이 계획서가 정하는 ID: 확인 필요 사항 `W-nn`(6장), 백엔드 구현 중 결정 `BD-nn`, 알아 둘 위험 `BK-nn`(6.2). 사용자 시나리오 6.4의 불일치 `D-nn`, PRD 리스크 `Kn`과 구분한다.
 > - `[P1]`이 붙은 Task는 P0 완료 뒤에 한다. 표시가 없으면 P0이다.
 > - 선행 Task가 끝나야 시작할 수 있다. "API 계약만 필요"라고 적힌 선행은 API가 끝나기 전에 응답 형태만 맞춰 먼저 시작해도 된다.
 > - 모든 Task의 공통 완료 조건(Q-14 셀프 체크리스트): 린트·테스트 통과, `console.log` 없음, 커밋 메시지 Conventional Commits. 각 Task 표에서는 반복하지 않는다.
@@ -22,7 +25,7 @@
 
 ### 1.1 Task 목록 요약
 
-> 상태: ✅ 완료, 🔶 일부 완료(남은 항목은 해당 Task 메모 참고), ⏸ 보류(이유는 해당 Task 메모 참고), 빈칸은 시작 전. 2026-11-04 기준
+> 상태: ✅ 완료, 🔶 일부 완료(남은 항목은 해당 Task 메모 참고), ⏸ 보류(이유는 해당 Task 메모 참고), 빈칸은 시작 전. 2026-11-05 기준
 
 | 영역 | Task | 이름 | 우선순위 | 선행 | 상태 |
 |------|------|------|----------|------|------|
@@ -134,7 +137,7 @@ flowchart LR
 - **근거**: 프로젝트 원칙 6.1, Q-10, Q-12, Q-16, OPS-01
 - **수행 작업**
   1. 루트 `package.json` 작성(공통 스크립트: `lint`, `test`, `dev`, `build`, `db:migrate`), `backend/`, `frontend/`, `api/`, `e2e/` 디렉토리 생성.
-  2. `.env.example`에 키 이름만 기록(`DATABASE_URL`, `JWT_SECRET`). 테스트 DB는 같은 키를 커밋하지 않는 `.env.test`에 둔다(G-04).
+  2. `.env.example`에 키 이름만 기록(`DATABASE_URL`, `JWT_SECRET`). (2026-11-05 `backend/.env.example`로 이동, BD-14) 테스트 DB는 같은 키를 커밋하지 않는 `.env.test`에 둔다(G-04).
   3. `.gitignore`에 `playwright-report/`, `test-results/` 추가(`.env*` 제외 규칙은 이미 있음, `!.env.example` 유지).
   4. 루트 ESLint·Prettier 설정 하나로 공유. `import/no-restricted-paths`로 BE-01, BE-04, FE-01–FE-03 레이어 규칙을 강제. `shared/components/ui/`는 `react-refresh/only-export-components`에서 제외, `prettier-plugin-tailwindcss` 적용.
   5. `vercel.json`에 `/api/*` → `api/index.js`, 그 밖의 경로는 SPA `index.html` fallback.
@@ -148,10 +151,10 @@ flowchart LR
 - **선행 Task**: API-01, DB-01
 - **근거**: OPS-19, OPS-21, PRD K10
 - **수행 작업**
-  1. Vercel 프로젝트 생성, 저장소 연결, 환경변수 `DATABASE_URL`(운영 풀러 6543), `JWT_SECRET`(HS384용 48바이트 이상 무작위 값, 예: `openssl rand -base64 64`) 등록.
+  1. Vercel 프로젝트 생성, 저장소 연결, 환경변수 `DATABASE_URL`(운영 풀러 6543), `JWT_SECRET`(HS384용 48바이트 이상 무작위 값, 예: `openssl rand -base64 64`), `CORS_ORIGINS`(배포된 프론트 URL, 끝 `/` 없이), 프론트와 API가 다른 사이트(예: 서로 다른 `*.vercel.app`)면 `COOKIE_SAMESITE=none` 등록. 토큰 만료를 기본값(15분·7일)과 다르게 하려면 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`. 프론트에는 `VITE_API_BASE_URL`(배포된 API URL).
   2. `GET /api/health`만 있는 상태로 배포해 Express 함수 동작과 콜드 스타트를 확인.
 - **완료 조건**
-  - [ ] 배포 URL에서 쿠키 없이 `GET /api/health`가 200 `{"status":"ok"}`를 돌려준다(SEC-04)
+  - [ ] 배포 URL에서 쿠키 없이 `GET /api/health`가 200 `{"server":"ok","db":"ok"}`를 돌려준다(SEC-04 v0.13)
   - [ ] 시크릿이 저장소가 아니라 Vercel 환경변수에만 있다(OPS-01)
   - [ ] 콜드 스타트 응답 시간을 한 번 기록해 두었다
 
@@ -195,7 +198,7 @@ flowchart LR
   3. US-10(모바일 레이아웃)은 실제 모바일 브라우저 또는 Chrome 기기 에뮬레이션으로 수동 검증.
   4. PRD 4.3의 P0 체크박스를 자동 테스트·수동 검증 결과로 표시.
 - **완료 조건**
-  - [ ] 운영 URL이 HTTPS로 동작하고 `access_token`, `refresh_token` 쿠키 모두에 `Secure`, `HttpOnly`, `SameSite=Lax`가 붙는다(`refresh_token`은 `Path=/api/auth`)
+  - [ ] 운영 URL이 HTTPS로 동작하고 `access_token`, `refresh_token` 쿠키 모두에 `Secure`, `HttpOnly`, `SameSite`(`COOKIE_SAMESITE` 값, 기본 `Lax`)가 붙는다(`refresh_token`은 `Path=/api/auth`). 배포된 프론트에서 로그인 후 새로고침해도 로그인이 유지된다(쿠키가 CORS 요청에 실림)
   - [ ] 운영에서 가입·로그인·할일 등록·캘린더 조회가 동작한다
   - [ ] US-10 모바일 레이아웃(단일 열, 접이식 필터, 월 뷰 개수 표시 → 탭 시 일 뷰)을 수동 확인했다
   - [ ] PRD 4.3의 P0 수용 기준이 100% 표시되었다(M6)
@@ -304,7 +307,7 @@ flowchart LR
   1. `backend/package.json`: `express`, `pg`, `jsonwebtoken`, `cookie-parser`, `bcryptjs`, 개발용 `vitest`, `supertest`.
   2. `config/env.js`: `DATABASE_URL`, `JWT_SECRET` 검증, 없으면 기동 실패. `JWT_SECRET`은 HS384 키 길이(384비트)에 맞춰 48바이트 미만이면 기동 실패(W-07). 다른 파일은 `process.env`를 읽지 않는다.
   3. `config/db.js`: 모듈 최상위 `pg.Pool` 1개(`max: 5`, `idleTimeoutMillis: 10000`, `connectionTimeoutMillis: 5000`), `withTransaction(fn)`(BEGIN/COMMIT/ROLLBACK, `finally release()`).
-  4. `app.js`: `express.json({ limit: '100kb' })`, `cookie-parser`, `/api` 라우터, `GET /api/health`(공개, 응답 `{"status":"ok"}` 고정, SEC-04). `server.js`는 로컬 listen 전용. 루트 `api/index.js`는 `app.js`를 export.
+  4. `app.js`: `express.json({ limit: '100kb' })`, `cookie-parser`, `/api` 라우터, `GET /api/health`(공개, SEC-04. 2026-11-05 서버·DB 상태 분리 응답 `{"server":"ok","db":"ok"}`, DB 실패 503으로 변경). `server.js`는 로컬 listen 전용. 루트 `api/index.js`는 `app.js`를 export.
   5. DB 세션 시간대는 DB 기본값 `Asia/Seoul`에 맡기고(W-01, DB-01), 코드에서 `SET TIME ZONE`을 하지 않는다. 사용자별 '오늘'과 응답 오프셋은 여전히 요청자 `User.timezone`으로 계산한다(PRD 5.3).
 - **완료 조건**
   - [x] 로컬에서 `GET /api/health`가 200이다
@@ -527,7 +530,7 @@ flowchart LR
 - **수행 작업**
   1. `PATCH /api/me`: `name`(1–50), `timezone`(`Intl.supportedValuesOf('timeZone')`에 있는 값만), 비밀번호 변경(`currentPassword`, `newPassword`). 이메일 필드는 받지 않는다.
   2. 현재 비밀번호 불일치는 400 `WRONG_PASSWORD`(401 아님).
-  3. 비밀번호를 바꾸면 같은 트랜잭션에서 그 사용자의 리프레시 토큰 행을 모두 삭제하고(폐기 표시가 아님, 6.2 D-04), 현재 브라우저에는 토큰 2종을 새로 발급한다(다른 기기 세션 종료).
+  3. 비밀번호를 바꾸면 같은 트랜잭션에서 그 사용자의 리프레시 토큰 행을 모두 삭제하고(폐기 표시가 아님, 6.2 BD-04), 현재 브라우저에는 토큰 2종을 새로 발급한다(다른 기기 세션 종료).
 - **완료 조건**
   - [x] 비밀번호 변경 후 다른 에이전트가 가진 리프레시 토큰으로 갱신하면 401이다
   - [x] 이름·시간대를 바꿀 수 있고, 목록 없는 시간대 문자열은 400
@@ -574,12 +577,12 @@ flowchart LR
 - **선행 Task**: CM-01
 - **근거**: PRD 6, 프로젝트 원칙 6.2, FE-08, FE-09, Q-04, Q-11, G-14, G-16
 - **수행 작업**
-  1. Vite + React 19 + TypeScript 생성, `@/` → `src/` 별칭, Tailwind 플러그인, 개발 서버 `/api` 프록시(로컬 백엔드).
+  1. Vite + React 19 + TypeScript 생성, `@/` → `src/` 별칭, Tailwind 플러그인. 프록시는 두지 않고 API 주소를 `VITE_API_BASE_URL`(개발 `http://localhost:3000`)로 받는다(CORS, G-14, BD-12). 키 견본은 `frontend/.env.example`(BD-14).
   2. shadcn 초기화: `components.json` aliases를 `@/shared/components/ui`, `@/shared/lib/utils`로. CLI 또는 shadcn MCP로 `button`, `input`, `label`, `select`, `checkbox`, `textarea`, `table`, `badge`, `dialog`, `alert-dialog`, `sheet`, `alert`, `skeleton`, `pagination`, `tabs`, `dropdown-menu` 추가.
   3. TanStack Query `QueryClientProvider`, React Router, Zustand 설치. `main.tsx`에서 마운트.
   4. Vitest + Testing Library + `src/test/setup.ts`(Radix용 `ResizeObserver`, `hasPointerCapture`, `scrollIntoView` 보완).
 - **완료 조건**
-  - [ ] `npm run dev`로 빈 화면이 뜨고 `/api/health` 프록시 호출이 200이다
+  - [ ] `npm run dev`(5173)로 빈 화면이 뜨고 `http://localhost:3000/api/health` CORS 호출이 200이다
   - [ ] shadcn 컴포넌트가 `src/shared/components/ui/`에 생성되어 있다
   - [ ] `tsc --noEmit`, `vitest run`이 통과한다(Q-11)
   - [ ] `npm run build` 산출물이 Vercel 정적 빌드 경로와 맞다
@@ -588,7 +591,7 @@ flowchart LR
 - **선행 Task**: UI-01, API-10(응답 타입 계약만 필요)
 - **근거**: FE-04, FE-06, OPS-10, 와이어프레임 3.4, 3.5, U-19, Q-03
 - **수행 작업**
-  1. `shared/api/client.ts`: `fetch` 래퍼(`credentials: 'same-origin'`, JSON), 에러 본문을 `ApiError { status, code, message, fields }`로 변환. 컴포넌트는 `fetch`를 직접 쓰지 않는다.
+  1. `shared/api/client.ts`: `fetch` 래퍼(`VITE_API_BASE_URL` + 경로, `credentials: 'include'`, JSON), 에러 본문을 `ApiError { status, code, message, fields }`로 변환. 컴포넌트는 `fetch`를 직접 쓰지 않는다.
   2. `shared/api/queryKeys.ts`: `todos`, `todo`, `categories`, `teams`, `members`, `me`, `histories` 키 팩토리.
   3. `shared/types/`: API-10에서 확정한 응답 타입(Todo, Category, Team, TeamMember, Me, 목록 응답 `{ items, total }`, 캘린더 응답 `{ items, truncated }`).
   4. `shared/lib/dateTime.ts`: 서버 ISO 문자열을 사용자 시간대 `YYYY-MM-DD HH:mm`로, 기간은 `시작 ~ 종료`(같은 날이면 종료 날짜 생략), `Asia/Seoul`이 아니면 시간대 표기(U-19). 클라이언트 시계로 상태를 판정하지 않는다(FE-06).
@@ -771,6 +774,7 @@ flowchart LR
 | W-06 | 리프레시 토큰 도입(기준 문서는 '리프레시 토큰 없음, 24시간 JWT', PRD A18·SEC-02) | DB-02, DB-04, API-02, API-06, API-12, UI-02, CM-05 | **결정(2026-11-04)**: 도입한다. 세부 값은 이 계획의 기본안이다: 액세스 JWT 15분, 리프레시 토큰은 불투명 랜덤 문자열을 DB(`refresh_tokens`)에 해시로 저장하고 7일 절대 만료, 갱신마다 회전, 폐기된 토큰 재사용 시 그 사용자 토큰 전체 폐기, 로그아웃 시 폐기, 비밀번호 변경 시 그 사용자 토큰 행 삭제(API-12 구현 때 폐기 표시에서 삭제로 바꿈. 폐기로 남기면 다른 브라우저의 옛 토큰이 재사용 감지를 일으켜 방금 새로 받은 토큰까지 폐기된다, EX-44. 반영 완료: SEC-02 v0.12, ERD 3.6 v0.5). 리프레시 쿠키는 `Path=/api/auth`. 보호 API의 인증은 여전히 DB 조회 없이 JWT 검증만 한다 |
 | W-07 | JWT 서명 알고리즘(기준 문서에 없음) | API-01, API-02, API-06, CM-02 | **결정(2026-11-04)**: `HS384`. 검증 시 `algorithms: ['HS384']`로 고정하고, `JWT_SECRET`은 48바이트 이상이어야 한다 |
 | W-08 | 만료 리프레시 토큰 정리(행이 계속 쌓임) | DB-05, CM-05 | **결정(2026-11-04)**: 정리한다. Supabase `pg_cron`으로 매일 04:00 `expires_at < now()` 행을 삭제한다. 폐기됐지만 만료 전인 행은 재사용 감지를 위해 남긴다. 앱 코드·공개 엔드포인트·추가 시크릿은 없다. 삭제 쿼리는 인덱스 없이 전체 스캔한다(행 수가 많아져 느려지면 `expires_at` 인덱스 추가) |
+| W-09 | 운영 배포 구성: 프론트와 API를 Vercel 프로젝트 하나(같은 출처, CORS 불필요)로 둘지 둘로 나눌지(다른 출처, CORS 필요). 둘로 나누고 각자 `*.vercel.app`이면 서로 다른 사이트라 `COOKIE_SAMESITE=none`이 필요하고, 서드파티 쿠키를 막는 브라우저(Safari 등)에서 로그인이 유지되지 않을 수 있다. 같은 상위 도메인의 하위 도메인(`app.example.com`·`api.example.com`)이면 `lax`로 된다 | CM-02, CM-05 | **미결**(배포 때 결정). 코드는 두 경우 모두 환경변수만으로 대응한다 |
 
 ### 6.1 기준 문서 반영 필요 (W-06–W-08)
 
@@ -793,25 +797,30 @@ flowchart LR
 
 | ID | 내용 | 관련 Task | 반영 |
 |----|------|-----------|------|
-| D-01 | 할일 생성·수정 요청에서 `null`은 명세가 nullable로 둔 필드만 받는다(생성 `teamId`·`description`, 수정 `description`). 일시·카테고리·공유 팀·소유자에 `null`을 보내면 400. 프론트는 고르지 않은 값이면 필드를 빼고 보낸다 | API-09, API-11, UI-02, UI-07 | swagger v0.3 S-08과 같음(변경 없음) |
-| D-02 | 목록·캘린더의 F2 `categoryId` 필터는 본인 할일에만 적용한다. 지정하면 남의 할일은 결과에서 빠진다. 남의 카테고리 ID면 빈 결과 | API-10 | swagger S-04와 같음 |
-| D-03 | `offset`은 9자리 이하 정수(최대 999,999,999). 넘으면 400 | API-10 | swagger v0.4 |
-| D-04 | 비밀번호 변경 시 리프레시 토큰을 폐기 표시가 아니라 **삭제**한다(W-06 참고, EX-44) | API-12 | SEC-02 v0.12, ERD 3.6 v0.5, swagger v0.4 |
-| D-05 | 순환 의존 회피(BE-06, BE-09): 카테고리 삭제 때 할일을 기본 카테고리로 옮기는 SQL은 `categories.repo`(`moveTodosToCategory`), 구성원 제거·팀 나가기 때 공유 삭제는 `teams.repo`, 이력 조회의 '볼 수 있음' 확인은 `todos.service`를 부르지 않고 `todo-histories.repo`에서 `access.js` 조각으로 한다(API-13 수행 작업 #3과 다름) | API-07, API-08, API-13, API-14 | 코드 구조만, 기준 문서 변경 없음 |
-| D-06 | 공유 팀 표시 필터(R21, 보는 사람이 속한 팀만)도 권한 조건이라 `access.js`의 `shareTeamVisible` 조각으로 둔다. `access.test.js`가 다른 파일의 소유자·역할 조건 문자열을 금지한다 | API-04, API-10 | 코드 구조만 |
-| D-07 | 이력 기록(API-13)은 변경 전 값을 `SELECT … FOR UPDATE`로 잠그고 읽어 동시 수정 때 이력이 어긋나지 않게 한다 | API-11, API-13 | 코드만 |
-| D-08 | 팀 나가기(API-14): 소유자가 아닌 구성원은 403, `nextOwnerId: null`은 400(uuid 아님) | API-14 | swagger와 같음 |
-| D-09 | 쿼리 문자열의 일시 오프셋 `+`는 `%2B`로 인코딩해야 한다(`URLSearchParams` 사용). 그대로 보내면 공백으로 읽혀 400 | UI-02, UI-06, UI-08 | API-10 구현 메모 |
+| BD-01 | 할일 생성·수정 요청에서 `null`은 명세가 nullable로 둔 필드만 받는다(생성 `teamId`·`description`, 수정 `description`). 일시·카테고리·공유 팀·소유자에 `null`을 보내면 400. 프론트는 고르지 않은 값이면 필드를 빼고 보낸다 | API-09, API-11, UI-02, UI-07 | swagger v0.3 S-08과 같음(변경 없음) |
+| BD-02 | 목록·캘린더의 F2 `categoryId` 필터는 본인 할일에만 적용한다. 지정하면 남의 할일은 결과에서 빠진다. 남의 카테고리 ID면 빈 결과 | API-10 | swagger S-04와 같음 |
+| BD-03 | `offset`은 9자리 이하 정수(최대 999,999,999). 넘으면 400 | API-10 | swagger v0.4 |
+| BD-04 | 비밀번호 변경 시 리프레시 토큰을 폐기 표시가 아니라 **삭제**한다(W-06 참고, EX-44) | API-12 | SEC-02 v0.12, ERD 3.6 v0.5, swagger v0.4 |
+| BD-05 | 순환 의존 회피(BE-06, BE-09): 카테고리 삭제 때 할일을 기본 카테고리로 옮기는 SQL은 `categories.repo`(`moveTodosToCategory`), 구성원 제거·팀 나가기 때 공유 삭제는 `teams.repo`, 이력 조회의 '볼 수 있음' 확인은 `todos.service`를 부르지 않고 `todo-histories.repo`에서 `access.js` 조각으로 한다(API-13 수행 작업 #3과 다름) | API-07, API-08, API-13, API-14 | 코드 구조만, 기준 문서 변경 없음 |
+| BD-06 | 공유 팀 표시 필터(R21, 보는 사람이 속한 팀만)도 권한 조건이라 `access.js`의 `shareTeamVisible` 조각으로 둔다. `access.test.js`가 다른 파일의 소유자·역할 조건 문자열을 금지한다 | API-04, API-10 | 코드 구조만 |
+| BD-07 | 이력 기록(API-13)은 변경 전 값을 `SELECT … FOR UPDATE`로 잠그고 읽어 동시 수정 때 이력이 어긋나지 않게 한다 | API-11, API-13 | 코드만 |
+| BD-08 | 팀 나가기(API-14): 소유자가 아닌 구성원은 403, `nextOwnerId: null`은 400(uuid 아님) | API-14 | swagger와 같음 |
+| BD-09 | 쿼리 문자열의 일시 오프셋 `+`는 `%2B`로 인코딩해야 한다(`URLSearchParams` 사용). 그대로 보내면 공백으로 읽혀 400 | UI-02, UI-06, UI-08 | API-10 구현 메모 |
+| BD-10 | `GET /api/health`는 서버·DB 상태를 따로 응답한다. 정상 200 `{"server":"ok","db":"ok"}`, DB 연결 실패 503 `{"server":"ok","db":"error"}`(`SELECT 1`로 확인, 에러 내용은 로그에만). DB가 멈추면 연결 제한 시간(5초) 뒤에 503 | API-01, CM-02, CM-05 | SEC-04 v0.13, swagger v0.5 |
+| BD-11 | 개발 모드(`npm run dev`)에서만 Swagger UI를 `http://localhost:3000/swagger`에 붙인다(`server.js`). 원본은 `docs/8-swagger.yaml`이고 화면에는 문자열 `description`을 뺀다. 명세를 고치면 서버를 다시 시작해야 반영된다(`--watch`는 yaml을 감시하지 않음). 화면용 명세는 응답 `description`이 빠져 OpenAPI 검증 도구에는 맞지 않는다 | API-01, UI-02 | 프로젝트 원칙 v0.13 1.2·6.3, swagger v0.5 |
+| BD-12 | 프론트·API 연결은 CORS다(2026-11-05 사용자 결정, Vite 프록시 없음). 백엔드 `middleware/cors.js`가 `CORS_ORIGINS` 허용 출처에만 `Access-Control-Allow-Origin`(요청 출처)·`Allow-Credentials: true`를 주고, preflight(`OPTIONS`)는 204로 끝낸다. 목록 밖 출처의 `POST`·`PATCH`·`DELETE`는 403(CSRF 방어). 같은 출처(Swagger UI)와 `Origin` 없는 요청(curl)은 통과. 쿠키 `SameSite`는 `COOKIE_SAMESITE`(기본 `lax`). 프론트는 `VITE_API_BASE_URL` + `credentials: 'include'` | CM-02, CM-05, UI-01, UI-02 | PRD v0.15 5.1·5.2, SEC-02·SEC-07·G-08·G-14 v0.13, swagger v0.5 |
+| BD-13 | 토큰 만료를 환경변수로 바꿀 수 있다: `ACCESS_TOKEN_TTL_MINUTES`(기본 15), `REFRESH_TOKEN_TTL_DAYS`(기본 7). 1 이상 정수만, 틀리면 기동 실패. 액세스 쿠키 `maxAge`와 JWT `exp`, 리프레시 `expires_at`·쿠키 `expires`가 같은 값을 쓴다. 기본값은 PRD §5.2·W-06의 15분·7일 그대로 | CM-02, API-06 | G-08 v0.13 |
+| BD-14 | 환경변수 견본은 `backend/.env.example`이다(루트에서 이동). 실제로 읽히는 파일은 `backend/.env`(`npm run dev`·`db:migrate`의 `--env-file`)와 `backend/.env.test`(Vitest·`db:reset:test`)이고, 루트 `.env`는 아무도 읽지 않는다. 프론트 키(`VITE_API_BASE_URL`)는 UI-01에서 `frontend/.env.example`에 둔다 | CM-01, UI-01 | 프로젝트 원칙 v0.13 6.1·6.3, OPS-01 |
 
 **알아 둘 점(남은 위험)** — 코드에는 `shortcut:` 주석으로 남겼다.
 
 | ID | 내용 | 위치 | 대응(필요해지면) |
 |----|------|------|------------------|
-| K-01 | 같은 소유자가 "B 제거·강등"과 "B에게 소유권을 넘기며 나가기"를 거의 동시에 보내면 소유자 없는 팀이 생길 수 있다. 구성원 제거의 소유자 확인도 트랜잭션 밖이다 | `teams.service.js` | 트랜잭션 안에서 `team_members` 행을 잠그고 소유자를 다시 확인(약 10줄) |
-| K-02 | 카테고리 삭제·할일 등록의 존재·권한 검사가 트랜잭션 밖이라 동시 요청이 겹치면 23503으로 500(전부 롤백, 데이터 손실 없음)이나 공유가 남을 수 있다 | `categories.service.js`, `todos.service.js` | 검사를 트랜잭션 안으로 이동 |
-| K-03 | 목록의 `COUNT(*) OVER()` 때문에 공유 팀 서브쿼리가 LIMIT 전 필터 결과 전체에 돈다 | `todos.repo.js` | 사용자당 할일이 수천 건을 넘으면 id만 먼저 페이지네이션 후 조인 |
-| K-04 | 이력 동시 완료 테스트는 잠금(D-07)이 빠져도 우연히 통과할 수 있어 동시성 보장을 완전히 검증하지 못한다 | `todo-histories.test.js` | - |
-| K-05 | 마이그레이션 파일 COMMIT과 `schema_migrations` 기록 사이에 끊기면 재실행 때 중복 적용 오류 | `db/migrate.js` | 마이그레이션이 늘면 기록을 파일 트랜잭션 안으로 |
-| K-06 | 자정이 없는 시간대(DST가 00:00에 바뀌는 곳)는 '오늘 00:00'이 01:00 근처로 밀린다 | `domain/period.js` | 해당 사용자가 생기면 보정 |
-| K-07 | 통합 테스트는 테스트 DB 하나를 쓰므로 두 실행을 동시에 돌리면 서로 데이터를 지워 실패한다. 판정은 단독 실행으로 한다 | `tests/` | - |
-| K-08 | 커밋 `606e4be`(API-07 상태 표시 보정)에는 이 문서 1줄이 깨진 상태가 남아 있다. `ecd3a14`에서 고쳤다 | git 기록 | - |
+| BK-01 | 같은 소유자가 "B 제거·강등"과 "B에게 소유권을 넘기며 나가기"를 거의 동시에 보내면 소유자 없는 팀이 생길 수 있다. 구성원 제거의 소유자 확인도 트랜잭션 밖이다 | `teams.service.js` | 트랜잭션 안에서 `team_members` 행을 잠그고 소유자를 다시 확인(약 10줄) |
+| BK-02 | 카테고리 삭제·할일 등록의 존재·권한 검사가 트랜잭션 밖이라 동시 요청이 겹치면 23503으로 500(전부 롤백, 데이터 손실 없음)이나 공유가 남을 수 있다 | `categories.service.js`, `todos.service.js` | 검사를 트랜잭션 안으로 이동 |
+| BK-03 | 목록의 `COUNT(*) OVER()` 때문에 공유 팀 서브쿼리가 LIMIT 전 필터 결과 전체에 돈다 | `todos.repo.js` | 사용자당 할일이 수천 건을 넘으면 id만 먼저 페이지네이션 후 조인 |
+| BK-04 | 이력 동시 완료 테스트는 잠금(BD-07)이 빠져도 우연히 통과할 수 있어 동시성 보장을 완전히 검증하지 못한다 | `todo-histories.test.js` | - |
+| BK-05 | 마이그레이션 파일 COMMIT과 `schema_migrations` 기록 사이에 끊기면 재실행 때 중복 적용 오류 | `db/migrate.js` | 마이그레이션이 늘면 기록을 파일 트랜잭션 안으로 |
+| BK-06 | 자정이 없는 시간대(DST가 00:00에 바뀌는 곳)는 '오늘 00:00'이 01:00 근처로 밀린다 | `domain/period.js` | 해당 사용자가 생기면 보정 |
+| BK-07 | 통합 테스트는 테스트 DB 하나를 쓰므로 두 실행을 동시에 돌리면 서로 데이터를 지워 실패한다. 판정은 단독 실행으로 한다 | `tests/` | - |
+| BK-08 | 커밋 `606e4be`(API-07 상태 표시 보정)에는 이 문서 1줄이 깨진 상태가 남아 있다. `ecd3a14`에서 고쳤다 | git 기록 | - |

@@ -1,18 +1,18 @@
 # =============================================================================
 # TodoList API 명세 (OpenAPI 3.1 / Swagger)
 # -----------------------------------------------------------------------------
-# 문서 버전   : v0.4
+# 문서 버전   : v0.5
 # 상태        : 초안
 # 최종 수정일 : 2026-11-05
 # 작성자      : hjining
 # 기준 문서   :
 #   - docs/1-domain-definition.md  v0.13  (도메인 정의서)
-#   - docs/2-prd.md                v0.14  (PRD)
-#   - docs/3-user-scenario.md      v0.13  (사용자 시나리오)
-#   - docs/4-wireframe.md          v0.11  (와이어프레임)
-#   - docs/5-project-principle.md  v0.12  (프로젝트 구조 설계 원칙)
-#   - docs/6-arch-diagram.md       v0.7   (기술 아키텍처)
-#   - docs/7-erd.md                v0.5   (ERD)
+#   - docs/2-prd.md                v0.15  (PRD)
+#   - docs/3-user-scenario.md      v0.14  (사용자 시나리오)
+#   - docs/4-wireframe.md          v0.12  (와이어프레임)
+#   - docs/5-project-principle.md  v0.13  (프로젝트 구조 설계 원칙)
+#   - docs/6-arch-diagram.md       v0.8   (기술 아키텍처)
+#   - docs/7-erd.md                v0.6   (ERD)
 # 참고 자료(로컬, git 추적 제외):
 #   - docs-local/261104-full-stack-plan.md  (풀스택 실행 계획 WBS, 작성일 2026-11-04)
 #   - docs-local/schema.sql                 (초안 DDL, ERD v0.3 기준)
@@ -28,25 +28,27 @@
 # | v0.2 | 2026-11-04 | hjining | 확인 필요 결정 반영: S-16 헬스 공개·응답 고정, S-07 대리 등록 `sharedTeamIds` 거부(400), S-03 42일을 달력 날짜로 판정, S-12 자동 로그인 확인. 문서 간 불일치 해소 표시, 기준 문서 버전 갱신 |
 # | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6, ERD v0.4). 문서 정합성 검토로 해소한 불일치 표시(PRD FR-01 #6·시나리오 EX-05 공개 경로, PRD §5.3 날짜만 예외). API 변경 없음 |
 # | v0.4 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7, ERD v0.5). 백엔드 구현 결과 반영: `offset` 최대 999,999,999(넘으면 400), `PATCH /api/me` 비밀번호 변경 시 리프레시 토큰 삭제(폐기 표시 아님). 그 밖 API 변경 없음 |
+# | v0.5 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13, 기술 아키텍처 v0.8, ERD v0.6). `GET /api/health` 응답을 서버·DB 상태 분리로 변경: 정상 200 `{ server: ok, db: ok }`, DB 연결 실패 503 `{ server: ok, db: error }`(S-16). 개발 모드 Swagger UI `/swagger` 안내 추가. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 프론트·API 연결을 CORS로 변경: 공통 규칙 기본 경로·인증(SameSite)·CSRF·CORS 행, `servers` 설명 |
 # =============================================================================
 openapi: 3.1.0
 info:
   title: TodoList API
   # 위 주석의 '문서 버전'과 같은 값이어야 한다.
-  version: v0.4
+  version: v0.5
   description: |
     인증된 사용자가 기간(시작·종료 일시)이 있는 할일을 카테고리별로 관리하고, 팀과 공유해
     목록·캘린더(월·주·일)로 보며, 변경 이력을 추적하는 웹 TodoList의 REST API다.
 
-    - 상태: 초안 / 최종 수정일: 2026-11-04 / 작성자: hjining
-    - 기준 문서: 도메인 정의서 v0.13, PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11,
-      프로젝트 원칙 v0.12, 기술 아키텍처 v0.7, ERD v0.5
+    - 상태: 초안 / 최종 수정일: 2026-11-05 / 작성자: hjining
+    - 기준 문서: 도메인 정의서 v0.13, PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12,
+      프로젝트 원칙 v0.13, 기술 아키텍처 v0.8, ERD v0.6
     - 참고 자료(로컬, git 추적 제외): `docs-local/261104-full-stack-plan.md`(이하 '실행 계획', Task ID `API-nn`·`CM-nn`·`UI-nn`),
       `docs-local/schema.sql`. 기준 문서와 다르면 기준 문서를 따르고, 기준 문서에 없는 API 세부는 실행 계획을 채택했다.
     - 근거 표기: 도메인(`FR`, `R`, `S`, `F`, `UC`), PRD(`A`, `B`, `K`, `M`, `SC`, `PRD §n`),
       시나리오(`US`, `EX`, `C`, `시나리오 §6.2`), 와이어프레임(`U`, `ST`, `DLG`),
       프로젝트 원칙(`N`, `SEC`, `OPS`, `G`), 아키텍처(`T`, `6-arch 5.n`), ERD(`E`), 실행 계획(`API-nn`, `CM-nn`, `UI-nn`, `W-nn`).
     - 이 명세에서 정한 사항(기준 문서·실행 계획 모두에 API 세부가 없던 부분)은 `S-xx`로 표시하고 아래 '확인 필요 사항'에 모았다.
+    - 개발 모드(`npm run dev`)에서는 `http://localhost:3000/swagger`의 Swagger UI로 이 명세를 본다. 화면에는 `description` 설명문을 빼고 보여 주므로 설명은 이 파일에서 읽는다. 배포 환경에는 Swagger UI가 없다(프로젝트 원칙 6.3).
 
     ## 변경 이력
 
@@ -56,18 +58,19 @@ info:
     | v0.2 | 2026-11-04 | hjining | 확인 필요 결정 반영: S-16 헬스 공개·응답 고정, S-07 대리 등록 `sharedTeamIds` 거부(400), S-03 42일을 달력 날짜로 판정, S-12 자동 로그인 확인. 문서 간 불일치 해소 표시, 기준 문서 버전 갱신 |
     | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6, ERD v0.4). 문서 정합성 검토로 해소한 불일치 표시(PRD FR-01 #6·시나리오 EX-05 공개 경로, PRD §5.3 날짜만 예외). API 변경 없음 |
     | v0.4 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7, ERD v0.5). 백엔드 구현 결과 반영: `offset` 최대 999,999,999(넘으면 400), `PATCH /api/me` 비밀번호 변경 시 리프레시 토큰 삭제(폐기 표시 아님). 그 밖 API 변경 없음 |
+    | v0.5 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13, 기술 아키텍처 v0.8, ERD v0.6). `GET /api/health` 응답을 서버·DB 상태 분리로 변경: 정상 200 `{ server: ok, db: ok }`, DB 연결 실패 503 `{ server: ok, db: error }`(S-16). 개발 모드 Swagger UI `/swagger` 안내 추가. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 프론트·API 연결을 CORS로 변경: 공통 규칙 기본 경로·인증(SameSite)·CSRF·CORS 행, `servers` 설명 |
 
     ## 공통 규칙
 
     | 항목 | 규칙 | 근거 |
     |------|------|------|
-    | 기본 경로 | 모든 경로는 같은 출처의 `/api/*`. 경로는 소문자 kebab-case 복수형 명사, 중첩 최대 2단계, 동작은 HTTP 메서드로 표현. 예외 `/api/me` | N-11, OPS-19, PRD §5.1 |
+    | 기본 경로 | 모든 경로는 API 출처의 `/api/*`이고 프론트는 CORS로 호출한다(SEC-07). 경로는 소문자 kebab-case 복수형 명사, 중첩 최대 2단계, 동작은 HTTP 메서드로 표현. 예외 `/api/me` | N-11, OPS-19, PRD §5.1 |
     | 버전 관리 | 경로·헤더 버전 접두사는 기준 문서에 없어 두지 않는다 | - |
     | 메서드 | `GET`은 상태를 바꾸지 않는다. 상태 변경은 `POST`·`PATCH`·`DELETE`만 | N-13, SEC-07 |
-    | 인증 | 액세스 토큰: `HS384` JWT, 15분, 쿠키 `access_token`(`Path=/`). 리프레시 토큰: `crypto.randomBytes(32)` 불투명 문자열, 7일 절대 만료, DB에는 SHA-256 해시만, 쿠키 `refresh_token`(`Path=/api/auth`). 두 쿠키 모두 `httpOnly; Secure; SameSite=Lax`. JWT 페이로드는 `sub`(사용자 ID)와 `exp`만 담고 권한은 요청마다 DB로 확인 | PRD §5.2 A18·A25·A26, SEC-02, SEC-03, G-09, API-06 |
+    | 인증 | 액세스 토큰: `HS384` JWT, 15분, 쿠키 `access_token`(`Path=/`). 리프레시 토큰: `crypto.randomBytes(32)` 불투명 문자열, 7일 절대 만료, DB에는 SHA-256 해시만, 쿠키 `refresh_token`(`Path=/api/auth`). 두 쿠키 모두 `httpOnly; Secure; SameSite=Lax`(프론트·API가 다른 사이트면 `COOKIE_SAMESITE=none`으로 `None`). JWT 페이로드는 `sub`(사용자 ID)와 `exp`만 담고 권한은 요청마다 DB로 확인 | PRD §5.2 A18·A25·A26, SEC-02, SEC-03, G-09, API-06 |
     | 공개 경로 | `POST /api/auth/signup`, `/login`, `/refresh`, `/logout`, `GET /api/health`만 인증 없이 호출. 그 밖의 모든 `/api/*`는 액세스 토큰 필요 | SEC-04, R1, API-02 |
     | 401 처리 | 보호 API가 401 `UNAUTHENTICATED`를 주면 클라이언트는 `POST /api/auth/refresh`로 한 번 갱신한 뒤 원래 요청을 한 번 다시 보낸다. 갱신도 401이면 로그인 화면(ST-01) | OPS-10, EX-42, UI-02 |
-    | CSRF | `SameSite=Lax` + 상태 변경 GET 금지 + 동일 출처. CSRF 토큰·CORS 허용 목록 없음 | PRD §5.2, SEC-07 |
+    | CSRF·CORS | 허용 출처는 `CORS_ORIGINS`(개발 `http://localhost:5173`). 허용 출처에만 `Access-Control-Allow-Origin`(요청 출처)·`Allow-Credentials: true`, preflight는 204(`GET, POST, PATCH, DELETE`, `Content-Type`). 목록 밖 출처의 `POST`·`PATCH`·`DELETE`는 403 `FORBIDDEN`(같은 출처·`Origin` 없는 요청은 통과). 상태 변경 GET 금지, CSRF 토큰 없음 | PRD §5.2, SEC-07 |
     | JSON 이름 | 필드·쿼리 파라미터는 camelCase. 열거 값은 UPPER_SNAKE_CASE. 식별자는 `uuid` | N-09, N-14, N-20, G-07 |
     | 일시 | ISO 8601 + 오프셋, 분 단위(예: `2026-11-04T09:00+09:00`). 응답은 요청자 `User.timezone`의 오프셋으로 보낸다. 요청에서 오프셋 없는 일시(`2026-11-04T09:00`)는 400. 날짜만(`2026-11-04`)은 예외로 받는다(S-06) | PRD §5.3 A20, SEC-11, FE-10, API-09, API-10 |
     | 상태 | `status`는 저장하지 않는 계산값. 서버 현재 시각(분 단위 절삭)으로 S1→S2→S3→S4 순 판정. 요청 필드로 받지 않는다 | 도메인 §5, P-04, R5 |
@@ -147,7 +150,7 @@ info:
     | S-13 | 팀 목록 항목 `id`, `name`, `role`(요청자의 역할). 구성원 항목에 `userId`를 더한다(경로 `{userId}`에 필요). 팀 목록은 이름 오름차순, 구성원은 소유자 → 관리자 → 일반 팀원, 같은 역할 안에서 이름 오름차순 | `GET /api/teams`, `GET /api/teams/{teamId}/members` |
     | S-14 | 역할 변경 대상이 소유자(요청자 자신)이면 400 `VALIDATION_ERROR`, 대상이 그 팀 구성원이 아니면 404 `NOT_FOUND`. 성공 시 `200`과 갱신된 구성원 | `PATCH /api/teams/{teamId}/members/{userId}` |
     | S-15 | 구성원 제거 대상이 그 팀 구성원이 아니면 404 `NOT_FOUND` | `DELETE /api/teams/{teamId}/members/{userId}` |
-    | S-16 | 헬스는 공개 경로이고 응답은 `200 {"status":"ok"}`로 고정한다(내부 정보 없음). SEC-04 v0.11에 반영 | `GET /api/health` |
+    | S-16 | 헬스는 공개 경로이고 응답은 서버·DB 상태만 담는다: 정상 `200 {"server":"ok","db":"ok"}`, DB 연결 실패 `503 {"server":"ok","db":"error"}`(내부 정보 없음). SEC-04 v0.11에 반영, v0.13에서 상태 분리로 변경 | `GET /api/health` |
     | S-17 | 카테고리 응답 필드 `id`, `name`, `isDefault`. 목록은 기본 카테고리 먼저(U-18 [제안] 채택), 그다음 이름 오름차순 | `/api/categories` |
 
     ## 문서 간 불일치(참고)
@@ -165,7 +168,7 @@ info:
 
 servers:
   - url: /
-    description: 같은 출처(Vercel 단일 프로젝트, 한 도메인). 경로는 `/api/*`(OPS-19).
+    description: API 출처. 프론트는 `VITE_API_BASE_URL`로 이 출처를 호출한다(CORS, SEC-07). 경로는 `/api/*`(OPS-19).
 
 tags:
   - name: auth
@@ -1179,26 +1182,26 @@ paths:
       operationId: getHealth
       summary: 헬스 확인
       description: |
-        Day 1 오전에 빈 API를 먼저 배포해 Express 함수와 콜드 스타트를 확인하는 경로다. 정상이면 200이다.
+        Day 1 오전에 빈 API를 먼저 배포해 Express 함수와 콜드 스타트를 확인하는 경로다. 서버 상태(`server`)와 DB 상태(`db`, `SELECT 1`로 확인)를 따로 응답한다. DB가 정상이면 200, 연결에 실패하면 503이다.
 
         - 근거: OPS-21, G-06, PRD K10, CM-02, API-01 #4
-        - S-16(공개 경로, 응답 고정. SEC-04 v0.11)
+        - S-16(공개 경로, 서버·DB 상태만 응답. SEC-04 v0.13)
       security: []
       responses:
         '200':
-          description: 정상. 내부 정보는 담지 않는다(S-16).
+          description: 서버·DB 모두 정상. 내부 정보는 담지 않는다(S-16).
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: false
-                required: [status]
-                properties:
-                  status:
-                    type: string
-                    const: ok
-        '500':
-          $ref: '#/components/responses/InternalError'
+                $ref: '#/components/schemas/Health'
+              example: { server: ok, db: ok }
+        '503':
+          description: DB 연결 실패. 원인은 응답에 담지 않고 서버 로그에만 남긴다(S-16).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example: { server: ok, db: error }
 
 components:
   securitySchemes:
@@ -1270,6 +1273,19 @@ components:
       example: 'refresh_token=; HttpOnly; Secure; SameSite=Lax; Path=/api/auth; Max-Age=0'
 
   schemas:
+    Health:
+      type: object
+      description: '헬스 응답(S-16). 응답하고 있으면 서버는 항상 `ok`다.'
+      additionalProperties: false
+      required: [server, db]
+      properties:
+        server:
+          type: string
+          const: ok
+        db:
+          type: string
+          enum: [ok, error]
+
     Uuid:
       type: string
       format: uuid

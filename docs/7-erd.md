@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.5 |
+| 문서 버전 | v0.6 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/4-wireframe.md` v0.11, `docs/5-project-principle.md` v0.12, `docs/6-arch-diagram.md` v0.7 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.15, `docs/4-wireframe.md` v0.12, `docs/5-project-principle.md` v0.13, `docs/6-arch-diagram.md` v0.8 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`, 프로젝트 원칙 `N-xx`·`G-xx`·`OPS-xx`·`P-xx`.
@@ -272,3 +272,4 @@ E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반�
 | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 와이어프레임 v0.10, 프로젝트 원칙 v0.10, 기술 아키텍처 v0.5). PRD A25·A27·A28 반영(E-15): `refresh_tokens` 테이블(1.1, 2장 다이어그램, 관계 10개), FK `user_id` RESTRICT(3.1), `uq_refresh_tokens_token_hash`·`idx_refresh_tokens_user_id`(3.2), 보존 규칙 3.6 신설, 4장 모듈 `auth`, 1.2 삭제·시간대 행 |
 | v0.4 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6). 프로젝트 원칙 v0.10·기술 아키텍처 v0.5를 가리키던 낡은 참조 정정. 테이블·제약 변경 없음 |
 | v0.5 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7). 백엔드 구현 결과 반영: 1장에 적용 기록 테이블 `schema_migrations`는 ERD 밖이라는 설명, 3.6에 비밀번호 변경 시 행 삭제 규칙. 도메인 테이블·제약 변경 없음 |
+| v0.6 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13, 기술 아키텍처 v0.8). 테이블·제약 변경 없음. 기준 문서 버전 갱신(PRD v0.15, 와이어프레임 v0.12) |
