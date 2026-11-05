@@ -19,7 +19,7 @@ const others: TeamMember[] = [
 ]
 
 // teamCalls: GET /api/teams 호출 횟수(invalidate 확인용)
-function setup(role: Team['role'], members: TeamMember[], teams: Team[] = [{ id: '5', name: '마케팅팀', role }]) {
+function setup(role: Team['role'], members: TeamMember[], teams: Team[] = [{ id: '5', name: '마케팅팀', role, color: null }]) {
   const counter = { teamCalls: 0 }
   get.mockImplementation(async (path: string) => {
     if (path === '/api/me') return me
@@ -59,7 +59,7 @@ describe('팀 나가기(DLG-04)', () => {
   })
 
   it('다음 소유자를 고르면 POST 하고 /teams 로 이동하며 teams 를 다시 불러온다', async () => {
-    const teams: Team[] = [{ id: '5', name: '마케팅팀', role: 'OWNER' }]
+    const teams: Team[] = [{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }]
     const counter = setup('OWNER', [owner, ...others], teams)
     post.mockImplementation(async () => {
       teams.length = 0 // 서버에서 나간 뒤에는 목록에서 사라진다

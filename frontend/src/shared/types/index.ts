@@ -84,10 +84,12 @@ export interface TodoHistoryList {
 }
 
 export type TeamRole = 'OWNER' | 'MANAGER' | 'MEMBER'
+export type TeamColor = 'RED' | 'ORANGE' | 'YELLOW' | 'GREEN' | 'TEAL' | 'BLUE' | 'VIOLET' | 'PINK'
 export interface Team {
   id: string
   name: string
   role: TeamRole
+  color: TeamColor | null // 요청자 본인 설정. null 이면 화면이 자동 배정
 }
 export interface TeamList {
   items: Team[]

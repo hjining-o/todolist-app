@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { api } from '@/shared/api/client'
-import type { Todo } from '@/shared/types'
+import type { Team, Todo } from '@/shared/types'
 import { useCalendarStore } from '@/stores/calendarStore'
 import { useTodoFilterStore } from '@/stores/todoFilterStore'
 import { me, renderApp } from '@/test/renderApp'
@@ -30,10 +30,10 @@ const todo = (over: Partial<Todo> = {}): Todo => ({
   ...over,
 })
 
-function setup(items: Todo[] = [todo()], truncated = false) {
+function setup(items: Todo[] = [todo()], truncated = false, teams: Team[] = [{ id: 't1', name: '마케팅팀', role: 'MEMBER', color: null }]) {
   get.mockImplementation(async (path: string) => {
     if (path === '/api/me') return me
-    if (path === '/api/teams') return { items: [{ id: 't1', name: '마케팅팀', role: 'MEMBER' }] }
+    if (path === '/api/teams') return { items: teams }
     if (path === '/api/teams/t1/members') return { items: [{ userId: '1', name: '홍길동', email: '', role: 'OWNER' }] }
     if (path === '/api/todos/a') return items[0]
     if (path === '/api/todos/a/histories') return { items: [] }
@@ -144,5 +144,64 @@ describe('CalendarPage', () => {
     setup([])
     renderApp('/calendar')
     expect(await screen.findByText('이 날 할일이 없습니다.')).toBeInTheDocument()
+  })
+
+  describe('막대 색·상태(UI-13)', () => {
+    const bar = () => document.querySelector<HTMLElement>('.fc-daygrid-event')!
+    const main = () => bar().querySelector<HTMLElement>('.fc-event-main')!
+    const teams: Team[] = [
+      { id: 't1', name: '마케팅팀', role: 'MEMBER', color: 'BLUE' },
+      { id: 't2', name: '영업팀', role: 'MEMBER', color: 'YELLOW' },
+    ]
+    const shared = (...ids: string[]) => ids.map((id) => ({ id, name: id === 't1' ? '마케팅팀' : '영업팀' }))
+    const render = async (t: Todo, ts = teams) => {
+      setup([t], false, ts)
+      renderApp('/calendar')
+      await waitFor(() => expect(bar()).not.toBeNull())
+    }
+
+    it('진행 중은 팀 색 채움 + 채움 글자색, 툴팁에 제목·상태·기간·공유 팀', async () => {
+      await render(todo({ sharedTeams: shared('t1') }))
+      await waitFor(() => expect(bar().style.backgroundColor).toBe('rgb(37, 99, 235)'))
+      expect(main().style.color).toBe('rgb(255, 255, 255)')
+      expect(bar().classList).toContain('bar-in_progress')
+      expect(bar().querySelector('[title]')).toHaveAttribute('title', '워크숍 준비 · 진행 중 · 2026-11-03 00:00 ~ 2026-11-05 23:59 · 공유 팀: 마케팅팀')
+    })
+
+    it('개인 할일은 기본색(--primary)이고 공유 팀 줄이 툴팁에 없다', async () => {
+      await render(todo())
+      expect(bar().style.backgroundColor).toBe('var(--primary)')
+      expect(bar().querySelector('[title]')!.getAttribute('title')).not.toContain('공유 팀')
+    })
+
+    it('시작 전은 연한 배경 + 색 테두리, 노랑은 글자를 어둡게 한다', async () => {
+      await render(todo({ status: 'NOT_STARTED', sharedTeams: shared('t2') }))
+      await waitFor(() => expect(bar().classList).toContain('bar-not_started'))
+      expect(bar().style.backgroundColor).toContain('color-mix')
+      expect(bar().style.borderColor).toBe('rgb(250, 204, 21)')
+      expect(main().style.color).toContain('black')
+    })
+
+    it('완료는 취소선 + 흐림', async () => {
+      await render(todo({ status: 'COMPLETED', completed: true, sharedTeams: shared('t1') }))
+      await waitFor(() => expect(bar().classList).toContain('bar-completed'))
+      // a.fc-event의 text-decoration은 FullCalendar CSS가 덮으므로 제목 span에 건다
+      expect(bar().querySelector('.fc-event-title')!.classList).toContain('line-through')
+      expect(bar().classList).toContain('opacity-50')
+    })
+
+    it('기한 초과는 채움 + 왼쪽 띠 클래스 + 경고 아이콘', async () => {
+      await render(todo({ status: 'OVERDUE', sharedTeams: shared('t1') }))
+      await waitFor(() => expect(bar().classList).toContain('bar-overdue'))
+      expect(bar().classList).toContain('border-l-destructive!')
+      expect(bar().querySelector('svg.lucide-triangle-alert')).not.toBeNull()
+    })
+
+    it('여러 팀이면 슬레이트 + Users 아이콘, 툴팁에 팀 목록', async () => {
+      await render(todo({ sharedTeams: shared('t1', 't2') }))
+      await waitFor(() => expect(bar().style.backgroundColor).toBe('rgb(100, 116, 139)'))
+      expect(bar().querySelector('svg.lucide-users')).not.toBeNull()
+      expect(bar().querySelector('[title]')!.getAttribute('title')).toContain('공유 팀: 마케팅팀, 영업팀')
+    })
   })
 })

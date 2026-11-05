@@ -3,7 +3,9 @@ import { ListFilter } from 'lucide-react'
 import { useState } from 'react'
 import { useMe } from '@/features/auth/hooks'
 import { CategorySelect } from '@/features/categories/components/CategorySelect'
+import { TeamColorDot } from '@/features/teams/components/TeamColorDot'
 import { useTeams } from '@/features/teams/hooks'
+import { resolveTeamColor } from '@/features/teams/teamColors'
 import { api } from '@/shared/api/client'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { Button } from '@/shared/components/ui/button'
@@ -49,6 +51,7 @@ function useViewOptions() {
 export function ViewSelect() {
   const { view, setView } = useTodoFilterStore()
   const { me, teams, users } = useViewOptions()
+  const colors = resolveTeamColor(teams)
   return (
     <div className="grid gap-1 md:w-48">
       <span className="text-sm">보기</span>
@@ -66,6 +69,7 @@ export function ViewSelect() {
                 <SelectLabel>팀</SelectLabel>
                 {teams.map((t) => (
                   <SelectItem key={t.id} value={`team:${t.id}`}>
+                    <TeamColorDot color={colors.get(t.id)} />
                     {t.name}
                   </SelectItem>
                 ))}

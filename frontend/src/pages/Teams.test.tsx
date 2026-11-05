@@ -42,7 +42,7 @@ describe('TeamsPage', () => {
   })
 
   it('팀 표에서 행을 누르면 팀 상세로 이동한다', async () => {
-    setup([{ id: '9', name: '영업팀', role: 'MEMBER' }])
+    setup([{ id: '9', name: '영업팀', role: 'MEMBER', color: null }])
     renderApp('/teams')
     const row = (await screen.findByText('영업팀')).closest('tr')!
     expect(within(row).getByText('일반 팀원')).toBeInTheDocument()
@@ -54,7 +54,7 @@ describe('TeamsPage', () => {
     const teams: Team[] = []
     setup(teams)
     post.mockImplementation(async () => {
-      teams.push({ id: '7', name: '마케팅팀', role: 'OWNER' })
+      teams.push({ id: '7', name: '마케팅팀', role: 'OWNER', color: null })
       return teams[0]
     })
     renderApp('/teams')
@@ -96,7 +96,7 @@ describe('TeamsPage', () => {
 
 describe('TeamDetailPage', () => {
   it.each(['MANAGER', 'MEMBER'] as const)('%s 에게는 추가 폼·제거·역할 변경 버튼이 없다(EX-28)', async (role) => {
-    setup([{ id: '5', name: '마케팅팀', role }])
+    setup([{ id: '5', name: '마케팅팀', role, color: null }])
     renderApp('/teams/5')
     expect(await screen.findByText('이관리')).toBeInTheDocument()
     expect(screen.getByText(`내 역할: ${role === 'MANAGER' ? '관리자' : '일반 팀원'}`)).toBeInTheDocument()
@@ -106,7 +106,7 @@ describe('TeamDetailPage', () => {
   })
 
   it('소유자에게는 자기 자신 행에 제거 버튼이 없고 다른 행에는 있다', async () => {
-    setup([{ id: '5', name: '마케팅팀', role: 'OWNER' }])
+    setup([{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }])
     renderApp('/teams/5')
     const own = (await screen.findByRole('cell', { name: '홍길동' })).closest('tr')!
     expect(within(own).queryByRole('button')).not.toBeInTheDocument()
@@ -117,7 +117,7 @@ describe('TeamDetailPage', () => {
   })
 
   it('관리자 지정은 확인 없이 PATCH 한다', async () => {
-    setup([{ id: '5', name: '마케팅팀', role: 'OWNER' }])
+    setup([{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }])
     patch.mockResolvedValue({})
     renderApp('/teams/5')
     const row = (await screen.findByText('김영희')).closest('tr')!
@@ -126,7 +126,7 @@ describe('TeamDetailPage', () => {
   })
 
   it('구성원 추가 성공 시 POST 하고 입력란을 비운다', async () => {
-    setup([{ id: '5', name: '마케팅팀', role: 'OWNER' }])
+    setup([{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }])
     post.mockResolvedValue({})
     renderApp('/teams/5')
     const input = await screen.findByLabelText(/이메일/)
@@ -140,7 +140,7 @@ describe('TeamDetailPage', () => {
     ['USER_NOT_FOUND', 404, '가입된 사용자가 아닙니다.'],
     ['ALREADY_MEMBER', 409, '이미 팀 구성원입니다.'],
   ])('%s 는 추가 폼 이메일 입력란 아래에 보인다', async (code, status, message) => {
-    setup([{ id: '5', name: '마케팅팀', role: 'OWNER' }])
+    setup([{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }])
     post.mockRejectedValue(new ApiError(status, code, message))
     renderApp('/teams/5')
     await userEvent.type(await screen.findByLabelText(/이메일/), 'x@example.com')
@@ -151,7 +151,7 @@ describe('TeamDetailPage', () => {
   })
 
   it('필드 오류가 아닌 4xx 는 폼 아래 메시지로 보인다', async () => {
-    setup([{ id: '5', name: '마케팅팀', role: 'OWNER' }])
+    setup([{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }])
     post.mockRejectedValue(new ApiError(403, 'FORBIDDEN', '권한이 없습니다.'))
     renderApp('/teams/5')
     await userEvent.type(await screen.findByLabelText(/이메일/), 'x@example.com')
@@ -160,7 +160,7 @@ describe('TeamDetailPage', () => {
   })
 
   it('제거 확인에서 취소하면 DELETE 요청이 나가지 않는다(U-10)', async () => {
-    setup([{ id: '5', name: '마케팅팀', role: 'OWNER' }])
+    setup([{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }])
     renderApp('/teams/5')
     const row = (await screen.findByText('김영희')).closest('tr')!
     await userEvent.click(within(row).getByRole('button', { name: '제거' }))
@@ -172,7 +172,7 @@ describe('TeamDetailPage', () => {
   })
 
   it('제거 확인하면 DELETE 한다', async () => {
-    setup([{ id: '5', name: '마케팅팀', role: 'OWNER' }])
+    setup([{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }])
     del.mockResolvedValue(undefined)
     renderApp('/teams/5')
     const row = (await screen.findByText('김영희')).closest('tr')!
@@ -182,7 +182,7 @@ describe('TeamDetailPage', () => {
   })
 
   it('구성원 목록이 404 이면 ST-02 를 보인다', async () => {
-    setup([{ id: '5', name: '마케팅팀', role: 'MEMBER' }], new ApiError(404, 'NOT_FOUND', '찾을 수 없습니다.'))
+    setup([{ id: '5', name: '마케팅팀', role: 'MEMBER', color: null }], new ApiError(404, 'NOT_FOUND', '찾을 수 없습니다.'))
     renderApp('/teams/5')
     expect(await screen.findByText('찾을 수 없습니다.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('link', { name: '팀 목록으로' }))
@@ -193,5 +193,27 @@ describe('TeamDetailPage', () => {
     setup([])
     renderApp('/teams/404')
     expect(await screen.findByText('찾을 수 없습니다.')).toBeInTheDocument()
+  })
+
+  it('일반 팀원에게도 내 캘린더 색 견본이 보이고, 현재 색이 체크되며, 누르면 PATCH 한다', async () => {
+    setup([{ id: '5', name: '마케팅팀', role: 'MEMBER', color: 'GREEN' }])
+    patch.mockResolvedValue({})
+    renderApp('/teams/5')
+    const group = await screen.findByRole('radiogroup', { name: '내 캘린더 색상' })
+    expect(within(group).getAllByRole('radio')).toHaveLength(8)
+    expect(within(group).getByRole('radio', { name: '초록' })).toHaveAttribute('aria-checked', 'true')
+    expect(within(group).getByRole('radio', { name: '빨강' })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByText('나에게만 적용됩니다')).toBeInTheDocument()
+    await userEvent.click(within(group).getByRole('radio', { name: '파랑' }))
+    expect(patch).toHaveBeenCalledWith('/api/teams/5/color', { color: 'BLUE' })
+  })
+
+  it('색 미설정이면 자동 배정된 색이 체크되고, 저장 실패(4xx)는 오류 문구를 보인다', async () => {
+    setup([{ id: '5', name: '마케팅팀', role: 'MEMBER', color: null }])
+    patch.mockRejectedValue(new ApiError(404, 'NOT_FOUND', '찾을 수 없습니다.'))
+    renderApp('/teams/5')
+    expect(await screen.findByRole('radio', { name: '빨강' })).toHaveAttribute('aria-checked', 'true')
+    await userEvent.click(screen.getByRole('radio', { name: '파랑' }))
+    expect(await screen.findByText('색을 저장하지 못했습니다.')).toBeInTheDocument()
   })
 })

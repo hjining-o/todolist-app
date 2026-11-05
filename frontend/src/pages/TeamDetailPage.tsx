@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
 import { LeaveTeamDialog } from '@/features/teams/components/LeaveTeamDialog'
+import { TeamColorPicker } from '@/features/teams/components/TeamColorPicker'
 import { TeamMemberTable } from '@/features/teams/components/TeamMemberTable'
 import {
   ROLE_LABEL,
@@ -12,6 +13,7 @@ import {
   useTeams,
   useUpdateTeamMemberRole,
 } from '@/features/teams/hooks'
+import { resolveTeamColor } from '@/features/teams/teamColors'
 import { ApiError } from '@/shared/api/client'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -152,6 +154,7 @@ export function TeamDetailPage() {
           )
         }
       />
+      {team && <TeamColorPicker teamId={teamId} current={resolveTeamColor(teams.data!.items).get(teamId)} />}
       {isOwner && <AddMemberForm teamId={teamId} />}
       <h2 className="text-lg font-semibold">구성원</h2>
       {members.isPending || !team ? (

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/shared/api/client'
 import { queryKeys } from '@/shared/api/queryKeys'
-import type { Team, TeamList, TeamMember, TeamMemberList, TeamRole } from '@/shared/types'
+import type { Team, TeamColor, TeamList, TeamMember, TeamMemberList, TeamRole } from '@/shared/types'
 
 export const ROLE_LABEL: Record<TeamRole, string> = { OWNER: '소유자', MANAGER: '관리자', MEMBER: '일반 팀원' }
 
@@ -21,6 +21,14 @@ export function useCreateTeam() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (name: string) => api.post<Team>('/api/teams', { name }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.teams() }),
+  })
+}
+
+export function useUpdateTeamColor(teamId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (color: TeamColor) => api.patch<Team>(`/api/teams/${teamId}/color`, { color }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.teams() }),
   })
 }

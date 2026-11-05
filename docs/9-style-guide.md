@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.1 |
+| 문서 버전 | v0.2 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/4-wireframe.md` v0.12, `docs/5-project-principle.md`(FE-08, FE-09, G-11, G-16) |
+| 기준 문서 | `docs/4-wireframe.md` v0.13, `docs/5-project-principle.md`(FE-08, FE-09, G-11, G-16) |
 
 > - 이 문서는 와이어프레임의 요소를 **어떤 shadcn 컴포넌트와 어떤 Tailwind 클래스로 그릴지**만 정한다. 기능·문구는 와이어프레임을 따른다.
 > - 컴포넌트는 shadcn MCP(`@shadcn` 레지스트리)로 추가한다(FE-08). 레지스트리에 없는 부품은 6장 규칙으로 만든다.
@@ -15,7 +15,7 @@
 ## 1. 기본 원칙
 
 1. **shadcn 기본 테마 그대로.** `npx shadcn init`이 만든 neutral 테마 변수(`src/index.css`)를 바꾸지 않는다(G-16).
-2. **색은 토큰으로만.** `bg-primary`, `text-muted-foreground`, `border-input`, `text-destructive`처럼 테마 변수 클래스만 쓴다. `bg-blue-500`, `#hex` 같은 고정 색은 쓰지 않는다.
+2. **색은 토큰으로만.** `bg-primary`, `text-muted-foreground`, `border-input`, `text-destructive`처럼 테마 변수 클래스만 쓴다. `bg-blue-500`, `#hex` 같은 고정 색은 쓰지 않는다. **예외**: 팀 캘린더 팔레트(6.3 CL-03)와 여러 팀 전용 색(슬레이트)은 사용자가 고르는 데이터 색이라 7장 표의 hex를 그대로 쓴다(`style`의 `backgroundColor` 허용).
 3. **생성 파일은 고치지 않는다.** `shared/components/ui/*`는 그대로 두고, 도메인 표현은 감싼 컴포넌트에서 `variant`·`className`으로 만든다(FE-09).
 4. **스타일 수단은 Tailwind 클래스뿐.** 별도 CSS 파일과 인라인 `style`은 FullCalendar 덮어쓰기(7장) 외에는 쓰지 않는다(FE-09).
 5. **아이콘은 `lucide-react`**, 크기는 shadcn 기본(`size-4`)을 따른다.
@@ -246,8 +246,37 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 ```
 
 - FullCalendar 자체 툴바는 끈다(`headerToolbar={false}`). 이동·뷰 전환은 3.2의 shadcn `Button`·`ToggleGroup`으로 만들고 `calendarRef.current.getApi()`로 조작한다. 버튼 모양을 따로 맞출 필요가 없어진다.
-- 할일 막대 색은 상태와 관계없이 하나(`--primary`)로 둔다. 상태 배지는 캘린더에 표시하지 않는다(와이어프레임 4.6).
+- 막대 색은 팀 기준이고 모양은 상태 기준이다(아래 7.1·7.2). 상태 배지는 캘린더에 표시하지 않는다(와이어프레임 4.6).
 - 모바일 월 뷰의 '개수만 표시'도 같은 토큰(`text-muted-foreground text-xs`)을 쓴다.
+
+### 7.1 팀 캘린더 팔레트 (6.3 CL-03, 고정 색 금지의 예외)
+키로 저장하고, 화면은 아래 hex로 그린다. 구현: `src/features/teams/teamColors.ts`.
+
+| 키 | 이름 | 색 | 채움일 때 글자 |
+|----|------|----|----------------|
+| RED | 빨강 | `#DC2626` | 흰색 |
+| ORANGE | 주황 | `#C2410C` | 흰색 |
+| YELLOW | 노랑 | `#FACC15` | 검정 |
+| GREEN | 초록 | `#15803D` | 흰색 |
+| TEAL | 청록 | `#0F766E` | 흰색 |
+| BLUE | 파랑 | `#2563EB` | 흰색 |
+| VIOLET | 보라 | `#7C3AED` | 흰색 |
+| PINK | 분홍 | `#BE185D` | 흰색 |
+| (여러 팀 전용) | - | `#64748B` 슬레이트 | 흰색 |
+
+색 미설정 팀은 내 팀 목록 순서로 위 8색을 순환 배정한다. 개인 할일(공유 팀 0개)은 `--primary`·`--primary-foreground`다.
+
+### 7.2 막대 상태 규칙 (6.3 CL-04·CL-05)
+| 상태 | 모양 |
+|------|------|
+| 진행 중 | 배경 = 색, 글자 = 채움 글자색 |
+| 시작 전 | 배경 = 색 15%(`color-mix`), 테두리 = 색, 글자 = 색(노랑은 검정 쪽으로 어둡게) |
+| 완료 | 시작 전과 같은 연한 배경 + 취소선(`line-through`) + `opacity-50` |
+| 기한 초과 | 채움 + 왼쪽 굵은 띠(`border-l-4`, `destructive`) + `TriangleAlert`(`size-3`) |
+
+- 공유 팀 2개 이상이면 제목 앞에 `Users` 아이콘(`size-3`)을 붙인다. 아이콘은 `aria-hidden`이다.
+- 막대 `title`(툴팁): `제목 · 상태 · 기간 · 공유 팀: A, B`(공유 팀 없으면 생략).
+- 색 견본(`TeamColorPicker`)은 `radiogroup`/`radio`(`aria-label` = 색 이름, `aria-checked`)이며 6.1의 포커스·비활성 클래스를 쓴다. 색 점(`TeamColorDot`)은 `size-2.5 rounded-full`, `aria-hidden`.
 
 ## 8. 체크리스트 (화면 구현 후)
 
@@ -264,3 +293,4 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 | 버전 | 날짜 | 작성자 | 내용 |
 |------|------|--------|------|
 | v0.1 | 2026-11-05 | hjining | 초안. 와이어프레임 v0.12 기준 shadcn 컴포넌트 매핑, 토큰, 상태 배지, 비-shadcn 부품 규칙, FullCalendar 테마 연결 |
+| v0.2 | 2026-11-05 | hjining | 팀 캘린더 팔레트·여러 팀 색을 고정 색 금지의 예외로 명시(1장), 7장에 팔레트 표(7.1)와 막대 상태 규칙(7.2) 추가(UI-13, 6.3 CL-01–CL-06) |

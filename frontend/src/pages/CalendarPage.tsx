@@ -1,17 +1,23 @@
 // SC-05
+import { cn } from '@/shared/lib/utils'
 import koLocale from '@fullcalendar/core/locales/ko'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
-import type { DatesSetArg, EventClickArg } from '@fullcalendar/core'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import type { DatesSetArg, EventClickArg, EventContentArg } from '@fullcalendar/core'
+import { ChevronLeft, ChevronRight, Plus, TriangleAlert, Users } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
+import { useTeams } from '@/features/teams/hooks'
+import { resolveTeamColor, todoBarColor } from '@/features/teams/teamColors'
 import { countTodosByDate, toCalendarRange, toWallClock } from '@/features/todos/calendar/calendarRange'
 import { useCalendarTodos } from '@/features/todos/calendar/useCalendarTodos'
 import { ViewSelect } from '@/features/todos/components/FilterBar'
+import { STATUS_LABEL } from '@/features/todos/components/StatusBadge'
+import { formatPeriod } from '@/shared/lib/dateTime'
+import type { Todo } from '@/shared/types'
 import { useMediaQuery } from '@/shared/lib/useMediaQuery'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
@@ -19,6 +25,49 @@ import { Button } from '@/shared/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 import { browserToday, useCalendarStore, type CalendarView } from '@/stores/calendarStore'
 import { useTodoFilterStore } from '@/stores/todoFilterStore'
+
+// 시작 전·완료는 연한 배경 + 색 테두리·글자(CL-05). 노랑은 글자를 검정 쪽으로 어둡게 한다
+const tint = (hex: string) => `color-mix(in srgb, ${hex} 15%, transparent)`
+const darken = (hex: string, fg: string) => (fg === '#000000' ? `color-mix(in srgb, ${hex} 40%, black)` : hex)
+// 상태별 막대 모양. 색은 FullCalendar 이벤트 색 속성(인라인)으로, 나머지는 클래스로 준다
+const STATUS_CLASS = {
+  IN_PROGRESS: '',
+  NOT_STARTED: '',
+  COMPLETED: 'opacity-50', // 취소선은 제목 span에 건다(FullCalendar가 a.fc-event의 text-decoration을 none으로 덮음)
+  OVERDUE: 'border-l-4! border-l-destructive!',
+} as const
+
+function barProps(t: Todo, colors: ReturnType<typeof resolveTeamColor>, timeZone?: string) {
+  const bar = todoBarColor(t, colors)
+  const light = t.status === 'NOT_STARTED' || t.status === 'COMPLETED'
+  // 색이 없으면(개인 할일) 기본색 --primary
+  const hex = bar.hex ?? 'var(--primary)'
+  const fg = bar.fg ?? 'var(--primary-foreground)'
+  const color = light
+    ? { backgroundColor: tint(hex), borderColor: hex, textColor: bar.fg ? darken(hex, bar.fg) : hex }
+    : { backgroundColor: hex, borderColor: hex, textColor: fg }
+  const title = [
+    t.title,
+    STATUS_LABEL[t.status],
+    timeZone && formatPeriod(t.startAt, t.endAt, timeZone),
+    t.sharedTeams.length > 0 && `공유 팀: ${t.sharedTeams.map((x) => x.name).join(', ')}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return { ...color, classNames: ['bar-' + t.status.toLowerCase(), STATUS_CLASS[t.status]], extendedProps: { title, multi: bar.multi, overdue: t.status === 'OVERDUE', completed: t.status === 'COMPLETED' } }
+}
+
+function BarContent({ arg }: { arg: EventContentArg }) {
+  const { title, multi, overdue, completed } = arg.event.extendedProps
+  return (
+    <div title={title} className="flex w-full items-center gap-1 overflow-hidden px-1">
+      {overdue && <TriangleAlert className="size-3 shrink-0" aria-hidden />}
+      {multi && <Users className="size-3 shrink-0" aria-hidden />}
+      {arg.timeText && <span className="fc-event-time">{arg.timeText}</span>}
+      <span className={cn('fc-event-title truncate', completed && 'line-through')}>{arg.event.title}</span>
+    </div>
+  )
+}
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10) // timeZone:'UTC' 라 UTC 날짜가 곧 벽시계 날짜
 
@@ -33,6 +82,8 @@ export function CalendarPage() {
   const [initial] = useState(() => ({ view: calView, date: useCalendarStore.getState().date })) // 초기값만 쓴다(이후는 FullCalendar 가 주도)
   const [dates, setDates] = useState<{ start: string; end: string; title: string } | null>(null)
   const timeZone = me?.timezone
+  const { data: teams } = useTeams()
+  const teamColors = useMemo(() => resolveTeamColor(teams?.items ?? []), [teams])
   // 사용자 시간대를 알아야 from·to 오프셋을 정할 수 있다
   const range = dates && timeZone ? toCalendarRange(dates.start, dates.end, timeZone) : null
   const { data, isPending } = useCalendarTodos(range, view)
@@ -46,8 +97,15 @@ export function CalendarPage() {
   )
 
   const events = useMemo(
-    () => (mobileMonth ? [] : data?.items ?? []).map((t) => ({ id: t.id, title: t.title, start: toWallClock(t.startAt), end: toWallClock(t.endAt) })),
-    [data, mobileMonth],
+    () =>
+      (mobileMonth ? [] : data?.items ?? []).map((t) => ({
+        id: t.id,
+        title: t.title,
+        start: toWallClock(t.startAt),
+        end: toWallClock(t.endAt),
+        ...barProps(t, teamColors, timeZone),
+      })),
+    [data, mobileMonth, teamColors, timeZone],
   )
   const api = () => calendarRef.current!.getApi()
   const onDatesSet = (arg: DatesSetArg) => {
@@ -120,6 +178,8 @@ export function CalendarPage() {
         initialView={initial.view}
         initialDate={initial.date}
         events={events}
+        eventDisplay="block"
+        eventContent={(arg) => <BarContent arg={arg} />}
         dayCellContent={
           mobileMonth
             ? (arg) => {

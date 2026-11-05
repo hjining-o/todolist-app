@@ -1,6 +1,8 @@
 // SC-08
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { TeamColorDot } from '@/features/teams/components/TeamColorDot'
+import { resolveTeamColor } from '@/features/teams/teamColors'
 import { ROLE_LABEL, useCreateTeam, useTeams } from '@/features/teams/hooks'
 import { ApiError } from '@/shared/api/client'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -66,6 +68,7 @@ export function TeamsPage() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const { data, isPending } = useTeams()
+  const colors = resolveTeamColor(data?.items ?? [])
 
   return (
     <div className="grid gap-4">
@@ -87,9 +90,12 @@ export function TeamsPage() {
             {data.items.map((t) => (
               <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/teams/${t.id}`)}>
                 <TableCell>
-                  <Link to={`/teams/${t.id}`} onClick={(e) => e.stopPropagation()} className="underline-offset-4 hover:underline">
-                    {t.name}
-                  </Link>
+                  <span className="flex items-center gap-2">
+                    <TeamColorDot color={colors.get(t.id)} />
+                    <Link to={`/teams/${t.id}`} onClick={(e) => e.stopPropagation()} className="underline-offset-4 hover:underline">
+                      {t.name}
+                    </Link>
+                  </span>
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{ROLE_LABEL[t.role]}</Badge>
