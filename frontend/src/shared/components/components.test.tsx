@@ -1,7 +1,9 @@
+import { ThemeProvider } from 'next-themes'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ErrorBanner } from './ErrorBanner'
+import { ThemeToggle } from './ThemeToggle'
 
 describe('ConfirmDialog', () => {
   const setup = () => {
@@ -47,5 +49,18 @@ describe('ErrorBanner', () => {
     render(<ErrorBanner message="오류" onRetry={onRetry} />)
     await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
     expect(onRetry).toHaveBeenCalledOnce()
+  })
+})
+
+describe('ThemeToggle', () => {
+  it('다크를 고르면 html에 dark 클래스가 붙는다', async () => {
+    render(
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <ThemeToggle />
+      </ThemeProvider>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: '테마 변경' }))
+    await userEvent.click(await screen.findByRole('menuitemradio', { name: '다크' }))
+    expect(document.documentElement).toHaveClass('dark')
   })
 })
