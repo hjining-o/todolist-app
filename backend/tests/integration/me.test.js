@@ -9,7 +9,7 @@ import { agentFor } from './helpers/agent.js';
 import { parseSetCookie } from './helpers/cookies.js';
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex');
-const ME_KEYS = ['email', 'id', 'name', 'timezone'];
+const ME_KEYS = ['email', 'hasPassword', 'id', 'name', 'timezone'];
 const OLD = 'password123';
 const NEW = 'newpass456';
 
@@ -70,7 +70,7 @@ describe('PATCH /api/me 비밀번호 변경', () => {
     expect((await dbUser(u.id)).password_hash).toMatch(/^\$2[aby]\$10\$/);
   });
 
-  it('SEC-01 응답은 키 4개뿐이고 비밀번호·해시가 노출되지 않는다 (조건9)', async () => {
+  it('SEC-01 응답은 키 5개뿐이고 비밀번호·해시가 노출되지 않는다 (조건9)', async () => {
     const { u, b1 } = await twoBrowsers();
     const res = await request(app)
       .patch('/api/me')
@@ -123,7 +123,7 @@ describe('PATCH /api/me 이름·시간대', () => {
 
     const res = await patchAs(u, { name: '  새이름 ', timezone: 'America/New_York' });
     expect(res.status).toBe(200);
-    const expected = { id: u.id, email: u.email, name: '새이름', timezone: 'America/New_York' };
+    const expected = { id: u.id, email: u.email, name: '새이름', timezone: 'America/New_York', hasPassword: true };
     expect(res.body).toEqual(expected);
     expect(res.headers['set-cookie']).toBeUndefined();
     expect(await tokenRows(u.id)).toEqual(rowsBefore);
@@ -244,5 +244,27 @@ describe('PATCH /api/me 트랜잭션', () => {
     expect(await tokenRows(u.id)).toEqual(rowsBefore);
     expect((await refresh(b1.refresh_token.value)).status).toBe(204);
     expect((await login(u.email, OLD)).status).toBe(200);
+  });
+});
+
+describe('SOC-03 소셜 전용 계정(해시 없음)', () => {
+  const socialUser = async () => {
+    const u = await createUser({ email: 'social@example.com' });
+    await pool.query('UPDATE users SET password_hash = NULL WHERE id = $1', [u.id]);
+    return u;
+  };
+
+  it('비밀번호 로그인은 401 INVALID_CREDENTIALS', async () => {
+    const res = await login((await socialUser()).email);
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('INVALID_CREDENTIALS');
+  });
+
+  it('비밀번호 변경은 400 WRONG_PASSWORD, GET /me의 hasPassword는 false', async () => {
+    const u = await socialUser();
+    const res = await patchAs(u, { currentPassword: OLD, newPassword: NEW });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('WRONG_PASSWORD');
+    expect((await agentFor(u.id).get('/api/me')).body.hasPassword).toBe(false);
   });
 });

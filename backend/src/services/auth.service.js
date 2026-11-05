@@ -9,7 +9,7 @@ import * as categoriesService from './categories.service.js';
 import * as usersService from './users.service.js';
 
 const sha256 = (raw) => createHash('sha256').update(raw).digest('hex');
-const toMe = ({ id, email, name, timezone }) => ({ id, email, name, timezone });
+const toMe = ({ id, email, name, timezone, hasPassword }) => ({ id, email, name, timezone, hasPassword });
 
 // 가입·로그인·갱신 공통. 갱신 시 expiresAt을 넘겨 리프레시 절대 만료를 유지한다
 async function issueTokens(client, userId, expiresAt = new Date(Date.now() + env.refreshTokenTtlMs)) {
@@ -34,7 +34,8 @@ export async function signup({ email, password, name }) {
 
 export async function login({ email, password }) {
   const user = await usersService.findByEmailWithHash(email);
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) throw AppError.of('INVALID_CREDENTIALS');
+  // 소셜 전용 계정(해시 없음)도 같은 오류로 계정 존재 여부를 숨긴다
+  if (!user || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) throw AppError.of('INVALID_CREDENTIALS');
   return { me: toMe(user), tokens: await withTransaction((client) => issueTokens(client, user.id)) };
 }
 
@@ -61,9 +62,8 @@ export async function logout(rawToken) {
 export async function updateMe(userId, { name, timezone, currentPassword, newPassword }) {
   let passwordHash;
   if (newPassword !== undefined) {
-    const hash = await usersService.findPasswordHash(userId);
-    if (!hash) throw AppError.of('UNAUTHENTICATED');
-    if (!(await bcrypt.compare(currentPassword, hash))) throw AppError.of('WRONG_PASSWORD');
+    const hash = await usersService.findPasswordHash(userId); // 소셜 전용 계정은 null
+    if (!hash || !(await bcrypt.compare(currentPassword, hash))) throw AppError.of('WRONG_PASSWORD');
     passwordHash = await bcrypt.hash(newPassword, 10); // 트랜잭션 밖에서 계산해 연결 점유 방지
   }
   return withTransaction(async (client) => {

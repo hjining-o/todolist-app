@@ -1,6 +1,6 @@
 export async function insertUser(client, { email, passwordHash, name }) {
   const { rows } = await client.query(
-    'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, timezone',
+    'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, timezone, password_hash IS NOT NULL AS "hasPassword"',
     [email, passwordHash, name],
   );
   return rows[0];
@@ -12,11 +12,11 @@ export async function findByEmail(client, email) {
   ]);
   if (!rows[0]) return null;
   const { password_hash: passwordHash, ...user } = rows[0];
-  return { ...user, passwordHash };
+  return { ...user, hasPassword: passwordHash !== null, passwordHash };
 }
 
 export async function findById(client, id) {
-  const { rows } = await client.query('SELECT id, email, name, timezone FROM users WHERE id = $1', [id]);
+  const { rows } = await client.query('SELECT id, email, name, timezone, password_hash IS NOT NULL AS "hasPassword" FROM users WHERE id = $1', [id]);
   return rows[0] ?? null;
 }
 
@@ -31,7 +31,7 @@ export async function updateUser(client, id, { name, timezone, passwordHash }) {
     `UPDATE users
         SET name = COALESCE($2, name), timezone = COALESCE($3, timezone), password_hash = COALESCE($4, password_hash)
       WHERE id = $1
-      RETURNING id, email, name, timezone`,
+      RETURNING id, email, name, timezone, password_hash IS NOT NULL AS "hasPassword"`,
     [id, name ?? null, timezone ?? null, passwordHash ?? null],
   );
   return rows[0] ?? null;

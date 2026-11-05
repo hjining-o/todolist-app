@@ -12,7 +12,7 @@ import { parseSetCookie } from './helpers/cookies.js';
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex');
 const SIGNUP = { email: 'new@example.com', password: 'password123', name: '새사용자' };
-const ME_KEYS = ['email', 'id', 'name', 'timezone'];
+const ME_KEYS = ['email', 'hasPassword', 'id', 'name', 'timezone'];
 
 const signup = (body = SIGNUP) => request(app).post('/api/auth/signup').send(body);
 const login = (email, password = 'password123') => request(app).post('/api/auth/login').send({ email, password });
@@ -284,11 +284,11 @@ describe('EX-06 로그아웃 (조건14)', () => {
 });
 
 describe('추가 케이스', () => {
-  it('GET /api/me는 키 4개만 200', async () => {
+  it('GET /api/me는 키 5개만 200', async () => {
     const user = await createUser({ email: 'a@example.com', name: '앨리스' });
     const res = await agentFor(user.id).get('/api/me');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ id: user.id, email: 'a@example.com', name: '앨리스', timezone: 'Asia/Seoul' });
+    expect(res.body).toEqual({ id: user.id, email: 'a@example.com', name: '앨리스', timezone: 'Asia/Seoul', hasPassword: true });
     expect(Object.keys(res.body).sort()).toEqual(ME_KEYS);
   });
 
@@ -305,9 +305,9 @@ describe('추가 케이스', () => {
     }
   });
 
-  it('가입·로그인 본문은 { id, email, name, timezone }만', async () => {
+  it('가입·로그인 본문은 { id, email, name, timezone, hasPassword }만', async () => {
     const s = await signup();
-    expect(s.body).toEqual({ id: s.body.id, email: SIGNUP.email, name: SIGNUP.name, timezone: 'Asia/Seoul' });
+    expect(s.body).toEqual({ id: s.body.id, email: SIGNUP.email, name: SIGNUP.name, timezone: 'Asia/Seoul', hasPassword: true });
     const l = await login(SIGNUP.email);
     expect(l.body).toEqual(s.body);
   });
@@ -337,7 +337,7 @@ describe('SEC 비밀 미노출 (조건16)', () => {
     expect(boom.status).toBe(500);
 
     for (const body of [s.body, l.body]) {
-      expect(body).toEqual({ id: body.id, email: SIGNUP.email, name: SIGNUP.name, timezone: 'Asia/Seoul' });
+      expect(body).toEqual({ id: body.id, email: SIGNUP.email, name: SIGNUP.name, timezone: 'Asia/Seoul', hasPassword: true });
     }
 
     const { rows } = await pool.query('SELECT password_hash FROM users');
