@@ -1,4 +1,5 @@
 import i18n from '@/shared/i18n'
+import { logger } from '@/shared/lib/logger'
 import type { ErrorResponse } from '@/shared/types'
 
 export class ApiError extends Error {
@@ -34,6 +35,8 @@ async function send<T>(method: string, path: string, { query, body }: Options): 
     if (qs) url += '?' + qs
   }
 
+  const start = performance.now()
+  const ms = () => Math.round(performance.now() - start)
   let res: Response
   try {
     res = await fetch(url, {
@@ -43,11 +46,13 @@ async function send<T>(method: string, path: string, { query, body }: Options): 
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
+    logger.error('api', `${method} ${path} 네트워크 오류`, { ms: ms() })
     throw new ApiError(0, 'NETWORK_ERROR', i18n.t('error.NETWORK_ERROR'))
   }
 
   if (!res.ok) {
     const data = (await res.json().catch(() => null)) as ErrorResponse | null
+    logger.warn('api', `${method} ${path} 실패`, { status: res.status, code: data?.error?.code ?? 'UNKNOWN', ms: ms() })
     throw new ApiError(
       res.status,
       data?.error?.code ?? 'UNKNOWN',
@@ -55,6 +60,7 @@ async function send<T>(method: string, path: string, { query, body }: Options): 
       data?.error?.fields,
     )
   }
+  logger.debug('api', `${method} ${path}`, { status: res.status, ms: ms() })
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
 }
@@ -67,14 +73,17 @@ async function request<T>(method: string, path: string, options: Options = {}): 
   } catch (e) {
     if (!(e instanceof ApiError) || e.status !== 401 || e.code !== 'UNAUTHENTICATED' || NO_REFRESH.has(path)) throw e
     // 동시에 여러 요청이 401이어도 갱신은 하나만 보낸다
+    logger.info('api', '액세스 토큰 갱신 시도')
     refreshing ??= send('POST', REFRESH_PATH, {}).finally(() => {
       refreshing = null
     })
     try {
       await refreshing
     } catch {
+      logger.warn('api', '액세스 토큰 갱신 실패')
       throw e // 갱신 실패: 재시도 없이 원래 401을 던진다
     }
+    logger.info('api', '액세스 토큰 갱신 성공')
     return send<T>(method, path, options)
   }
 }

@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router'
+import { useEffect } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { CalendarPage } from '@/pages/CalendarPage'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { LoginPage } from '@/pages/LoginPage'
@@ -8,10 +9,13 @@ import { TeamDetailPage } from '@/pages/TeamDetailPage'
 import { TeamsPage } from '@/pages/TeamsPage'
 import { TodoEditPage } from '@/pages/TodoEditPage'
 import { TodoListPage } from '@/pages/TodoListPage'
+import { logger } from '@/shared/lib/logger'
 import { AppLayout } from './AppLayout'
 import { AuthGuard, GuestGuard } from './AuthGuard'
 
 export function App() {
+  const { pathname, search } = useLocation()
+  useEffect(() => logger.info('route', pathname + search), [pathname, search])
   return (
     <Routes>
       <Route element={<GuestGuard />}>

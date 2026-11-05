@@ -1,6 +1,7 @@
 import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useTranslation } from 'react-i18next'
+import { logger } from '@/shared/lib/logger'
 import { Button } from '@/shared/components/ui/button'
 import {
   DropdownMenu,
@@ -28,7 +29,10 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+        <DropdownMenuRadioGroup value={theme} onValueChange={(v) => {
+            logger.info('theme', '테마 변경', { theme: v })
+            setTheme(v)
+          }}>
           {OPTIONS.map(({ value, label, Icon }) => (
             <DropdownMenuRadioItem key={value} value={value}>
               <Icon /> {t(label)}

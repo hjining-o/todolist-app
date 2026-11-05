@@ -10,6 +10,10 @@ afterEach(async () => {
   await i18n.changeLanguage('ko')
 })
 
+// 개발용 debug/info 로그가 테스트 출력을 어지럽히지 않게 한다(warn/error는 그대로)
+console.debug = () => {}
+console.info = () => {}
+
 // Radix가 jsdom에 없는 API를 부른다(Q-04)
 globalThis.ResizeObserver ??= class {
   observe() {}

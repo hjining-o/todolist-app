@@ -2,12 +2,14 @@ import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
 import { safeNext } from '@/features/auth/safeNext'
 import { ApiError } from '@/shared/api/client'
+import { logger } from '@/shared/lib/logger'
 
 // 내 정보가 확정되기 전에는 보호 화면을 그리지 않는다(EX-06)
 export function AuthGuard() {
   const { data, error } = useMe()
   const { pathname, search } = useLocation()
   if (error instanceof ApiError && error.status === 401) {
+    logger.info('auth', '비로그인 리다이렉트', { from: pathname })
     return <Navigate to={`/login?next=${encodeURIComponent(pathname + search)}`} replace />
   }
   return data ? <Outlet /> : null
