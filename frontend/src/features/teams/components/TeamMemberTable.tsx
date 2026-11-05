@@ -1,8 +1,9 @@
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import type { TeamMember } from '@/shared/types'
-import { ROLE_LABEL } from '../hooks'
+import { ROLE_KEY } from '../hooks'
 
 interface Props {
   members: TeamMember[]
@@ -13,14 +14,15 @@ interface Props {
 }
 
 export function TeamMemberTable({ members, myUserId, isOwner, onToggleManager, onRemove }: Props) {
+  const { t } = useTranslation()
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>이름</TableHead>
-          <TableHead className="hidden md:table-cell">이메일</TableHead>
-          <TableHead>역할</TableHead>
-          {isOwner && <TableHead className="text-right">관리</TableHead>}
+          <TableHead>{t('team.member.name')}</TableHead>
+          <TableHead className="hidden md:table-cell">{t('auth.email')}</TableHead>
+          <TableHead>{t('team.member.role')}</TableHead>
+          {isOwner && <TableHead className="text-right">{t('team.member.manage')}</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -29,18 +31,18 @@ export function TeamMemberTable({ members, myUserId, isOwner, onToggleManager, o
             <TableCell className="max-w-32 truncate md:max-w-none">{m.name}</TableCell>
             <TableCell className="hidden md:table-cell">{m.email}</TableCell>
             <TableCell>
-              <Badge variant="outline">{ROLE_LABEL[m.role]}</Badge>
+              <Badge variant="outline">{t(ROLE_KEY[m.role])}</Badge>
             </TableCell>
             {isOwner && (
               <TableCell className="text-right">
                 {m.role !== 'OWNER' && (
                   <div className="flex flex-wrap justify-end gap-1">
                     <Button variant="outline" size="sm" onClick={() => onToggleManager(m)}>
-                      {m.role === 'MANAGER' ? '관리자 해제' : '관리자 지정'}
+                      {m.role === 'MANAGER' ? t('team.member.demote') : t('team.member.promote')}
                     </Button>
                     {m.userId !== myUserId && (
                       <Button variant="outline" size="sm" onClick={() => onRemove(m)}>
-                        제거
+                        {t('team.member.remove')}
                       </Button>
                     )}
                   </div>

@@ -1,9 +1,10 @@
 // SC-08
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { TeamColorDot } from '@/features/teams/components/TeamColorDot'
 import { resolveTeamColor } from '@/features/teams/teamColors'
-import { ROLE_LABEL, useCreateTeam, useTeams } from '@/features/teams/hooks'
+import { ROLE_KEY, useCreateTeam, useTeams } from '@/features/teams/hooks'
 import { ApiError } from '@/shared/api/client'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { RequiredMark } from '@/shared/components/RequiredMark'
@@ -19,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 // DLG-03
 function CreateTeamDialog({ onOpenChange }: { onOpenChange: (o: boolean) => void }) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const navigate = useNavigate()
   const create = useCreateTeam()
@@ -40,22 +42,22 @@ function CreateTeamDialog({ onOpenChange }: { onOpenChange: (o: boolean) => void
       <DialogContent>
         <form onSubmit={onSubmit} noValidate className="grid gap-4">
           <DialogHeader>
-            <DialogTitle>팀 생성</DialogTitle>
+            <DialogTitle>{t('team.create.title')}</DialogTitle>
           </DialogHeader>
           <Field data-invalid={!!message}>
             <FieldLabel htmlFor="team-name">
-              팀 이름 <RequiredMark />
+              {t('team.name')} <RequiredMark />
             </FieldLabel>
             <Input id="team-name" value={name} maxLength={50} aria-invalid={!!message} onChange={(e) => setName(e.target.value)} />
             <FieldError>{message}</FieldError>
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              취소
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={create.isPending}>
               {create.isPending && <Spinner />}
-              생성
+              {t('team.create.submit')}
             </Button>
           </DialogFooter>
         </form>
@@ -65,6 +67,7 @@ function CreateTeamDialog({ onOpenChange }: { onOpenChange: (o: boolean) => void
 }
 
 export function TeamsPage() {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const { data, isPending } = useTeams()
@@ -72,9 +75,9 @@ export function TeamsPage() {
 
   return (
     <div className="grid gap-4">
-      <PageHeader title="팀" actions={<Button onClick={() => setOpen(true)}>팀 만들기</Button>} />
+      <PageHeader title={t('team.title')} actions={<Button onClick={() => setOpen(true)}>{t('team.createButton')}</Button>} />
       {isPending ? (
-        <div className="grid gap-2" aria-label="불러오는 중">
+        <div className="grid gap-2" aria-label={t('common.loading')}>
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
         </div>
@@ -82,23 +85,23 @@ export function TeamsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>팀 이름</TableHead>
-              <TableHead>내 역할</TableHead>
+              <TableHead>{t('team.name')}</TableHead>
+              <TableHead>{t('team.myRole')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.items.map((t) => (
-              <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/teams/${t.id}`)}>
+            {data.items.map((team) => (
+              <TableRow key={team.id} className="cursor-pointer" onClick={() => navigate(`/teams/${team.id}`)}>
                 <TableCell>
                   <span className="flex items-center gap-2">
-                    <TeamColorDot color={colors.get(t.id)} />
-                    <Link to={`/teams/${t.id}`} onClick={(e) => e.stopPropagation()} className="underline-offset-4 hover:underline">
-                      {t.name}
+                    <TeamColorDot color={colors.get(team.id)} />
+                    <Link to={`/teams/${team.id}`} onClick={(e) => e.stopPropagation()} className="underline-offset-4 hover:underline">
+                      {team.name}
                     </Link>
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">{ROLE_LABEL[t.role]}</Badge>
+                  <Badge variant="outline">{t(ROLE_KEY[team.role])}</Badge>
                 </TableCell>
               </TableRow>
             ))}
@@ -107,7 +110,7 @@ export function TeamsPage() {
       ) : (
         <Empty>
           <EmptyHeader>
-            <EmptyDescription>속한 팀이 없습니다. 팀을 만들어 보세요.</EmptyDescription>
+            <EmptyDescription>{t('team.empty')}</EmptyDescription>
           </EmptyHeader>
         </Empty>
       )}

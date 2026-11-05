@@ -1,12 +1,13 @@
 // SC-09
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
 import { LeaveTeamDialog } from '@/features/teams/components/LeaveTeamDialog'
 import { TeamColorPicker } from '@/features/teams/components/TeamColorPicker'
 import { TeamMemberTable } from '@/features/teams/components/TeamMemberTable'
 import {
-  ROLE_LABEL,
+  ROLE_KEY,
   useAddTeamMember,
   useRemoveTeamMember,
   useTeamMembers,
@@ -30,6 +31,7 @@ import { Spinner } from '@/shared/components/ui/spinner'
 import type { TeamMember, TeamRole } from '@/shared/types'
 
 function AddMemberForm({ teamId }: { teamId: string }) {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<TeamRole>('MEMBER')
   const add = useAddTeamMember(teamId)
@@ -56,13 +58,13 @@ function AddMemberForm({ teamId }: { teamId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>구성원 추가</CardTitle>
+        <CardTitle>{t('team.addMember.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3 md:flex-row md:items-start">
           <Field data-invalid={!!emailError} className="md:flex-1">
             <FieldLabel htmlFor="member-email">
-              이메일 <RequiredMark />
+              {t('auth.email')} <RequiredMark />
             </FieldLabel>
             <Input
               id="member-email"
@@ -75,21 +77,21 @@ function AddMemberForm({ teamId }: { teamId: string }) {
             <FieldError>{emailError}</FieldError>
           </Field>
           <Field data-invalid={!!roleError} className="md:w-40">
-            <FieldLabel htmlFor="member-role">역할</FieldLabel>
+            <FieldLabel htmlFor="member-role">{t('team.member.role')}</FieldLabel>
             <Select value={role} onValueChange={(v) => setRole(v as TeamRole)}>
               <SelectTrigger id="member-role" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MEMBER">{ROLE_LABEL.MEMBER}</SelectItem>
-                <SelectItem value="MANAGER">{ROLE_LABEL.MANAGER}</SelectItem>
+                <SelectItem value="MEMBER">{t(ROLE_KEY.MEMBER)}</SelectItem>
+                <SelectItem value="MANAGER">{t(ROLE_KEY.MANAGER)}</SelectItem>
               </SelectContent>
             </Select>
             <FieldError>{roleError}</FieldError>
           </Field>
           <Button type="submit" disabled={add.isPending} className="md:mt-6.5">
             {add.isPending && <Spinner />}
-            추가
+            {t('team.addMember.submit')}
           </Button>
         </form>
         {formError && (
@@ -103,6 +105,7 @@ function AddMemberForm({ teamId }: { teamId: string }) {
 }
 
 export function TeamDetailPage() {
+  const { t } = useTranslation()
   const { teamId = '' } = useParams()
   const teams = useTeams()
   const members = useTeamMembers(teamId)
@@ -121,11 +124,11 @@ export function TeamDetailPage() {
     return (
       <Empty>
         <EmptyHeader>
-          <EmptyDescription>찾을 수 없습니다.</EmptyDescription>
+          <EmptyDescription>{t('common.notFound')}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <Button variant="outline" asChild>
-            <Link to="/teams">팀 목록으로</Link>
+            <Link to="/teams">{t('team.backToList')}</Link>
           </Button>
         </EmptyContent>
       </Empty>
@@ -137,17 +140,17 @@ export function TeamDetailPage() {
   return (
     <div className="grid gap-4">
       <Link to="/teams" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
-        &lt; 팀 목록
+        {t('team.backLink')}
       </Link>
       <PageHeader
-        title={team?.name ?? '팀'}
+        title={team?.name ?? t('team.title')}
         actions={
           team && (
             <div className="flex items-center gap-2">
-              <Badge variant="outline">내 역할: {ROLE_LABEL[team.role]}</Badge>
+              <Badge variant="outline">{t('team.myRoleBadge', { role: t(ROLE_KEY[team.role]) })}</Badge>
               {isOwner && (
                 <Button variant="outline" onClick={() => setLeaving(true)}>
-                  팀 나가기
+                  {t('team.leave.title')}
                 </Button>
               )}
             </div>
@@ -156,9 +159,9 @@ export function TeamDetailPage() {
       />
       {team && <TeamColorPicker teamId={teamId} current={resolveTeamColor(teams.data!.items).get(teamId)} />}
       {isOwner && <AddMemberForm teamId={teamId} />}
-      <h2 className="text-lg font-semibold">구성원</h2>
+      <h2 className="text-lg font-semibold">{t('team.members')}</h2>
       {members.isPending || !team ? (
-        <div className="grid gap-2" aria-label="불러오는 중">
+        <div className="grid gap-2" aria-label={t('common.loading')}>
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
         </div>
@@ -175,9 +178,9 @@ export function TeamDetailPage() {
         <ConfirmDialog
           open={!!removing}
           onOpenChange={(o) => !o && setRemoving(null)}
-          title="구성원 제거"
-          description={`${removing?.name}님을 ${team.name}에서 제거할까요? ${removing?.name}님의 할일 중 이 팀에 공유된 항목의 공유가 해제됩니다.`}
-          confirmLabel="제거"
+          title={t('team.removeMember.title')}
+          description={t('team.removeMember.description', { name: removing?.name, teamName: team.name })}
+          confirmLabel={t('team.member.remove')}
           onConfirm={() => removing && remove.mutate(removing.userId)}
         />
       )}

@@ -29,7 +29,10 @@
     "backToList": "목록으로",
     "none": "(없음)",
     "me": "나",
-    "notFound": "찾을 수 없습니다."
+    "notFound": "찾을 수 없습니다.",
+    "loading": "불러오는 중",
+    "select": "선택",
+    "requestFailed": "요청에 실패했습니다."
   },
   "todo": {
     "view": {
@@ -83,5 +86,61 @@
   },
   "category": {
     "select": "카테고리 선택"
+  },
+  "team": {
+    "title": "팀",
+    "name": "팀 이름",
+    "myRole": "내 역할",
+    "myRoleBadge": "내 역할: {{role}}",
+    "members": "구성원",
+    "empty": "속한 팀이 없습니다. 팀을 만들어 보세요.",
+    "createButton": "팀 만들기",
+    "backToList": "팀 목록으로",
+    "backLink": "< 팀 목록",
+    "role": {
+      "OWNER": "소유자",
+      "MANAGER": "관리자",
+      "MEMBER": "일반 팀원"
+    },
+    "create": {
+      "title": "팀 생성",
+      "submit": "생성"
+    },
+    "addMember": {
+      "title": "구성원 추가",
+      "submit": "추가"
+    },
+    "removeMember": {
+      "title": "구성원 제거",
+      "description": "{{name}}님을 {{teamName}}에서 제거할까요? {{name}}님의 할일 중 이 팀에 공유된 항목의 공유가 해제됩니다."
+    },
+    "member": {
+      "name": "이름",
+      "role": "역할",
+      "manage": "관리",
+      "promote": "관리자 지정",
+      "demote": "관리자 해제",
+      "remove": "제거"
+    },
+    "leave": {
+      "title": "팀 나가기",
+      "description": "다음 소유자를 지정해야 팀을 나갈 수 있습니다.",
+      "nextOwner": "다음 소유자",
+      "noCandidates": "다음 소유자로 지정할 구성원이 없습니다.",
+      "submit": "지정하고 나가기"
+    },
+    "color": {
+      "title": "내 캘린더 색상",
+      "onlyMe": "나에게만 적용됩니다",
+      "saveFailed": "색을 저장하지 못했습니다.",
+      "RED": "빨강",
+      "ORANGE": "주황",
+      "YELLOW": "노랑",
+      "GREEN": "초록",
+      "TEAL": "청록",
+      "BLUE": "파랑",
+      "VIOLET": "보라",
+      "PINK": "분홍"
+    }
   }
 }

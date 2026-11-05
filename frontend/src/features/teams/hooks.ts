@@ -3,7 +3,8 @@ import { api } from '@/shared/api/client'
 import { queryKeys } from '@/shared/api/queryKeys'
 import type { Team, TeamColor, TeamList, TeamMember, TeamMemberList, TeamRole } from '@/shared/types'
 
-export const ROLE_LABEL: Record<TeamRole, string> = { OWNER: '소유자', MANAGER: '관리자', MEMBER: '일반 팀원' }
+// i18n 키
+export const ROLE_KEY: Record<TeamRole, string> = { OWNER: 'team.role.OWNER', MANAGER: 'team.role.MANAGER', MEMBER: 'team.role.MEMBER' }
 
 export function useTeams() {
   return useQuery({ queryKey: queryKeys.teams(), queryFn: () => api.get<TeamList>('/api/teams') })

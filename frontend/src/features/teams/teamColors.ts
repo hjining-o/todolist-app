@@ -3,20 +3,19 @@ import type { Team, TeamColor, Todo } from '@/shared/types'
 
 export interface PaletteEntry {
   key: TeamColor
-  name: string
   hex: string
   fg: string // 채움 배경 위 글자색
 }
 
 export const TEAM_PALETTE: readonly PaletteEntry[] = [
-  { key: 'RED', name: '빨강', hex: '#DC2626', fg: '#FFFFFF' },
-  { key: 'ORANGE', name: '주황', hex: '#C2410C', fg: '#FFFFFF' },
-  { key: 'YELLOW', name: '노랑', hex: '#FACC15', fg: '#000000' },
-  { key: 'GREEN', name: '초록', hex: '#15803D', fg: '#FFFFFF' },
-  { key: 'TEAL', name: '청록', hex: '#0F766E', fg: '#FFFFFF' },
-  { key: 'BLUE', name: '파랑', hex: '#2563EB', fg: '#FFFFFF' },
-  { key: 'VIOLET', name: '보라', hex: '#7C3AED', fg: '#FFFFFF' },
-  { key: 'PINK', name: '분홍', hex: '#BE185D', fg: '#FFFFFF' },
+  { key: 'RED', hex: '#DC2626', fg: '#FFFFFF' },
+  { key: 'ORANGE', hex: '#C2410C', fg: '#FFFFFF' },
+  { key: 'YELLOW', hex: '#FACC15', fg: '#000000' },
+  { key: 'GREEN', hex: '#15803D', fg: '#FFFFFF' },
+  { key: 'TEAL', hex: '#0F766E', fg: '#FFFFFF' },
+  { key: 'BLUE', hex: '#2563EB', fg: '#FFFFFF' },
+  { key: 'VIOLET', hex: '#7C3AED', fg: '#FFFFFF' },
+  { key: 'PINK', hex: '#BE185D', fg: '#FFFFFF' },
 ]
 
 // 여러 팀에 공유된 할일 전용(팔레트에서 고를 수 없다)

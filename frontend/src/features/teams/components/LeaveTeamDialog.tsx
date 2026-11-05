@@ -1,5 +1,6 @@
 // DLG-04
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLeaveTeam } from '@/features/teams/hooks'
 import { ApiError } from '@/shared/api/client'
 import { RequiredMark } from '@/shared/components/RequiredMark'
@@ -18,9 +19,10 @@ interface Props {
 }
 
 export function LeaveTeamDialog({ teamId, candidates, onOpenChange, onLeft }: Props) {
+  const { t } = useTranslation()
   const [nextOwnerId, setNextOwnerId] = useState('')
   const leave = useLeaveTeam(teamId)
-  const error = leave.error instanceof ApiError ? leave.error.message : leave.error ? '요청에 실패했습니다.' : null
+  const error = leave.error instanceof ApiError ? leave.error.message : leave.error ? t('common.requestFailed') : null
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
@@ -34,16 +36,16 @@ export function LeaveTeamDialog({ teamId, candidates, onOpenChange, onLeft }: Pr
           }}
         >
           <DialogHeader>
-            <DialogTitle>팀 나가기</DialogTitle>
+            <DialogTitle>{t('team.leave.title')}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">다음 소유자를 지정해야 팀을 나갈 수 있습니다.</p>
+          <p className="text-sm text-muted-foreground">{t('team.leave.description')}</p>
           <Field>
             <FieldLabel htmlFor="next-owner">
-              다음 소유자 <RequiredMark />
+              {t('team.leave.nextOwner')} <RequiredMark />
             </FieldLabel>
             <Select value={nextOwnerId} onValueChange={setNextOwnerId} disabled={candidates.length === 0}>
               <SelectTrigger id="next-owner" className="w-full">
-                <SelectValue placeholder="선택" />
+                <SelectValue placeholder={t('common.select')} />
               </SelectTrigger>
               <SelectContent>
                 {candidates.map((m) => (
@@ -54,7 +56,7 @@ export function LeaveTeamDialog({ teamId, candidates, onOpenChange, onLeft }: Pr
               </SelectContent>
             </Select>
           </Field>
-          {candidates.length === 0 && <p className="text-sm text-muted-foreground">다음 소유자로 지정할 구성원이 없습니다.</p>}
+          {candidates.length === 0 && <p className="text-sm text-muted-foreground">{t('team.leave.noCandidates')}</p>}
           {error && (
             <p role="alert" className="text-sm text-destructive">
               {error}
@@ -62,11 +64,11 @@ export function LeaveTeamDialog({ teamId, candidates, onOpenChange, onLeft }: Pr
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              취소
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={!nextOwnerId || leave.isPending}>
               {leave.isPending && <Spinner />}
-              지정하고 나가기
+              {t('team.leave.submit')}
             </Button>
           </DialogFooter>
         </form>
