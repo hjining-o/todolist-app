@@ -45,10 +45,55 @@ function useViewOptions() {
   return { me, teams: teams?.items ?? [], users: [...users] }
 }
 
+// F4 보기 Select. SC-03 필터와 SC-05 툴바가 같은 store 를 공유한다
+export function ViewSelect() {
+  const { view, setView } = useTodoFilterStore()
+  const { me, teams, users } = useViewOptions()
+  return (
+    <div className="grid gap-1 md:w-48">
+      <span className="text-sm">보기</span>
+      <Select value={viewToValue(view)} onValueChange={(v) => setView(valueToView(v))}>
+        <SelectTrigger aria-label="보기" className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_VIEW}>팀 전체</SelectItem>
+          {me && <SelectItem value={`user:${me.id}`}>내 할일</SelectItem>}
+          {teams.length > 0 && (
+            <>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>팀</SelectLabel>
+                {teams.map((t) => (
+                  <SelectItem key={t.id} value={`team:${t.id}`}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </>
+          )}
+          {users.length > 0 && (
+            <>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>사용자</SelectLabel>
+                {users.map(([id, name]) => (
+                  <SelectItem key={id} value={`user:${id}`}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </>
+          )}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 export function FilterBar() {
   const [open, setOpen] = useState(false) // 모바일 접힘 상태
-  const { view, categoryId, status, setView, setCategoryId, setStatus, reset } = useTodoFilterStore()
-  const { me, teams, users } = useViewOptions()
+  const { categoryId, status, setCategoryId, setStatus, reset } = useTodoFilterStore()
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="grid gap-2">
@@ -59,44 +104,7 @@ export function FilterBar() {
       </CollapsibleTrigger>
       {/* forceMount: 데스크톱(md 이상)은 항상 펼친다 */}
       <CollapsibleContent forceMount className="grid gap-2 md:flex md:flex-wrap md:items-end">
-        <div className="grid gap-1 md:w-48">
-          <span className="text-sm">보기</span>
-          <Select value={viewToValue(view)} onValueChange={(v) => setView(valueToView(v))}>
-            <SelectTrigger aria-label="보기" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_VIEW}>팀 전체</SelectItem>
-              {me && <SelectItem value={`user:${me.id}`}>내 할일</SelectItem>}
-              {teams.length > 0 && (
-                <>
-                  <SelectSeparator />
-                  <SelectGroup>
-                    <SelectLabel>팀</SelectLabel>
-                    {teams.map((t) => (
-                      <SelectItem key={t.id} value={`team:${t.id}`}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </>
-              )}
-              {users.length > 0 && (
-                <>
-                  <SelectSeparator />
-                  <SelectGroup>
-                    <SelectLabel>사용자</SelectLabel>
-                    {users.map(([id, name]) => (
-                      <SelectItem key={id} value={`user:${id}`}>
-                        {name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+        <ViewSelect />
         <div className="grid gap-1 md:w-48">
           <span className="text-sm">카테고리</span>
           <CategorySelect aria-label="카테고리" value={categoryId} onValueChange={setCategoryId} allLabel="전체" />
