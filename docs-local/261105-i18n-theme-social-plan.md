@@ -144,8 +144,8 @@ CREATE INDEX ix_user_identities_user ON user_identities(user_id);
 |------|------|------|------|------|
 | 테마 | THM-01 | ThemeProvider·토글 UI | - | ✅ 완료 |
 | 테마 | THM-02 | 다크 대비 점검·FullCalendar 토큰·스타일 가이드 | THM-01 | 🔶 일부 |
-| 다국어 | I18N-01 | i18n 초기화·언어 선택 UI·테스트 셋업 | - | |
-| 다국어 | I18N-02 | 문자열 추출(ko.json)·컴포넌트 치환 | I18N-01 | |
+| 다국어 | I18N-01 | i18n 초기화·언어 선택 UI·테스트 셋업 | - | 🔶 일부 |
+| 다국어 | I18N-02 | 문자열 추출(ko.json)·컴포넌트 치환 | I18N-01 | ✅ 완료 |
 | 다국어 | I18N-03 | 에러 코드 번역·FullCalendar locale·`<html lang>` | I18N-02 | |
 | 다국어 | I18N-04 | en·zh·ja 번역·키 누락 테스트 | I18N-02 | |
 | 소셜 | SOC-00 | Google 앱 등록, 키 발급 (**사용자 작업**) | - | ✅ 완료 |
@@ -167,6 +167,8 @@ CREATE INDEX ix_user_identities_user ON user_identities(user_id);
 | SOC-01 | `111a522` | 로컬 DB에 003 적용. 운영 DB는 **미적용**(적용 전 사용자 확인). 인덱스 이름은 계획대로 `ix_user_identities_user`(기존 `idx_` 규칙과 다름) |
 | SOC-03 | `3ff0e00` | `hasPassword`를 `/api/me`·`PATCH /api/me`·가입·로그인 응답에 포함 |
 | SOC-02 | `c66da67` | 테스트 493건 통과(제공자 fetch mock). `APP_URL`이 없으면 `CORS_ORIGINS` 첫 값, `API_URL`이 없으면 `http://localhost:PORT`를 쓴다. `oauth_state` 쿠키는 항상 SameSite=lax, fetch 타임아웃 10초. 실패 시 `OAUTH_EMAIL_REQUIRED` 외에는 모두 `OAUTH_FAILED`. **남은 것**: 실제 Google 로그인 수동 확인(신규·재로그인·자동 연결), swagger 갱신(DOC-01) |
+| I18N-01 | `8e6bbae` | 언어 표기는 `Intl.DisplayNames`로 생성(한국어·English·中文·日本語). `test/setup.ts`가 로드 시와 매 테스트 뒤 `ko`로 고정. **남은 것**: 브라우저에서 언어 전환·새로고침 유지 육안 확인 |
+| I18N-02 | `5716b9d` `a6acc94` `010ac10` `0e4a1ca` `9c7d37a` `764c364` | ko.json 키 173개, 남은 한국어(테스트·locales·주석 제외) 0건, 테스트 204건 통과. 라벨 맵을 키 맵으로 변경(`STATUS_KEY`, `ROLE_KEY`, `ACTION_KEY`, 팀 색상 `team.color.*`). 컴포넌트 밖 문자열은 `i18n.t` 사용(`client.ts`, `queryClient.ts`, 캘린더 툴팁 — 툴팁은 데이터 재계산 전까지 이전 언어로 남음). `TeamLeave.test.tsx`의 타이밍 의존 단언 1건을 `waitFor`로 수정 |
 
 ### THM-01 ThemeProvider·토글 UI
 - 작업: `main.tsx`에 `ThemeProvider` 추가, `shared/components/ThemeToggle.tsx`(DropdownMenu 3항목) 작성, `AppLayout` 헤더·모바일 Sheet에 배치, `index.html`에 color-scheme 메타 추가
