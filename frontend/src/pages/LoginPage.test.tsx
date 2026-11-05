@@ -23,6 +23,17 @@ beforeEach(() => {
 })
 
 describe('LoginPage', () => {
+  it('Google 버튼 href에 next가 인코딩되어 들어간다', async () => {
+    renderApp('/login?next=' + encodeURIComponent('/todos?status=OVERDUE'))
+    const link = await screen.findByRole('link', { name: 'Google로 계속하기' })
+    expect(link.getAttribute('href')).toMatch(/\/api\/auth\/oauth\/google\?next=%2Ftodos%3Fstatus%3DOVERDUE$/)
+  })
+
+  it('?error=OAUTH_FAILED 이면 에러 배너를 보인다', async () => {
+    renderApp('/login?error=OAUTH_FAILED')
+    expect(await screen.findByRole('alert')).toHaveTextContent('소셜 로그인에 실패했습니다. 다시 시도해 주세요.')
+  })
+
   it('실패하면 서버 메시지를 폼 상단에 그대로 보이고 비밀번호를 비운다', async () => {
     post.mockRejectedValue(new ApiError(401, 'INVALID_CREDENTIALS', '이메일 또는 비밀번호가 올바르지 않습니다.'))
     renderApp('/login')

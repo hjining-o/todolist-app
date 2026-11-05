@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { SocialLoginButtons } from '@/features/auth/components/SocialLoginButtons'
 import { useLogin } from '@/features/auth/hooks'
 import { safeNext } from '@/features/auth/safeNext'
 import { ApiError } from '@/shared/api/client'
@@ -23,6 +24,10 @@ export function LoginPage() {
   const login = useLogin()
   // 5xx·네트워크 오류는 전역 배너(ST-04)가 보여준다
   const error = login.error instanceof ApiError && login.error.status > 0 && login.error.status < 500 ? login.error : null
+
+  // 소셜 로그인 실패는 백엔드가 /login?error=코드 로 돌려보낸다
+  const oauthError = params.get('error')
+  const message = error ? errorMessage(error) : oauthError ? errorMessage(new ApiError(400, oauthError, t('error.UNKNOWN'))) : null
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -47,9 +52,9 @@ export function LoginPage() {
         <CardContent>
           <form onSubmit={onSubmit} noValidate>
             <FieldGroup>
-              {error && (
+              {message && (
                 <Alert variant="destructive">
-                  <AlertDescription>{errorMessage(error)}</AlertDescription>
+                  <AlertDescription>{message}</AlertDescription>
                 </Alert>
               )}
               <Field>
@@ -85,6 +90,7 @@ export function LoginPage() {
               </p>
             </FieldGroup>
           </form>
+          <SocialLoginButtons next={params.get('next')} />
         </CardContent>
       </Card>
     </main>

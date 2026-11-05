@@ -21,6 +21,13 @@ beforeEach(() => {
 const todoCalls = () => get.mock.calls.filter(([p]) => p === '/api/todos').length
 
 describe('ProfilePage', () => {
+  it('hasPassword가 false면 비밀번호 변경 카드를 숨긴다', async () => {
+    get.mockImplementation(async () => ({ ...me, hasPassword: false }))
+    renderApp('/me')
+    await screen.findByLabelText('이름', { exact: false })
+    expect(screen.queryByText('비밀번호 변경')).not.toBeInTheDocument()
+  })
+
   it('메뉴에 내 정보 링크가 있고 /me 에서 강조된다', async () => {
     renderApp('/me')
     const nav = within(await screen.findByRole('navigation', { name: '주 메뉴' }))

@@ -6,7 +6,7 @@ import { createQueryClient } from '@/app/queryClient'
 import { ApiError } from '@/shared/api/client'
 import type { Me } from '@/shared/types'
 
-export const me: Me = { id: '1', email: 'a@example.com', name: '홍길동', timezone: 'Asia/Seoul' }
+export const me: Me = { id: '1', email: 'a@example.com', name: '홍길동', timezone: 'Asia/Seoul', hasPassword: true }
 export const unauthenticated = () => new ApiError(401, 'UNAUTHENTICATED', '로그인이 필요합니다.')
 
 function Probe() {

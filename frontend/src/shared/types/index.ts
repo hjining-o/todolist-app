@@ -20,6 +20,7 @@ export interface Me {
   email: string
   name: string
   timezone: string
+  hasPassword: boolean
 }
 
 export interface Category {

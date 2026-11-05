@@ -187,7 +187,7 @@ export function ProfilePage() {
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <PageHeader title={t('menu.profile')} />
       {me ? <ProfileCard me={me} /> : <Skeleton className="h-64 w-full" />}
-      <PasswordCard />
+      {me?.hasPassword && <PasswordCard />}
     </div>
   )
 }

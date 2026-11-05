@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
+import { SocialLoginButtons } from '@/features/auth/components/SocialLoginButtons'
 import { useSignup } from '@/features/auth/hooks'
 import { ApiError } from '@/shared/api/client'
 import { errorMessage, fieldErrors } from '@/shared/api/errorMessage'
@@ -83,6 +84,7 @@ export function SignupPage() {
               </p>
             </FieldGroup>
           </form>
+          <SocialLoginButtons />
         </CardContent>
       </Card>
     </main>
