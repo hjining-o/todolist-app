@@ -14,7 +14,8 @@ const location = () => screen.getByLabelText('현재 위치')
 
 beforeEach(() => {
   vi.resetAllMocks()
-  get.mockResolvedValue(me)
+  // 할일 목록 화면이 부르는 다른 경로는 빈 목록으로 답한다
+  get.mockImplementation(async (path: string) => (path === '/api/me' ? me : { items: [], total: 0 }))
 })
 
 describe('AuthGuard', () => {
