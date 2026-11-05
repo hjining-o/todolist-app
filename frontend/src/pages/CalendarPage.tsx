@@ -24,9 +24,10 @@ import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-grou
 import { browserToday, useCalendarStore, type CalendarView } from '@/stores/calendarStore'
 import { useTodoFilterStore } from '@/stores/todoFilterStore'
 
-// 시작 전·완료는 연한 배경 + 색 테두리·글자(CL-05). 노랑은 글자를 검정 쪽으로 어둡게 한다
+// 시작 전·완료는 연한 배경 + 색 테두리·글자(CL-05). 글자는 라이트에서 노랑만 검정 쪽으로, 다크에서는 전부 흰색 쪽으로 섞는다(--bar-ink*, index.css)
 const tint = (hex: string) => `color-mix(in srgb, ${hex} 15%, transparent)`
-const darken = (hex: string, fg: string) => (fg === '#000000' ? `color-mix(in srgb, ${hex} 40%, black)` : hex)
+const ink = (hex: string, fg: string) =>
+  `color-mix(in srgb, ${hex} ${fg === '#000000' ? 'var(--bar-ink-y)' : 'var(--bar-ink)'}, var(--bar-mix))`
 // 상태별 막대 모양. 색은 FullCalendar 이벤트 색 속성(인라인)으로, 나머지는 클래스로 준다
 const STATUS_CLASS = {
   IN_PROGRESS: '',
@@ -42,7 +43,7 @@ function barProps(t: Todo, colors: ReturnType<typeof resolveTeamColor>) {
   const hex = bar.hex ?? 'var(--primary)'
   const fg = bar.fg ?? 'var(--primary-foreground)'
   const color = light
-    ? { backgroundColor: tint(hex), borderColor: hex, textColor: bar.fg ? darken(hex, bar.fg) : hex }
+    ? { backgroundColor: tint(hex), borderColor: hex, textColor: bar.fg ? ink(hex, bar.fg) : hex }
     : { backgroundColor: hex, borderColor: hex, textColor: fg }
   // 툴팁은 공유 팀만(상세는 클릭하면 SC-04). 공유 팀이 없으면 툴팁 없음
   const title = t.sharedTeams.length > 0 ? `공유 팀: ${t.sharedTeams.map((x) => x.name).join(', ')}` : undefined

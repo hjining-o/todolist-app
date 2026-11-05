@@ -199,7 +199,7 @@ describe('CalendarPage', () => {
       await waitFor(() => expect(bar().classList).toContain('bar-not_started'))
       expect(bar().style.backgroundColor).toContain('color-mix')
       expect(bar().style.borderColor).toBe('rgb(250, 204, 21)')
-      expect(main().style.color).toContain('black')
+      expect(main().style.color).toContain('--bar-ink-y')
     })
 
     it('완료는 취소선 + 흐림', async () => {

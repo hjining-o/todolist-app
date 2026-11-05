@@ -79,6 +79,10 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+    /* 캘린더 연한 막대 글자색: 팀 색 비율과 섞을 색(THM-02) */
+    --bar-ink: 100%;
+    --bar-ink-y: 40%;
+    --bar-mix: black;
 }
 
 .dark {
@@ -113,6 +117,9 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    --bar-ink: 65%; /* 다크 배경 대비 4.5:1 이상(팀 색 8종·다중 팀) */
+    --bar-ink-y: 65%;
+    --bar-mix: white;
 }
 
 @layer base {
