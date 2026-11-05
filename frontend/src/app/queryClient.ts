@@ -3,12 +3,14 @@ import { ApiError } from '@/shared/api/client'
 import { useBannerStore } from '@/stores/bannerStore'
 
 // 401(갱신 실패 포함)·403·413·5xx·네트워크 오류만 전역 처리한다. 400·404·409는 화면이 처리한다
-function handleError(error: unknown, onRetry?: () => void) {
+// me 쿼리(meta.ownsAuth)의 401은 AuthGuard가 화면 이동을 맡는다
+function handleError(error: unknown, onRetry?: () => void, ownsAuth = false) {
   if (!(error instanceof ApiError)) return
   const { status, message } = error
   if (status === 401) {
     const { pathname, search } = window.location
-    if (pathname !== '/login') window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`)
+    if (!ownsAuth && pathname !== '/login' && pathname !== '/signup')
+      window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`)
   } else if (status === 403) {
     useBannerStore.getState().show('권한이 없습니다.')
   } else if (status === 413 || status === 0 || status >= 500) {
@@ -19,7 +21,7 @@ function handleError(error: unknown, onRetry?: () => void) {
 export function createQueryClient() {
   const client: QueryClient = new QueryClient({
     queryCache: new QueryCache({
-      onError: (error, query) => handleError(error, () => void client.invalidateQueries({ queryKey: query.queryKey })),
+      onError: (error, query) => handleError(error, () => void client.invalidateQueries({ queryKey: query.queryKey }), !!query.meta?.ownsAuth),
     }),
     mutationCache: new MutationCache({ onError: (error) => handleError(error) }),
     defaultOptions: {

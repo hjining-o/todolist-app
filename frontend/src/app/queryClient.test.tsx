@@ -112,3 +112,16 @@ describe('GlobalErrorBanner', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
+
+describe('인증 화면 401 예외', () => {
+  it('/signup 화면에서는 이동하지 않는다', async () => {
+    setLocation('/signup')
+    await run(fail(401))
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('meta.ownsAuth 쿼리의 401은 이동하지 않는다(AuthGuard가 처리)', async () => {
+    await createQueryClient().fetchQuery({ queryKey: ['me'], queryFn: fail(401), retry: false, meta: { ownsAuth: true } }).catch(() => {})
+    expect(assign).not.toHaveBeenCalled()
+  })
+})
