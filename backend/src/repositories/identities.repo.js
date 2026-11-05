@@ -1,6 +1,6 @@
 export async function findUserByIdentity(client, provider, providerUserId) {
   const { rows } = await client.query(
-    `SELECT u.id, u.email, u.name, u.timezone
+    `SELECT u.id, u.email, u.name, u.timezone, u.password_hash IS NOT NULL AS "hasPassword"
        FROM user_identities i JOIN users u ON u.id = i.user_id
       WHERE i.provider = $1 AND i.provider_user_id = $2`,
     [provider, providerUserId],

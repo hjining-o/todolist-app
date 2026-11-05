@@ -4,6 +4,8 @@ export const ERRORS = {
   INVALID_PERIOD: { status: 400, message: '종료 일시는 시작 일시보다 빠를 수 없습니다.' },
   INVALID_SHARE_TEAM: { status: 400, message: '속한 팀에만 공유할 수 있습니다.' },
   INVALID_OWNER: { status: 400, message: '선택한 팀의 구성원만 소유자로 지정할 수 있습니다.' },
+  OAUTH_FAILED: { status: 400, message: '소셜 로그인에 실패했습니다. 다시 시도해 주세요.' },
+  OAUTH_EMAIL_REQUIRED: { status: 400, message: '확인된 이메일이 있는 계정으로 로그인해 주세요.' },
   WRONG_PASSWORD: { status: 400, message: '현재 비밀번호가 올바르지 않습니다.' },
   UNAUTHENTICATED: { status: 401, message: '로그인이 필요합니다.' },
   INVALID_CREDENTIALS: { status: 401, message: '이메일 또는 비밀번호가 올바르지 않습니다.' },

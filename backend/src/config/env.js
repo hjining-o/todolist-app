@@ -27,10 +27,19 @@ const positiveInt = (key, fallback) => {
 const accessTokenTtlMinutes = positiveInt('ACCESS_TOKEN_TTL_MINUTES', 15);
 const refreshTokenTtlDays = positiveInt('REFRESH_TOKEN_TTL_DAYS', 7);
 
+// 소셜 로그인(SOC-02). 제공자 키는 선택값이고 없으면 해당 경로가 404다. 끝 '/'는 제거
+const trimUrl = (v) => v?.trim().replace(/\/+$/, '');
+const port = Number(process.env.PORT) || 3000;
+const googleId = process.env.GOOGLE_CLIENT_ID;
+const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
+
 export const env = {
   databaseUrl: process.env.DATABASE_URL,
   jwtSecret: process.env.JWT_SECRET,
-  port: Number(process.env.PORT) || 3000,
+  port,
+  appUrl: trimUrl(process.env.APP_URL) || corsOrigins[0],
+  apiUrl: trimUrl(process.env.API_URL) || `http://localhost:${port}`,
+  oauth: { google: googleId && googleSecret ? { clientId: googleId, clientSecret: googleSecret } : null },
   corsOrigins,
   cookieSameSite,
   accessTokenTtlMs: accessTokenTtlMinutes * 60 * 1000,

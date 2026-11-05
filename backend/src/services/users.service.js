@@ -11,6 +11,10 @@ export async function createUser(client, { email, passwordHash, name }) {
   }
 }
 
+export function findByEmail(client, email) {
+  return usersRepo.findByEmail(client, email);
+}
+
 export function findByEmailWithHash(email) {
   return usersRepo.findByEmail(pool, email);
 }

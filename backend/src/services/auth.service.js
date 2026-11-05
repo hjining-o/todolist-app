@@ -5,6 +5,7 @@ import { env } from '../config/env.js';
 import { withTransaction } from '../config/db.js';
 import { AppError } from '../domain/errors.js';
 import * as authRepo from '../repositories/auth.repo.js';
+import * as identitiesRepo from '../repositories/identities.repo.js';
 import * as categoriesService from './categories.service.js';
 import * as usersService from './users.service.js';
 
@@ -37,6 +38,34 @@ export async function login({ email, password }) {
   // 소셜 전용 계정(해시 없음)도 같은 오류로 계정 존재 여부를 숨긴다
   if (!user || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) throw AppError.of('INVALID_CREDENTIALS');
   return { me: toMe(user), tokens: await withTransaction((client) => issueTokens(client, user.id)) };
+}
+
+// 소셜 로그인 계정 결정(계획서 1.3): identity → 이메일 자동 연결 → 신규 가입
+async function oauthAttempt(provider, { providerUserId, email, emailVerified, name }) {
+  return withTransaction(async (client) => {
+    let user = await identitiesRepo.findUserByIdentity(client, provider, providerUserId);
+    if (!user) {
+      if (!email || !emailVerified) throw AppError.of('OAUTH_EMAIL_REQUIRED');
+      user = await usersService.findByEmail(client, email);
+      if (!user) {
+        const displayName = name.trim().slice(0, 50) || email.split('@')[0].slice(0, 50);
+        user = await usersService.createUser(client, { email, passwordHash: null, name: displayName });
+        await categoriesService.createDefaultCategory(client, user.id);
+      }
+      await identitiesRepo.insertIdentity(client, { provider, providerUserId, userId: user.id });
+    }
+    return { me: toMe(user), tokens: await issueTokens(client, user.id) };
+  });
+}
+
+export async function oauthLogin(provider, profile) {
+  try {
+    return await oauthAttempt(provider, profile);
+  } catch (err) {
+    // 동시 가입으로 이메일·identity unique가 충돌하면 1회 재시도
+    if (err.code === 'EMAIL_TAKEN' || err.code === '23505') return oauthAttempt(provider, profile);
+    throw err;
+  }
 }
 
 export async function refresh(rawToken) {
