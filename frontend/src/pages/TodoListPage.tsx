@@ -48,7 +48,8 @@ export function TodoListPage() {
   const last = page >= pages
 
   return (
-    <div className="grid gap-4">
+    // 데스크톱은 화면 높이에 맞추고 할일 행만 안에서 스크롤해 페이지 바가 항상 보인다: 100svh - 헤더(h-14) - main 여백(py-6)
+    <div className="flex flex-col gap-4 md:h-[calc(100svh-6.5rem)]">
       <PageHeader title="할일 목록" actions={register} />
       <FilterBar />
       {isPending ? (
@@ -59,8 +60,10 @@ export function TodoListPage() {
         </div>
       ) : data?.items.length ? (
         <>
-          <Table className="hidden md:table">
-            <TableHeader>
+          {/* shadcn Table 의 래퍼(table-container)가 세로 스크롤 영역이어야 머리 고정(sticky)이 동작한다 */}
+          <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col [&>[data-slot=table-container]]:min-h-0 [&>[data-slot=table-container]]:flex-1">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead />
                 <TableHead>제목</TableHead>
@@ -77,6 +80,7 @@ export function TodoListPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
           <ul className="divide-y md:hidden">
             {data.items.map((t) => (
               <TodoMobileRow key={t.id} todo={t} {...rowProps} />

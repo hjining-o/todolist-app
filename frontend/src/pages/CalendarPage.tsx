@@ -79,7 +79,8 @@ export function CalendarPage() {
   const range = dates && timeZone ? toCalendarRange(dates.start, dates.end, timeZone) : null
   const { data, isPending } = useCalendarTodos(range, view)
   // 모바일(<768px) 월 뷰는 막대 대신 날짜 칸에 개수만 보인다(PRD 5.4)
-  const mobileMonth = !useMediaQuery('(min-width: 768px)') && calView === 'dayGridMonth'
+  const desktop = useMediaQuery('(min-width: 768px)')
+  const mobileMonth = !desktop && calView === 'dayGridMonth'
   const mobileMonthRef = useRef(mobileMonth)
   mobileMonthRef.current = mobileMonth
   const counts = useMemo(
@@ -108,7 +109,8 @@ export function CalendarPage() {
   const newPath = view.type === 'TEAM' ? `/todos/new?teamId=${view.teamId}` : '/todos/new'
 
   return (
-    <div className="grid gap-4">
+    // 데스크톱은 화면 높이에 맞추고 캘린더가 남은 높이를 채운다: 100svh - 헤더(h-14) - main 여백(py-6)
+    <div className="flex flex-col gap-4 md:h-[calc(100svh-6.5rem)]">
       <PageHeader title="캘린더" />
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="icon" aria-label="이전" onClick={() => api().prev()}>
@@ -153,6 +155,7 @@ export function CalendarPage() {
       {calView === 'timeGridDay' && data && data.items.length === 0 && (
         <p className="text-sm text-muted-foreground">이 날 할일이 없습니다.</p>
       )}
+      <div className="md:min-h-0 md:flex-1">
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -167,7 +170,7 @@ export function CalendarPage() {
         moreLinkClick={(arg) => api().changeView('timeGridDay', arg.date)}
         moreLinkContent={({ num }) => `+${num}`}
         headerToolbar={false}
-        height="auto"
+        height={desktop ? '100%' : 'auto'}
         initialView={initial.view}
         initialDate={initial.date}
         events={events}
@@ -194,6 +197,7 @@ export function CalendarPage() {
           navigate(`/todos/${arg.event.id}`)
         }}
       />
+      </div>
     </div>
   )
 }

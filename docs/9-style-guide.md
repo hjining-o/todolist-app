@@ -57,6 +57,7 @@
 |------|------|
 | 브레이크포인트 | Tailwind `md`(768px) 하나만 쓴다. 기본(접두사 없음) = 모바일, `md:` = 데스크톱(와이어프레임 1.2) |
 | 본문 폭 | `mx-auto w-full max-w-5xl px-4 py-6` (SC-03–SC-09 공통) |
+| 화면 높이 맞춤(SC-03, SC-05) | 데스크톱(`md:`)은 페이지 루트를 `flex flex-col md:h-[calc(100svh-6.5rem)]`(화면 높이 − 헤더 `h-14` − 본문 `py-6`)로 두어 페이지 자체는 스크롤하지 않는다. SC-03은 표 영역만 안에서 스크롤하고 표 머리는 `sticky`, 페이지 바는 항상 아래에 보인다. SC-05는 캘린더가 남은 높이를 채운다(`height=100%`, 주·일 뷰는 시간 영역만 스크롤). 모바일은 페이지 전체 스크롤 |
 | 폼 화면 폭 | SC-04, SC-07: 본문 안 `max-w-2xl` |
 | 인증 화면(SC-01, SC-02) | `flex min-h-svh items-center justify-center p-4` + `Card className="w-full max-w-sm"` |
 | 페이지 머리 | `flex items-center justify-between gap-2` (제목 왼쪽, 주요 버튼 오른쪽) |
