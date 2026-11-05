@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import { CalendarPage } from '@/pages/CalendarPage'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { LoginPage } from '@/pages/LoginPage'
+import { ProfilePage } from '@/pages/ProfilePage'
 import { SignupPage } from '@/pages/SignupPage'
 import { TeamDetailPage } from '@/pages/TeamDetailPage'
 import { TeamsPage } from '@/pages/TeamsPage'
@@ -10,7 +11,6 @@ import { TodoListPage } from '@/pages/TodoListPage'
 import { AppLayout } from './AppLayout'
 import { AuthGuard, GuestGuard } from './AuthGuard'
 
-// SC-07(/me)은 UI-10에서 추가한다
 export function App() {
   return (
     <Routes>
@@ -27,6 +27,7 @@ export function App() {
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/:teamId" element={<TeamDetailPage />} />
+          <Route path="/me" element={<ProfilePage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/todos" replace />} />

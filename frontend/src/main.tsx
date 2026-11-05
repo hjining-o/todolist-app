@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router'
 import { App } from '@/app/App'
 import { GlobalErrorBanner } from '@/app/GlobalErrorBanner'
 import { createQueryClient } from '@/app/queryClient'
+import { Toaster } from '@/shared/components/ui/sonner'
 import './index.css'
 
 const queryClient = createQueryClient()
@@ -15,6 +16,7 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <GlobalErrorBanner />
         <App />
+        <Toaster />
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

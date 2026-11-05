@@ -12,6 +12,7 @@ const MENUS = [
   { to: '/calendar', label: '캘린더' },
   { to: '/categories', label: '카테고리' },
   { to: '/teams', label: '팀' },
+  { to: '/me', label: '내 정보' },
 ]
 
 function Menus({ onSelect }: { onSelect?: () => void }) {
