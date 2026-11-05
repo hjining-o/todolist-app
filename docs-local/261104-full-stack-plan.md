@@ -1,4 +1,4 @@
-# TodoList 풀스택 실행 계획 (WBS)
+ ✅ 완료 |✅ 완료 |# TodoList 풀스택 실행 계획 (WBS)
 
 | 항목 | 내용 |
 |------|------|
@@ -54,7 +54,7 @@
 | 백엔드 | API-12 | [P1] 내 정보 수정 | P1 | API-06 | ✅ 완료 |
 | 백엔드 | API-13 | [P1] 변경 이력 기록·조회 | P1 | API-11 | ✅ 완료 |
 | 백엔드 | API-14 | [P1] 소유자의 팀 나가기 | P1 | API-08 | ✅ 완료 |
-| 프론트 | UI-01 | 프론트 골격·shadcn | P0 | CM-01 |  |
+| 프론트 | UI-01 | 프론트 골격·shadcn | P0 | CM-01 | ✅ 완료 |
 | 프론트 | UI-02 | 공통 API 클라이언트·유틸·부품 | P0 | UI-01, API-10(계약) |  |
 | 프론트 | UI-03 | 인증 화면·가드·공통 레이아웃 | P0 | UI-02, API-06(계약) |  |
 | 프론트 | UI-04 | 카테고리 관리(SC-06) | P0 | UI-03, API-07 |  |
@@ -120,7 +120,7 @@ flowchart LR
 |-------------|------|
 | Day 1 (11/04) 오전 | CM-01 ✅, DB-01 🔶, DB-02 ✅, API-01 ✅, DB-03 ✅, DB-04 ✅, DB-05 🔶, CM-02 ⏸, API-02 ✅, API-03 ✅, API-04 ✅ |
 | Day 1 오후 | API-05 ✅, API-06 ✅, API-07 ✅, API-08 ✅, API-09 ✅, API-10 ✅, API-11 ✅ |
-| Day 1 저녁 | UI-01, UI-02, UI-03 |
+| Day 1 저녁 | UI-01 ✅, UI-02, UI-03 |
 | Day 2 (11/05) 오전 | UI-04, UI-05, UI-06, UI-07 |
 | Day 2 오후 | UI-08, UI-09, CM-03 |
 | Day 2 저녁 | CM-04, CM-05 |
@@ -582,10 +582,10 @@ flowchart LR
   3. TanStack Query `QueryClientProvider`, React Router, Zustand 설치. `main.tsx`에서 마운트.
   4. Vitest + Testing Library + `src/test/setup.ts`(Radix용 `ResizeObserver`, `hasPointerCapture`, `scrollIntoView` 보완).
 - **완료 조건**
-  - [ ] `npm run dev`(5173)로 빈 화면이 뜨고 `http://localhost:3000/api/health` CORS 호출이 200이다
-  - [ ] shadcn 컴포넌트가 `src/shared/components/ui/`에 생성되어 있다
-  - [ ] `tsc --noEmit`, `vitest run`이 통과한다(Q-11)
-  - [ ] `npm run build` 산출물이 Vercel 정적 빌드 경로와 맞다
+  - [x] `npm run dev`(5173)로 빈 화면이 뜨고 `http://localhost:3000/api/health` CORS 호출이 200이다
+  - [x] shadcn 컴포넌트가 `src/shared/components/ui/`에 생성되어 있다
+  - [x] `tsc --noEmit`, `vitest run`이 통과한다(Q-11)
+  - [x] `npm run build` 산출물이 Vercel 정적 빌드 경로와 맞다
 
 ### UI-02 공통 API 클라이언트·유틸·부품
 - **선행 Task**: UI-01, API-10(응답 타입 계약만 필요)
