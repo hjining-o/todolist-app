@@ -36,6 +36,7 @@ function setup(items: Todo[] = [todo()], truncated = false) {
     if (path === '/api/teams') return { items: [{ id: 't1', name: '마케팅팀', role: 'MEMBER' }] }
     if (path === '/api/teams/t1/members') return { items: [{ userId: '1', name: '홍길동', email: '', role: 'OWNER' }] }
     if (path === '/api/todos/a') return items[0]
+    if (path === '/api/todos/a/histories') return { items: [] }
     return { items, truncated }
   })
 }

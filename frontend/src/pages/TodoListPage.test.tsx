@@ -45,6 +45,7 @@ function setup(items: Todo[] = [todo()], total = items.length) {
       }
     if (path === '/api/categories') return { items: [{ id: 'c1', name: '기본', isDefault: true }] }
     if (path === '/api/todos/a') return items[0] // 행 클릭 후 이동한 SC-04 단건 조회
+    if (path === '/api/todos/a/histories') return { items: [] }
     return { items, total }
   })
 }

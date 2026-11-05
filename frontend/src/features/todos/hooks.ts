@@ -12,7 +12,7 @@ export function useTodos(params: TodoListParams) {
   })
 }
 
-// 목록·캘린더 전부(['todos'])와 해당 할일 단건을 다시 조회한다
+// 목록·캘린더 전부(['todos'])와 해당 할일 단건·이력을 다시 조회한다
 function useTodoMutation<V>(mutationFn: (v: V) => Promise<unknown>, idOf: (v: V) => string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -21,6 +21,7 @@ function useTodoMutation<V>(mutationFn: (v: V) => Promise<unknown>, idOf: (v: V)
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['todos'] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.todo(idOf(v)) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.histories(idOf(v)) }),
       ]),
   })
 }

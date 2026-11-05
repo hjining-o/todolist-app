@@ -331,3 +331,30 @@ describe('TodoEditPage 편집·읽기 전용', () => {
     await waitFor(() => expect(place()).not.toHaveTextContent('/todos/a'))
   })
 })
+
+describe('TodoEditPage 변경 이력 탭', () => {
+  it('편집 모드에 탭이 있고, 탭을 바꿔도 입력한 폼 값이 유지된다', async () => {
+    setup()
+    renderApp('/todos/a')
+    const title = (await screen.findByLabelText(/제목/)) as HTMLInputElement
+    type(/제목/, '바꾼 제목')
+    await userEvent.click(screen.getByRole('tab', { name: '변경 이력' }))
+    expect(await screen.findByText('표시할 변경 이력이 없습니다')).toBeVisible()
+    await userEvent.click(screen.getByRole('tab', { name: '상세' }))
+    expect(title).toBeVisible()
+    expect(title.value).toBe('바꾼 제목')
+  })
+
+  it('읽기 전용 모드에도 탭이 있고, 등록 모드에는 없다', async () => {
+    setup(todo({ canEdit: false }))
+    renderApp('/todos/a')
+    expect(await screen.findByRole('tab', { name: '변경 이력' })).toBeInTheDocument()
+  })
+
+  it('등록 모드에는 탭이 없다', async () => {
+    setup()
+    renderApp('/todos/new')
+    await screen.findByLabelText(/제목/)
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+  })
+})
