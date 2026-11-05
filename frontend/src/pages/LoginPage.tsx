@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useLogin } from '@/features/auth/hooks'
 import { safeNext } from '@/features/auth/safeNext'
 import { ApiError } from '@/shared/api/client'
+import { LanguageSelect } from '@/shared/components/LanguageSelect'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -32,7 +33,10 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-svh items-center justify-center p-4">
+    <main className="relative flex min-h-svh items-center justify-center p-4">
+      <div className="absolute right-4 top-4">
+        <LanguageSelect />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-center text-2xl">TodoList</CardTitle>

@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router'
 import { App } from '@/app/App'
 import { GlobalErrorBanner } from '@/app/GlobalErrorBanner'
 import { createQueryClient } from '@/app/queryClient'
+import '@/shared/i18n'
 import { Toaster } from '@/shared/components/ui/sonner'
 import './index.css'
 

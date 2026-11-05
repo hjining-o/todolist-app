@@ -3,6 +3,7 @@ import { MenuIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
 import { useLogout, useMe } from '@/features/auth/hooks'
+import { LanguageSelect } from '@/shared/components/LanguageSelect'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
@@ -36,6 +37,7 @@ function UserActions({ onDone }: { onDone?: () => void }) {
   return (
     <>
       <span className="text-sm text-muted-foreground">{me?.name}</span>
+      <LanguageSelect />
       <ThemeToggle />
       <Button
         variant="outline"

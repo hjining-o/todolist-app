@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ErrorBanner } from './ErrorBanner'
+import i18n from '@/shared/i18n'
+import { LanguageSelect } from './LanguageSelect'
 import { ThemeToggle } from './ThemeToggle'
 
 describe('ConfirmDialog', () => {
@@ -62,5 +64,14 @@ describe('ThemeToggle', () => {
     await userEvent.click(screen.getByRole('button', { name: '테마 변경' }))
     await userEvent.click(await screen.findByRole('menuitemradio', { name: '다크' }))
     expect(document.documentElement).toHaveClass('dark')
+  })
+})
+
+describe('LanguageSelect', () => {
+  it('언어를 고르면 i18n.language 가 바뀐다', async () => {
+    render(<LanguageSelect />)
+    await userEvent.click(screen.getByRole('button', { name: '언어 변경' }))
+    await userEvent.click(await screen.findByRole('menuitemradio', { name: 'English' }))
+    expect(i18n.language).toBe('en')
   })
 })

@@ -1,8 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
+import i18n from '@/shared/i18n'
 
-afterEach(() => cleanup())
+// 기존 한국어 단언이 통과하도록 언어를 ko 로 고정한다
+await i18n.changeLanguage('ko')
+afterEach(async () => {
+  cleanup()
+  await i18n.changeLanguage('ko')
+})
 
 // Radix가 jsdom에 없는 API를 부른다(Q-04)
 globalThis.ResizeObserver ??= class {

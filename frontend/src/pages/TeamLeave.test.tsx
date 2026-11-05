@@ -75,8 +75,7 @@ describe('팀 나가기(DLG-04)', () => {
     const before = counter.teamCalls
     await userEvent.click(within(dialog).getByRole('button', { name: '지정하고 나가기' }))
     expect(post).toHaveBeenCalledWith('/api/teams/5/leave', { nextOwnerId: '2' })
-    expect(await screen.findByLabelText('현재 위치')).toHaveTextContent('/teams')
-    expect(screen.getByLabelText('현재 위치')).not.toHaveTextContent('/teams/5')
+    await waitFor(() => expect(screen.getByLabelText('현재 위치')).toHaveTextContent(/^\/teams$/))
     await waitFor(() => expect(counter.teamCalls).toBeGreaterThan(before))
     expect(await screen.findByText('속한 팀이 없습니다. 팀을 만들어 보세요.')).toBeInTheDocument()
   })
