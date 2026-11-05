@@ -114,6 +114,23 @@ describe('CalendarPage', () => {
     await waitFor(() => expect(useCalendarStore.getState().view).toBe('timeGridDay'))
   })
 
+  it('한 칸이 넘치면 기간이 긴 할일이 먼저 자리를 차지해 끊기지 않고, 하루짜리가 +N 으로 숨는다', async () => {
+    // 11/5 칸에 4건. 늦게(04:00) 시작하는 여러 날 할일이 시작 시각 순으로 밀려 숨겨지던 문제의 재현 데이터
+    setup([
+      todo({ id: 'a', title: '사흘', startAt: '2026-11-03T00:00+09:00', endAt: '2026-11-05T23:59+09:00' }),
+      todo({ id: 'b', title: '진행중', startAt: '2026-11-04T00:00+09:00', endAt: '2026-11-06T23:59+09:00' }),
+      todo({ id: 'c', title: '하루', startAt: '2026-11-05T00:00+09:00', endAt: '2026-11-05T23:59+09:00' }),
+      todo({ id: 'd', title: '긴할일', startAt: '2026-11-05T04:00+09:00', endAt: '2026-11-10T05:00+09:00' }),
+    ])
+    renderApp('/calendar')
+    await screen.findByText('+1')
+    const harnesses = (title: string) =>
+      [...document.querySelectorAll<HTMLElement>('.fc-daygrid-event-harness')].filter((h) => h.textContent?.trim() === title)
+    await waitFor(() => expect(harnesses('긴할일').length).toBeGreaterThan(0))
+    expect(harnesses('긴할일').every((h) => h.style.visibility !== 'hidden')).toBe(true)
+    expect(harnesses('하루').some((h) => h.style.visibility === 'hidden')).toBe(true)
+  })
+
   it('보기를 팀으로 바꾸면 teamId 로 재조회하고 등록 링크에 teamId 가 붙는다', async () => {
     setup()
     renderApp('/calendar')

@@ -161,6 +161,8 @@ export function CalendarPage() {
         timeZone="UTC"
         firstDay={0}
         dayMaxEvents={3}
+        // 기간이 긴 할일이 위 줄을 먼저 차지한다. 시작 시각 순이면 늦게 시작한 여러 날 할일이 +N에 숨었다가 다음 날부터 첫 줄로 올라와 끊겨 보인다
+        eventOrder="-duration,start,title"
         // 'day' 문자열은 dayGridDay 로 가므로 일 뷰(timeGridDay)로 직접 보낸다(U-13)
         moreLinkClick={(arg) => api().changeView('timeGridDay', arg.date)}
         moreLinkContent={({ num }) => `+${num}`}
