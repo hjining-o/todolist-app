@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
@@ -16,21 +17,29 @@ interface RowProps {
 
 // 완료 체크·삭제는 canEdit 일 때만 그린다(FE-07, C-14)
 function CompleteCheckbox({ todo, onToggle, className }: Pick<RowProps, 'todo' | 'onToggle'> & { className?: string }) {
-  return <Checkbox aria-label="완료" className={className} checked={todo.completed} onCheckedChange={(c) => onToggle(todo, c === true)} />
+  const { t } = useTranslation()
+  return <Checkbox aria-label={t('common.completed')} className={className} checked={todo.completed} onCheckedChange={(c) => onToggle(todo, c === true)} />
 }
 function DeleteButton({ todo, onDelete }: Pick<RowProps, 'todo' | 'onDelete'>) {
+  const { t } = useTranslation()
   return (
-    <Button variant="ghost" size="sm" className="text-destructive" aria-label={`${todo.title} 삭제`} onClick={() => onDelete(todo)}>
-      삭제
+    <Button variant="ghost" size="sm" className="text-destructive" aria-label={t('todo.deleteAria', { title: todo.title })} onClick={() => onDelete(todo)}>
+      {t('common.delete')}
     </Button>
   )
 }
 
-const ownerName = (t: Todo) => (t.isOwner ? '나' : t.owner.name)
 const stop = (e: MouseEvent) => e.stopPropagation()
 
+function useOwnerName() {
+  const { t } = useTranslation()
+  return (todo: Todo) => (todo.isOwner ? t('common.me') : todo.owner.name)
+}
+
 export function TodoRow({ todo, timeZone, onToggle, onDelete }: RowProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
+  const ownerName = useOwnerName()
   return (
     <TableRow className="cursor-pointer" onClick={() => navigate(`/todos/${todo.id}`)}>
       <TableCell className="w-10" onClick={stop}>
@@ -48,7 +57,7 @@ export function TodoRow({ todo, timeZone, onToggle, onDelete }: RowProps) {
         <StatusBadge status={todo.status} />
       </TableCell>
       <TableCell>{ownerName(todo)}</TableCell>
-      <TableCell>{todo.category?.name ?? '(없음)'}</TableCell>
+      <TableCell>{todo.category?.name ?? t('common.none')}</TableCell>
       <TableCell className="text-right" onClick={stop}>
         {todo.canEdit && <DeleteButton todo={todo} onDelete={onDelete} />}
       </TableCell>
@@ -57,6 +66,7 @@ export function TodoRow({ todo, timeZone, onToggle, onDelete }: RowProps) {
 }
 
 export function TodoMobileRow({ todo, timeZone, onToggle, onDelete }: RowProps) {
+  const ownerName = useOwnerName()
   return (
     <li className="flex items-start gap-3 py-3">
       {todo.canEdit && <CompleteCheckbox todo={todo} onToggle={onToggle} className="mt-0.5" />}

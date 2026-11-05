@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useMe } from '@/features/auth/hooks'
 import { CategorySelect } from '@/features/categories/components/CategorySelect'
 import { useCategories } from '@/features/categories/hooks'
@@ -24,7 +25,6 @@ import { TodoFormRow } from './TodoFormRow'
 import { TodoNotFound } from './TodoNotFound'
 
 const NONE = 'NONE' // '없음(개인 할일)' 항목 값(Select 항목은 빈 문자열 불가)
-const PERIOD_ERROR = '종료 일시는 시작 일시보다 빠를 수 없습니다.'
 
 interface Values {
   teamId: string
@@ -58,6 +58,7 @@ function initialValues(todo: Todo | undefined, meId: string, timeZone: string, d
 const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x))
 
 function OwnerSelect({ teamId, value, meId, onChange }: { teamId: string; value: string; meId: string; onChange: (id: string) => void }) {
+  const { t: tr } = useTranslation()
   const { data } = useTeamMembers(teamId)
   return (
     <Select value={value} onValueChange={onChange}>
@@ -67,7 +68,7 @@ function OwnerSelect({ teamId, value, meId, onChange }: { teamId: string; value:
       <SelectContent>
         {data?.items.map((m) => (
           <SelectItem key={m.userId} value={m.userId}>
-            {m.userId === meId ? `나 (${m.name})` : m.name}
+            {m.userId === meId ? tr('todo.form.me', { name: m.name }) : m.name}
           </SelectItem>
         ))}
       </SelectContent>
@@ -81,6 +82,7 @@ interface TodoFormProps {
 }
 
 export function TodoForm({ todo, defaultTeamId }: TodoFormProps) {
+  const { t: tr } = useTranslation()
   const { data: me } = useMe()
   const { data: teams } = useTeams()
   const { data: categories } = useCategories()
@@ -108,7 +110,7 @@ export function TodoForm({ todo, defaultTeamId }: TodoFormProps) {
   const pending = createTodo.isPending || updateTodo.isPending
   const dirty = JSON.stringify(v) !== JSON.stringify(initial)
   const reversed = isEndBeforeStart(v.startDate, v.startTime, v.endDate, v.endTime)
-  const endError = errors.endAt ?? (reversed ? PERIOD_ERROR : undefined)
+  const endError = errors.endAt ?? (reversed ? tr('todo.form.periodError') : undefined)
 
   const changeTeam = (teamId: string) =>
     setV((p) => ({ ...p, teamId, ownerId: meId, sharedTeamIds: teamId === NONE ? [] : [teamId] })) // 고른 팀이 공유 기본값(FR-11 #3)
@@ -129,9 +131,9 @@ export function TodoForm({ todo, defaultTeamId }: TodoFormProps) {
     e.preventDefault()
     setFormError('')
     const next: Record<string, string> = {}
-    if (!v.title.trim()) next.title = '제목을 입력해 주세요.'
-    if (isEdit && !v.startDate) next.startAt = '시작 날짜를 입력해 주세요.'
-    if (isEdit && !v.endDate) next.endAt = '종료 날짜를 입력해 주세요.'
+    if (!v.title.trim()) next.title = tr('todo.form.titleRequired')
+    if (isEdit && !v.startDate) next.startAt = tr('todo.form.startRequired')
+    if (isEdit && !v.endDate) next.endAt = tr('todo.form.endRequired')
     setErrors(next)
     if (Object.keys(next).length > 0 || reversed) return
 
@@ -174,16 +176,16 @@ export function TodoForm({ todo, defaultTeamId }: TodoFormProps) {
           <AlertDescription>{formError}</AlertDescription>
         </Alert>
       )}
-      {todo && !todo.isOwner && <p className="text-sm text-muted-foreground">소유자: {todo.owner.name} (읽기 전용)</p>}
+      {todo && !todo.isOwner && <p className="text-sm text-muted-foreground">{tr('todo.form.ownerReadonly', { name: todo.owner.name })}</p>}
       <FieldGroup className="gap-4">
         {!isEdit && (
-          <TodoFormRow label="팀" htmlFor="team">
+          <TodoFormRow label={tr('todo.form.team')} htmlFor="team">
             <Select value={v.teamId} onValueChange={changeTeam}>
               <SelectTrigger id="team" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NONE}>없음(개인)</SelectItem>
+                <SelectItem value={NONE}>{tr('todo.form.personal')}</SelectItem>
                 {teams?.items.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name}
@@ -194,24 +196,24 @@ export function TodoForm({ todo, defaultTeamId }: TodoFormProps) {
           </TodoFormRow>
         )}
         {showOwner && (
-          <TodoFormRow label="소유자" htmlFor="owner" error={errors.ownerId}>
+          <TodoFormRow label={tr('todo.form.owner')} htmlFor="owner" error={errors.ownerId}>
             <OwnerSelect teamId={v.teamId} value={v.ownerId} meId={meId} onChange={(id) => set('ownerId', id)} />
           </TodoFormRow>
         )}
-        <TodoFormRow label="제목" htmlFor="title" required error={errors.title}>
+        <TodoFormRow label={tr('todo.form.title')} htmlFor="title" required error={errors.title}>
           <Input id="title" maxLength={200} value={v.title} aria-invalid={!!errors.title} onChange={(e) => set('title', e.target.value)} />
           <div className="flex justify-end">
             <CharCounter value={v.title} max={200} />
           </div>
         </TodoFormRow>
-        <TodoFormRow label="설명" htmlFor="description" error={errors.description}>
+        <TodoFormRow label={tr('todo.form.description')} htmlFor="description" error={errors.description}>
           <Textarea id="description" maxLength={2000} value={v.description} onChange={(e) => set('description', e.target.value)} />
           <div className="flex justify-end">
             <CharCounter value={v.description} max={2000} />
           </div>
         </TodoFormRow>
         {(['start', 'end'] as const).map((w) => {
-          const label = w === 'start' ? '시작' : '종료'
+          const label = tr(w === 'start' ? 'todo.form.start' : 'todo.form.end')
           const error = w === 'start' ? errors.startAt : endError
           return (
             <TodoFormRow key={w} label={label} htmlFor={`${w}Date`} error={error}>
@@ -220,40 +222,40 @@ export function TodoForm({ todo, defaultTeamId }: TodoFormProps) {
                 <Input
                   type="time"
                   className="w-auto"
-                  aria-label={`${label} 시각`}
+                  aria-label={tr('todo.form.timeOf', { label })}
                   disabled={!v[`${w}Date`]}
                   value={v[`${w}Time`]}
                   onChange={(e) => set(`${w}Time`, e.target.value)}
                 />
-                {!isEdit && <span className="text-xs text-muted-foreground">(비우면 {w === 'start' ? '00:00' : '23:59'})</span>}
+                {!isEdit && <span className="text-xs text-muted-foreground">{tr('todo.form.emptyTime', { time: w === 'start' ? '00:00' : '23:59' })}</span>}
               </div>
             </TodoFormRow>
           )
         })}
-        <TodoFormRow label="카테고리" htmlFor="category" error={errors.categoryId}>
+        <TodoFormRow label={tr('todo.form.category')} htmlFor="category" error={errors.categoryId}>
           {isOwner ? (
             <CategorySelect id="category" value={v.categoryId || defaultCategoryId} onValueChange={(id) => set('categoryId', id)} />
           ) : (
             <Select disabled>
               <SelectTrigger id="category" className="w-full">
-                <SelectValue placeholder="(비공개)" />
+                <SelectValue placeholder={tr('todo.form.private')} />
               </SelectTrigger>
             </Select>
           )}
         </TodoFormRow>
         {todo && (
-          <TodoFormRow label="완료 여부">
+          <TodoFormRow label={tr('todo.form.completed')}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Checkbox id="completed" checked={v.completed} onCheckedChange={(c) => set('completed', c === true)} />
-                <Label htmlFor="completed">완료</Label>
+                <Label htmlFor="completed">{tr('common.completed')}</Label>
               </div>
               <StatusBadge status={todo.status} />
             </div>
           </TodoFormRow>
         )}
         {!delegated && (
-          <TodoFormRow label="공유 팀" error={errors.sharedTeamIds}>
+          <TodoFormRow label={tr('todo.form.sharedTeams')} error={errors.sharedTeamIds}>
             {isOwner ? (
               <div className="flex flex-wrap gap-4">
                 {teams?.items.map((t) => (
@@ -272,36 +274,36 @@ export function TodoForm({ todo, defaultTeamId }: TodoFormProps) {
       <div className="flex items-center justify-between gap-2">
         {todo ? (
           <Button type="button" variant="ghost" className="text-destructive" onClick={() => setDeleteOpen(true)}>
-            삭제
+            {tr('common.delete')}
           </Button>
         ) : (
           <span />
         )}
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={() => (dirty ? setLeaveOpen(true) : goBack())}>
-            취소
+            {tr('common.cancel')}
           </Button>
           <Button type="submit" disabled={pending}>
             {pending && <Spinner />}
-            저장
+            {tr('common.save')}
           </Button>
         </div>
       </div>
       <ConfirmDialog
         open={leaveOpen}
         onOpenChange={setLeaveOpen}
-        title="저장하지 않은 변경"
-        description="저장하지 않은 변경이 있습니다. 나가시겠어요?"
-        confirmLabel="나가기"
+        title={tr('todo.form.leaveTitle')}
+        description={tr('todo.form.leaveDescription')}
+        confirmLabel={tr('todo.form.leave')}
         confirmVariant="default"
         onConfirm={goBack}
       />
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="할일 삭제"
-        description={`'${todo?.title ?? ''}' 할일을 삭제할까요? 삭제하면 복구할 수 없습니다.`}
-        confirmLabel="삭제"
+        title={tr('todo.form.deleteTitle')}
+        description={tr('todo.form.deleteDescription', { title: todo?.title ?? '' })}
+        confirmLabel={tr('common.delete')}
         onConfirm={() => todo && removeTodo.mutate(todo.id, { onSuccess: goBack, onError })}
       />
     </form>
