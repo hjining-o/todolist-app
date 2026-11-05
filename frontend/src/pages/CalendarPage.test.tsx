@@ -123,4 +123,25 @@ describe('CalendarPage', () => {
     await waitFor(() => expect(lastQuery()).toMatchObject({ teamId: 't1' }))
     expect(screen.getByRole('link', { name: '할일 등록' })).toHaveAttribute('href', '/todos/new?teamId=t1')
   })
+
+  it('모바일 월 뷰는 막대 없이 날짜 칸에 개수만 보이고 칸을 누르면 그 날의 일 뷰로 간다', async () => {
+    const mm = vi.spyOn(window, 'matchMedia').mockImplementation((q) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList)
+    try {
+      setup()
+      renderApp('/calendar')
+      expect(await screen.findAllByText('1건')).toHaveLength(3) // 11/03–11/05
+      expect(document.querySelectorAll('.fc-daygrid-event').length).toBe(0)
+      await userEvent.click(document.querySelector('[data-date="2026-11-04"]')!)
+      await waitFor(() => expect(useCalendarStore.getState()).toMatchObject({ view: 'timeGridDay', date: '2026-11-04' }))
+    } finally {
+      mm.mockRestore()
+    }
+  })
+
+  it('일 뷰에서 할일이 없으면 빈 상태 문구를 보인다', async () => {
+    useCalendarStore.setState({ view: 'timeGridDay', date: '2026-11-04' })
+    setup([])
+    renderApp('/calendar')
+    expect(await screen.findByText('이 날 할일이 없습니다.')).toBeInTheDocument()
+  })
 })

@@ -9,9 +9,10 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
-import { toCalendarRange, toWallClock } from '@/features/todos/calendar/calendarRange'
+import { countTodosByDate, toCalendarRange, toWallClock } from '@/features/todos/calendar/calendarRange'
 import { useCalendarTodos } from '@/features/todos/calendar/useCalendarTodos'
 import { ViewSelect } from '@/features/todos/components/FilterBar'
+import { useMediaQuery } from '@/shared/lib/useMediaQuery'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
@@ -34,11 +35,19 @@ export function CalendarPage() {
   const timeZone = me?.timezone
   // 사용자 시간대를 알아야 from·to 오프셋을 정할 수 있다
   const range = dates && timeZone ? toCalendarRange(dates.start, dates.end, timeZone) : null
-  const { data } = useCalendarTodos(range, view)
+  const { data, isPending } = useCalendarTodos(range, view)
+  // 모바일(<768px) 월 뷰는 막대 대신 날짜 칸에 개수만 보인다(PRD 5.4)
+  const mobileMonth = !useMediaQuery('(min-width: 768px)') && calView === 'dayGridMonth'
+  const mobileMonthRef = useRef(mobileMonth)
+  mobileMonthRef.current = mobileMonth
+  const counts = useMemo(
+    () => (dates ? countTodosByDate(data?.items ?? [], dates.start, dates.end) : new Map<string, number>()),
+    [data, dates],
+  )
 
   const events = useMemo(
-    () => (data?.items ?? []).map((t) => ({ id: t.id, title: t.title, start: toWallClock(t.startAt), end: toWallClock(t.endAt) })),
-    [data],
+    () => (mobileMonth ? [] : data?.items ?? []).map((t) => ({ id: t.id, title: t.title, start: toWallClock(t.startAt), end: toWallClock(t.endAt) })),
+    [data, mobileMonth],
   )
   const api = () => calendarRef.current!.getApi()
   const onDatesSet = (arg: DatesSetArg) => {
@@ -91,6 +100,10 @@ export function CalendarPage() {
           <AlertDescription>일부 할일만 표시됩니다. 필터를 좁혀 주세요.</AlertDescription>
         </Alert>
       )}
+      {isPending && dates && <p className="text-sm text-muted-foreground">불러오는 중...</p>}
+      {calView === 'timeGridDay' && data && data.items.length === 0 && (
+        <p className="text-sm text-muted-foreground">이 날 할일이 없습니다.</p>
+      )}
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -107,6 +120,21 @@ export function CalendarPage() {
         initialView={initial.view}
         initialDate={initial.date}
         events={events}
+        dayCellContent={
+          mobileMonth
+            ? (arg) => {
+                const n = counts.get(ymd(arg.date))
+                return (
+                  <>
+                    {arg.dayNumberText}
+                    {n ? <div className="text-xs text-muted-foreground">{n}건</div> : null}
+                  </>
+                )
+              }
+            : undefined
+        }
+        // dateClick 은 좌표로 칸을 찾아 jsdom 에서 안 되므로 칸 요소에 직접 건다. 칸은 뷰 이동 때 다시 만들어져 리스너가 쌓이지 않는다
+        dayCellDidMount={(arg) => arg.el.addEventListener('click', () => mobileMonthRef.current && api().changeView('timeGridDay', arg.date))}
         datesSet={onDatesSet}
         eventClick={(arg: EventClickArg) => {
           arg.jsEvent.preventDefault()

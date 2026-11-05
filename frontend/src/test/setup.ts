@@ -16,7 +16,7 @@ Element.prototype.releasePointerCapture ??= () => {}
 Element.prototype.scrollIntoView ??= () => {}
 window.matchMedia ??= (query: string) =>
   ({
-    matches: false,
+    matches: query.includes('min-width'), // 기본은 데스크톱. 모바일은 테스트에서 matchMedia 를 바꿔 쓴다
     media: query,
     onchange: null,
     addListener() {},
