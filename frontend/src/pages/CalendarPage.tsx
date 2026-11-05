@@ -15,8 +15,6 @@ import { resolveTeamColor, todoBarColor } from '@/features/teams/teamColors'
 import { countTodosByDate, toCalendarRange, toWallClock } from '@/features/todos/calendar/calendarRange'
 import { useCalendarTodos } from '@/features/todos/calendar/useCalendarTodos'
 import { ViewSelect } from '@/features/todos/components/FilterBar'
-import { STATUS_LABEL } from '@/features/todos/components/StatusBadge'
-import { formatPeriod } from '@/shared/lib/dateTime'
 import type { Todo } from '@/shared/types'
 import { useMediaQuery } from '@/shared/lib/useMediaQuery'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -37,7 +35,7 @@ const STATUS_CLASS = {
   OVERDUE: 'border-l-4! border-l-destructive!',
 } as const
 
-function barProps(t: Todo, colors: ReturnType<typeof resolveTeamColor>, timeZone?: string) {
+function barProps(t: Todo, colors: ReturnType<typeof resolveTeamColor>) {
   const bar = todoBarColor(t, colors)
   const light = t.status === 'NOT_STARTED' || t.status === 'COMPLETED'
   // 색이 없으면(개인 할일) 기본색 --primary
@@ -46,14 +44,8 @@ function barProps(t: Todo, colors: ReturnType<typeof resolveTeamColor>, timeZone
   const color = light
     ? { backgroundColor: tint(hex), borderColor: hex, textColor: bar.fg ? darken(hex, bar.fg) : hex }
     : { backgroundColor: hex, borderColor: hex, textColor: fg }
-  const title = [
-    t.title,
-    STATUS_LABEL[t.status],
-    timeZone && formatPeriod(t.startAt, t.endAt, timeZone),
-    t.sharedTeams.length > 0 && `공유 팀: ${t.sharedTeams.map((x) => x.name).join(', ')}`,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  // 툴팁은 공유 팀만(상세는 클릭하면 SC-04). 공유 팀이 없으면 툴팁 없음
+  const title = t.sharedTeams.length > 0 ? `공유 팀: ${t.sharedTeams.map((x) => x.name).join(', ')}` : undefined
   return { ...color, classNames: ['bar-' + t.status.toLowerCase(), STATUS_CLASS[t.status]], extendedProps: { title, multi: bar.multi, overdue: t.status === 'OVERDUE', completed: t.status === 'COMPLETED' } }
 }
 
@@ -63,8 +55,7 @@ function BarContent({ arg }: { arg: EventContentArg }) {
     <div title={title} className="flex w-full items-center gap-1 overflow-hidden px-1">
       {overdue && <TriangleAlert className="size-3 shrink-0" aria-hidden />}
       {multi && <Users className="size-3 shrink-0" aria-hidden />}
-      {arg.timeText && <span className="fc-event-time">{arg.timeText}</span>}
-      <span className={cn('fc-event-title truncate', completed && 'line-through')}>{arg.event.title}</span>
+      <span className={cn('fc-event-title truncate font-semibold', completed && 'line-through')}>{arg.event.title}</span>
     </div>
   )
 }
@@ -103,9 +94,9 @@ export function CalendarPage() {
         title: t.title,
         start: toWallClock(t.startAt),
         end: toWallClock(t.endAt),
-        ...barProps(t, teamColors, timeZone),
+        ...barProps(t, teamColors),
       })),
-    [data, mobileMonth, teamColors, timeZone],
+    [data, mobileMonth, teamColors],
   )
   const api = () => calendarRef.current!.getApi()
   const onDatesSet = (arg: DatesSetArg) => {

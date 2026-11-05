@@ -160,18 +160,21 @@ describe('CalendarPage', () => {
       await waitFor(() => expect(bar()).not.toBeNull())
     }
 
-    it('진행 중은 팀 색 채움 + 채움 글자색, 툴팁에 제목·상태·기간·공유 팀', async () => {
+    it('진행 중은 팀 색 채움 + 채움 글자색, 굵은 제목만 있고 시각은 없으며 툴팁은 공유 팀만', async () => {
       await render(todo({ sharedTeams: shared('t1') }))
       await waitFor(() => expect(bar().style.backgroundColor).toBe('rgb(37, 99, 235)'))
       expect(main().style.color).toBe('rgb(255, 255, 255)')
       expect(bar().classList).toContain('bar-in_progress')
-      expect(bar().querySelector('[title]')).toHaveAttribute('title', '워크숍 준비 · 진행 중 · 2026-11-03 00:00 ~ 2026-11-05 23:59 · 공유 팀: 마케팅팀')
+      expect(bar().querySelector('[title]')).toHaveAttribute('title', '공유 팀: 마케팅팀')
+      expect(bar().querySelector('.fc-event-title')).toHaveClass('font-semibold')
+      expect(bar().querySelector('.fc-event-time')).toBeNull()
+      expect(bar()).toHaveTextContent(/^워크숍 준비$/)
     })
 
-    it('개인 할일은 기본색(--primary)이고 공유 팀 줄이 툴팁에 없다', async () => {
+    it('개인 할일은 기본색(--primary)이고 툴팁이 없다', async () => {
       await render(todo())
       expect(bar().style.backgroundColor).toBe('var(--primary)')
-      expect(bar().querySelector('[title]')!.getAttribute('title')).not.toContain('공유 팀')
+      expect(bar().querySelector('[title]')).toBeNull()
     })
 
     it('시작 전은 연한 배경 + 색 테두리, 노랑은 글자를 어둡게 한다', async () => {
@@ -201,7 +204,7 @@ describe('CalendarPage', () => {
       await render(todo({ sharedTeams: shared('t1', 't2') }))
       await waitFor(() => expect(bar().style.backgroundColor).toBe('rgb(100, 116, 139)'))
       expect(bar().querySelector('svg.lucide-users')).not.toBeNull()
-      expect(bar().querySelector('[title]')!.getAttribute('title')).toContain('공유 팀: 마케팅팀, 영업팀')
+      expect(bar().querySelector('[title]')).toHaveAttribute('title', '공유 팀: 마케팅팀, 영업팀')
     })
   })
 })

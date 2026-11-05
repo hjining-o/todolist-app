@@ -275,7 +275,7 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 | 기한 초과 | 채움 + 왼쪽 굵은 띠(`border-l-4`, `destructive`) + `TriangleAlert`(`size-3`) |
 
 - 공유 팀 2개 이상이면 제목 앞에 `Users` 아이콘(`size-3`)을 붙인다. 아이콘은 `aria-hidden`이다.
-- 막대 `title`(툴팁): `제목 · 상태 · 기간 · 공유 팀: A, B`(공유 팀 없으면 생략).
+- 막대 라벨은 제목만 `font-semibold`로 쓰고 시각은 쓰지 않는다. 막대 `title`(툴팁)은 `공유 팀: A, B`만(공유 팀 없으면 툴팁 없음).
 - 색 견본(`TeamColorPicker`)은 `radiogroup`/`radio`(`aria-label` = 색 이름, `aria-checked`)이며 6.1의 포커스·비활성 클래스를 쓴다. 색 점(`TeamColorDot`)은 `size-2.5 rounded-full`, `aria-hidden`.
 
 ## 8. 체크리스트 (화면 구현 후)
