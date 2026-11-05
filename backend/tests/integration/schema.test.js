@@ -15,7 +15,7 @@ const insertTodo = (ownerId, categoryId, startAt, endAt, completed = false, comp
   );
 
 describe('DB-04 스키마 구조', () => {
-  it('E-09: 테이블 8개가 존재한다', async () => {
+  it('E-09: 테이블 9개가 존재한다', async () => {
     const tables = await names(
       "SELECT tablename AS name FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'schema_migrations'",
     );
@@ -29,6 +29,7 @@ describe('DB-04 스키마 구조', () => {
         'todo_shares',
         'todo_histories',
         'refresh_tokens',
+        'user_identities',
       ]),
     );
   });
