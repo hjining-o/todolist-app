@@ -1,5 +1,23 @@
 {
   "language": {
     "change": "언어 변경"
+  },
+  "auth": {
+    "email": "이메일",
+    "password": "비밀번호",
+    "name": "이름",
+    "passwordHint": "(8자 이상, 72바이트 이하)",
+    "nameHint": "(1~50자)",
+    "login": {
+      "submit": "로그인",
+      "noAccount": "계정이 없나요?",
+      "signup": "회원가입"
+    },
+    "signup": {
+      "title": "회원가입",
+      "submit": "가입",
+      "hasAccount": "이미 계정이 있나요?",
+      "login": "로그인"
+    }
   }
 }

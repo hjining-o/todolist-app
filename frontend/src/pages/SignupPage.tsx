@@ -1,5 +1,6 @@
 // SC-02
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { useSignup } from '@/features/auth/hooks'
 import { ApiError } from '@/shared/api/client'
@@ -14,13 +15,15 @@ import { Spinner } from '@/shared/components/ui/spinner'
 
 type Name = 'email' | 'password' | 'name'
 
+// label·hint 는 i18n 키
 const FIELDS: { name: Name; label: string; hint?: string; type: string; maxLength: number; autoComplete: string }[] = [
-  { name: 'email', label: '이메일', type: 'email', maxLength: 254, autoComplete: 'email' },
-  { name: 'password', label: '비밀번호', hint: '(8자 이상, 72바이트 이하)', type: 'password', maxLength: 72, autoComplete: 'new-password' },
-  { name: 'name', label: '이름', hint: '(1~50자)', type: 'text', maxLength: 50, autoComplete: 'name' },
+  { name: 'email', label: 'auth.email', type: 'email', maxLength: 254, autoComplete: 'email' },
+  { name: 'password', label: 'auth.password', hint: 'auth.passwordHint', type: 'password', maxLength: 72, autoComplete: 'new-password' },
+  { name: 'name', label: 'auth.name', hint: 'auth.nameHint', type: 'text', maxLength: 50, autoComplete: 'name' },
 ]
 
 export function SignupPage() {
+  const { t } = useTranslation()
   const [form, setForm] = useState<Record<Name, string>>({ email: '', password: '', name: '' })
   const navigate = useNavigate()
   const signup = useSignup()
@@ -41,7 +44,7 @@ export function SignupPage() {
       </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">회원가입</CardTitle>
+          <CardTitle className="text-center text-2xl">{t('auth.signup.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} noValidate>
@@ -54,8 +57,8 @@ export function SignupPage() {
               {FIELDS.map(({ name, label, hint, ...inputProps }) => (
                 <Field key={name} data-invalid={!!fieldError(name)}>
                   <FieldLabel htmlFor={name}>
-                    {label} <RequiredMark />
-                    {hint && <span className="font-normal text-muted-foreground">{hint}</span>}
+                    {t(label)} <RequiredMark />
+                    {hint && <span className="font-normal text-muted-foreground">{t(hint)}</span>}
                   </FieldLabel>
                   <Input
                     id={name}
@@ -69,12 +72,12 @@ export function SignupPage() {
               ))}
               <Button type="submit" disabled={signup.isPending}>
                 {signup.isPending && <Spinner />}
-                가입
+                {t('auth.signup.submit')}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                이미 계정이 있나요?{' '}
+                {t('auth.signup.hasAccount')}{' '}
                 <Link to="/login" className="text-foreground underline underline-offset-4">
-                  로그인
+                  {t('auth.signup.login')}
                 </Link>
               </p>
             </FieldGroup>

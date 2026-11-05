@@ -1,5 +1,6 @@
 // SC-01
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useLogin } from '@/features/auth/hooks'
 import { safeNext } from '@/features/auth/safeNext'
@@ -13,6 +14,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Spinner } from '@/shared/components/ui/spinner'
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [params] = useSearchParams()
@@ -50,7 +52,7 @@ export function LoginPage() {
                 </Alert>
               )}
               <Field>
-                <FieldLabel htmlFor="email">이메일</FieldLabel>
+                <FieldLabel htmlFor="email">{t('auth.email')}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
@@ -61,7 +63,7 @@ export function LoginPage() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="password">비밀번호</FieldLabel>
+                <FieldLabel htmlFor="password">{t('auth.password')}</FieldLabel>
                 <Input
                   id="password"
                   type="password"
@@ -72,12 +74,12 @@ export function LoginPage() {
               </Field>
               <Button type="submit" disabled={login.isPending}>
                 {login.isPending && <Spinner />}
-                로그인
+                {t('auth.login.submit')}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                계정이 없나요?{' '}
+                {t('auth.login.noAccount')}{' '}
                 <Link to="/signup" className="text-foreground underline underline-offset-4">
-                  회원가입
+                  {t('auth.login.signup')}
                 </Link>
               </p>
             </FieldGroup>
