@@ -1,18 +1,18 @@
 # =============================================================================
 # TodoList API 명세 (OpenAPI 3.1 / Swagger)
 # -----------------------------------------------------------------------------
-# 문서 버전   : v0.3
+# 문서 버전   : v0.4
 # 상태        : 초안
-# 최종 수정일 : 2026-11-04
+# 최종 수정일 : 2026-11-05
 # 작성자      : hjining
 # 기준 문서   :
 #   - docs/1-domain-definition.md  v0.13  (도메인 정의서)
 #   - docs/2-prd.md                v0.14  (PRD)
 #   - docs/3-user-scenario.md      v0.13  (사용자 시나리오)
 #   - docs/4-wireframe.md          v0.11  (와이어프레임)
-#   - docs/5-project-principle.md  v0.11  (프로젝트 구조 설계 원칙)
-#   - docs/6-arch-diagram.md       v0.6   (기술 아키텍처)
-#   - docs/7-erd.md                v0.4   (ERD)
+#   - docs/5-project-principle.md  v0.12  (프로젝트 구조 설계 원칙)
+#   - docs/6-arch-diagram.md       v0.7   (기술 아키텍처)
+#   - docs/7-erd.md                v0.5   (ERD)
 # 참고 자료(로컬, git 추적 제외):
 #   - docs-local/261104-full-stack-plan.md  (풀스택 실행 계획 WBS, 작성일 2026-11-04)
 #   - docs-local/schema.sql                 (초안 DDL, ERD v0.3 기준)
@@ -27,19 +27,20 @@
 # | v0.1 | 2026-11-04 | hjining | 최초 작성 |
 # | v0.2 | 2026-11-04 | hjining | 확인 필요 결정 반영: S-16 헬스 공개·응답 고정, S-07 대리 등록 `sharedTeamIds` 거부(400), S-03 42일을 달력 날짜로 판정, S-12 자동 로그인 확인. 문서 간 불일치 해소 표시, 기준 문서 버전 갱신 |
 # | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6, ERD v0.4). 문서 정합성 검토로 해소한 불일치 표시(PRD FR-01 #6·시나리오 EX-05 공개 경로, PRD §5.3 날짜만 예외). API 변경 없음 |
+# | v0.4 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7, ERD v0.5). 백엔드 구현 결과 반영: `offset` 최대 999,999,999(넘으면 400), `PATCH /api/me` 비밀번호 변경 시 리프레시 토큰 삭제(폐기 표시 아님). 그 밖 API 변경 없음 |
 # =============================================================================
 openapi: 3.1.0
 info:
   title: TodoList API
   # 위 주석의 '문서 버전'과 같은 값이어야 한다.
-  version: v0.3
+  version: v0.4
   description: |
     인증된 사용자가 기간(시작·종료 일시)이 있는 할일을 카테고리별로 관리하고, 팀과 공유해
     목록·캘린더(월·주·일)로 보며, 변경 이력을 추적하는 웹 TodoList의 REST API다.
 
     - 상태: 초안 / 최종 수정일: 2026-11-04 / 작성자: hjining
     - 기준 문서: 도메인 정의서 v0.13, PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11,
-      프로젝트 원칙 v0.11, 기술 아키텍처 v0.6, ERD v0.4
+      프로젝트 원칙 v0.12, 기술 아키텍처 v0.7, ERD v0.5
     - 참고 자료(로컬, git 추적 제외): `docs-local/261104-full-stack-plan.md`(이하 '실행 계획', Task ID `API-nn`·`CM-nn`·`UI-nn`),
       `docs-local/schema.sql`. 기준 문서와 다르면 기준 문서를 따르고, 기준 문서에 없는 API 세부는 실행 계획을 채택했다.
     - 근거 표기: 도메인(`FR`, `R`, `S`, `F`, `UC`), PRD(`A`, `B`, `K`, `M`, `SC`, `PRD §n`),
@@ -54,6 +55,7 @@ info:
     | v0.1 | 2026-11-04 | hjining | 최초 작성 |
     | v0.2 | 2026-11-04 | hjining | 확인 필요 결정 반영: S-16 헬스 공개·응답 고정, S-07 대리 등록 `sharedTeamIds` 거부(400), S-03 42일을 달력 날짜로 판정, S-12 자동 로그인 확인. 문서 간 불일치 해소 표시, 기준 문서 버전 갱신 |
     | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6, ERD v0.4). 문서 정합성 검토로 해소한 불일치 표시(PRD FR-01 #6·시나리오 EX-05 공개 경로, PRD §5.3 날짜만 예외). API 변경 없음 |
+    | v0.4 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7, ERD v0.5). 백엔드 구현 결과 반영: `offset` 최대 999,999,999(넘으면 400), `PATCH /api/me` 비밀번호 변경 시 리프레시 토큰 삭제(폐기 표시 아님). 그 밖 API 변경 없음 |
 
     ## 공통 규칙
 
@@ -117,7 +119,7 @@ info:
     | 캘린더 겹침 | `startAt < to AND endAt >= from` | API-10 #1 |
     | 등록 요청 필드 | `teamId?`, `ownerId?`, `title`, `description?`, `startAt?`, `endAt?`, `categoryId?`, `sharedTeamIds?` | API-09 #1 |
     | 수정 요청 필드 | `title`, `description`, `startAt`, `endAt`, `completed`, `categoryId`, `sharedTeamIds` 중 보낸 것만 | API-11 #1 |
-    | 내 정보 | `GET /api/me` 응답 `id`, `email`, `name`, `timezone`. `PATCH /api/me` 필드 `name`, `timezone`, `currentPassword`, `newPassword`. 비밀번호 변경 시 그 사용자 리프레시 토큰 전체 폐기 + 현재 브라우저에 토큰 2종 재발급 | API-06 #6, API-12 |
+    | 내 정보 | `GET /api/me` 응답 `id`, `email`, `name`, `timezone`. `PATCH /api/me` 필드 `name`, `timezone`, `currentPassword`, `newPassword`. 비밀번호 변경 시 그 사용자 리프레시 토큰 전체 삭제 + 현재 브라우저에 토큰 2종 재발급 | API-06 #6, API-12 |
     | 토큰 갱신 실패 | 401 `UNAUTHENTICATED`와 함께 쿠키 2개 삭제 | API-06 #4 |
     | 역할 변경 | `MANAGER` ↔ `MEMBER`만, `OWNER` 지정은 400 | API-08 #4 |
     | 팀 나가기 본문 | `nextOwnerId` | API-14 #1 |
@@ -367,7 +369,7 @@ paths:
 
         - 시간대는 `Intl.supportedValuesOf('timeZone')`에 있는 IANA 이름만 받는다. 바꾸면 이후 모든 일시 응답의 오프셋과 '오늘' 판정(R4)이 새 시간대 기준이다.
         - 비밀번호를 바꿀 때는 현재 비밀번호를 확인한다. 틀리면 400 `WRONG_PASSWORD`(401이 아님, 401은 로그인 화면 이동 신호).
-        - 비밀번호를 바꾸면 같은 트랜잭션에서 그 사용자의 리프레시 토큰을 모두 폐기하고, 이 요청에 토큰 2종을 새로 발급해 변경한 브라우저의 로그인을 유지한다.
+        - 비밀번호를 바꾸면 같은 트랜잭션에서 그 사용자의 리프레시 토큰 행을 모두 삭제하고(폐기 표시로 남기면 다른 브라우저의 옛 토큰이 재사용 감지를 일으켜 새 토큰까지 폐기된다, ERD 3.6), 이 요청에 토큰 2종을 새로 발급해 변경한 브라우저의 로그인을 유지한다.
         - 이름·시간대 저장과 비밀번호 변경은 화면에서 별도 폼이지만 같은 경로를 쓴다(U-17).
         - 근거: FR-03 #1–#5, R5, R17, UC-04, A9, U-17, C-23, SEC-02, SEC-09, EX-30, EX-31, EX-44, US-16, API-12
         - S-01(200), S-08(빈 본문 400과 같은 방식), S-09, S-11
@@ -605,10 +607,11 @@ paths:
         - name: offset
           in: query
           required: false
-          description: '목록 모드 건너뛸 건수. 기본 0. 캘린더 모드에서는 보내면 400(S-03, S-05).'
+          description: '목록 모드 건너뛸 건수. 기본 0, 최대 999,999,999(9자리 이하 정수, 넘으면 400). 캘린더 모드에서는 보내면 400(S-03, S-05).'
           schema:
             type: integer
             minimum: 0
+            maximum: 999999999
             default: 0
         - name: from
           in: query

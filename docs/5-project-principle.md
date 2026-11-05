@@ -2,9 +2,9 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.11 |
+| 문서 버전 | v0.12 |
 | 상태 | 초안 |
-| 최종 수정일 | 2026-11-04 |
+| 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
 | 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/3-user-scenario.md` v0.13, `docs/4-wireframe.md` v0.11 |
 
@@ -194,7 +194,7 @@
 | ID | 원칙 | 근거 |
 |----|------|------|
 | SEC-01 | 비밀번호는 8자 이상, UTF-8 72바이트 이하를 검증한 뒤 `bcryptjs`(cost 10)로 해시해서만 저장한다. 평문과 해시는 응답과 로그에 나가지 않는다. | PRD §5.2 B4, 도메인 §3.4 |
-| SEC-02 | 액세스 토큰(JWT, 15분)과 리프레시 토큰(7일 절대 만료)을 각각 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급한다. 리프레시 쿠키는 `Path=/api/auth`다. 리프레시 토큰은 원문이 아니라 SHA-256 해시만 `refresh_tokens`에 저장하고, `POST /api/auth/refresh` 때마다 회전한다(쓴 토큰 폐기 + 새 토큰 발급, 한 트랜잭션). 폐기된 토큰이 다시 오면 그 사용자의 리프레시 토큰을 모두 폐기한다. 로그아웃은 리프레시 토큰 폐기와 쿠키 삭제, 비밀번호 변경은 그 사용자의 리프레시 토큰 전체 폐기다. 탈취된 액세스 토큰은 만료(최대 15분)까지 유효하다는 한계를 알고 있다. | PRD §5.2 A25, 시나리오 D-03, EX-42–EX-44 |
+| SEC-02 | 액세스 토큰(JWT, 15분)과 리프레시 토큰(7일 절대 만료)을 각각 `httpOnly; Secure; SameSite=Lax` 쿠키로 발급한다. 리프레시 쿠키는 `Path=/api/auth`다. 리프레시 토큰은 원문이 아니라 SHA-256 해시만 `refresh_tokens`에 저장하고, `POST /api/auth/refresh` 때마다 회전한다(쓴 토큰 폐기 + 새 토큰 발급, 한 트랜잭션). 폐기된 토큰이 다시 오면 그 사용자의 리프레시 토큰을 모두 폐기한다. 로그아웃은 리프레시 토큰 폐기와 쿠키 삭제, 비밀번호 변경은 그 사용자의 리프레시 토큰 행을 모두 삭제하고(폐기 표시가 아니라 삭제. 남겨 두면 다른 브라우저가 옛 토큰으로 갱신할 때 재사용 감지가 방금 발급한 새 토큰까지 폐기해 변경한 브라우저도 로그아웃된다, EX-44) 현재 브라우저에 토큰을 새로 발급한다. 탈취된 액세스 토큰은 만료(최대 15분)까지 유효하다는 한계를 알고 있다. | PRD §5.2 A25, 시나리오 D-03, EX-42–EX-44 |
 | SEC-03 | JWT 페이로드에는 사용자 ID(`sub`)와 만료 시각만 담는다. 역할, 팀, 권한을 넣지 않고, 권한은 요청마다 DB로 확인한다. 서명과 검증은 `HS384`만 쓴다(`jwt.verify`의 `algorithms: ['HS384']`). 서명 키는 48바이트 이상이다. | PRD §5.2 A26, 시나리오 US-15 #2 |
 | SEC-04 | `authenticate` 미들웨어는 `/api/auth/signup`, `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`, `GET /api/health`를 뺀 모든 `/api/*` 라우터에 기본 적용한다. 갱신은 액세스 토큰이 만료된 상태에서 호출되고, 로그아웃은 만료된 상태에서도 쿠키를 지울 수 있어야 하므로 공개다(두 경로는 리프레시 쿠키로만 동작). 헬스는 배포 확인(OPS-21)을 쿠키 없이 하기 위해 공개이고, 응답은 `200 {"status":"ok"}`로 고정해 내부 정보를 담지 않는다. 공개 경로를 늘리려면 이 문서를 먼저 고친다. | 도메인 R1, UC-01–03, PRD A25 |
 | SEC-05 | 로그인 실패는 이메일 존재 여부를 드러내지 않는다. 없는 이메일과 틀린 비밀번호는 같은 `INVALID_CREDENTIALS` 응답이다. | PRD FR-01 #5, 시나리오 EX-04 |
@@ -239,7 +239,7 @@
 | OPS-15 | 목록은 `limit`과 `offset`을 쓴다. 기본 50건, 최대 100건, 정렬은 `start_at` 오름차순이다. 응답에 필터 적용 후 `total`을 포함한다. | PRD §5.1 U-12 |
 | OPS-16 | 캘린더 조회(`GET /api/todos?from=&to=`, N-11)는 범위를 최대 42일, 결과를 최대 500건으로 제한한다. 42일을 넘는 범위는 400 `VALIDATION_ERROR`다. 결과가 상한에 걸리면 응답에 `truncated: true`를 넣는다. | PRD §5.1 U-13, 시나리오 EX-39 |
 | OPS-17 | 목록과 캘린더는 1회 쿼리에 공유 팀 같은 연관 데이터를 JOIN이나 집계로 함께 가져온다(N+1 금지). 상태는 SQL에서 계산해 필터와 정렬에 쓴다. | PRD §5.1 |
-| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))과 팀당 OWNER 1명 부분 유니크 인덱스(OPS-23), 사용자당 기본 카테고리 1개 부분 유니크 인덱스, 카테고리 복합 FK용 `UNIQUE (id, owner_id)`, 카테고리 삭제용 `idx_todos_category_id`, 리프레시 토큰의 `uq_refresh_tokens_token_hash`·`idx_refresh_tokens_user_id`를 포함한다. 전체 목록은 `docs/7-erd.md` 3.2다. 스키마가 아닌 운영 작업(OPS-24의 `pg_cron` 등록)은 마이그레이션에 넣지 않고 `backend/src/db/ops/`의 SQL 파일로 남긴다. | PRD §5.1, `docs/7-erd.md` E-02·E-04·E-12, [가정 G-07] |
+| OPS-18 | 스키마 변경은 `backend/src/db/migrations/`의 순번 SQL 파일로만 한다. 적용한 파일 이름은 실행 스크립트(`npm run db:migrate`)가 만드는 `schema_migrations` 테이블에 기록하고 다음 실행에서 건너뛴다(도구 테이블이라 ERD 엔티티가 아니다). 인덱스는 PRD §5.1의 목록(이메일 소문자 유일, 카테고리 (소유자, 정규화 이름) 유일, 팀 정규화 이름 유일, 할일 (소유자, 시작·종료), 할일 공유 (팀, 할일), 팀 구성원 (사용자), 이력 (할일, 일시))과 팀당 OWNER 1명 부분 유니크 인덱스(OPS-23), 사용자당 기본 카테고리 1개 부분 유니크 인덱스, 카테고리 복합 FK용 `UNIQUE (id, owner_id)`, 카테고리 삭제용 `idx_todos_category_id`, 리프레시 토큰의 `uq_refresh_tokens_token_hash`·`idx_refresh_tokens_user_id`를 포함한다. 전체 목록은 `docs/7-erd.md` 3.2다. 스키마가 아닌 운영 작업(OPS-24의 `pg_cron` 등록)은 마이그레이션에 넣지 않고 `backend/src/db/ops/`의 SQL 파일로 남긴다. | PRD §5.1, `docs/7-erd.md` E-02·E-04·E-12, [가정 G-07] |
 | OPS-24 | 만료된 리프레시 토큰은 Supabase `pg_cron`으로 매일 04:00(DB 시간대) `DELETE FROM refresh_tokens WHERE expires_at < now()`로 지운다. 폐기됐지만 만료 전인 행은 재사용 감지(SEC-02)를 위해 남긴다. 작업 SQL은 `backend/src/db/ops/refresh-token-cleanup.sql`에 두고 운영 프로젝트에 1회 등록한다. 테스트 DB는 리셋되므로 등록하지 않는다. 앱 코드에는 정리 경로를 두지 않는다. | PRD §5.1 A27, K12 |
 | OPS-23 | 참조 무결성과 데이터 제약은 마이그레이션 SQL에 다음과 같이 둔다. ① 사용자·팀을 참조하는 FK(`todo_histories.actor_id`, `todo_shares.team_id`, `team_members.user_id`, `team_members.team_id`, `todos.owner_id`, `categories.owner_id` 등)는 `ON DELETE RESTRICT`다. ② `todo_shares.todo_id`, `todo_histories.todo_id`는 `ON DELETE CASCADE`라 할일 삭제 때 함께 지워진다. ③ 구성원 제거 때의 `todo_shares` 정리는 FK로 연쇄하지 않고 service가 같은 트랜잭션에서 직접 `DELETE`한다(BE-08). ④ 팀당 OWNER 1명은 부분 유니크 인덱스 `UNIQUE (team_id) WHERE role = 'OWNER'`로 보장한다. ⑤ 소유권 이전은 반드시 기존 소유자를 강등하거나 삭제한 뒤 새 소유자를 승격하는 순서로 처리한다(④ 때문에 반대 순서는 인덱스 위반이다). ⑥ `todos`의 카테고리 FK는 `(category_id, owner_id)` → `categories (id, owner_id)` 복합 FK이고 `ON DELETE RESTRICT`다. 카테고리 삭제는 할일을 기본 카테고리로 옮긴 뒤 지운다(R9). ⑦ 공유 팀이 소유자가 속한 팀이라는 조건(R21)은 트리거 없이 service가 검증한다. ⑧ CHECK 제약과 `updated_at` 갱신 방식은 `docs/7-erd.md` 3.3을 따른다. | 도메인 §3.9, R7, R9, R18, R21, `docs/7-erd.md` |
 
@@ -465,3 +465,4 @@ backend/
 | v0.9 | 2026-11-04 | hjining | 기준 문서 버전 갱신(도메인 v0.13, PRD v0.12, 사용자 시나리오 v0.11, 와이어프레임 v0.9). ERD(`docs/7-erd.md`) 확인 필요 E-01–E-12 결정 반영: N-18 `password_hash`, N-19 복합·표현식 인덱스 이름과 이메일 일반 유일 제약(PK·FK·CHECK 무명), OPS-18 인덱스 추가(기본 카테고리 부분 유니크, `UNIQUE (id, owner_id)`, `idx_todos_category_id`), OPS-23 ⑥–⑧(카테고리 복합 FK·RESTRICT, 공유 팀 service 검증, CHECK·`updated_at`은 ERD 3.3) |
 | v0.10 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 사용자 시나리오 v0.12, 와이어프레임 v0.10). PRD A25–A28 반영: 1.2 인증 행, SEC-02(리프레시 토큰 회전·재사용 감지·폐기), SEC-03(`HS384` 고정, 키 48바이트), SEC-04(공개 경로에 refresh·logout), `JWT_SECRET` 길이, OPS-10(401 → 갱신 → 재시도), OPS-14(`ALTER DATABASE`로 시간대 고정), OPS-18(리프레시 토큰 인덱스, 운영 작업 SQL 위치), OPS-22, OPS-24 추가(`pg_cron` 만료 토큰 정리), Q-02 인증 테스트, BE-08 리프레시 토큰 회전, 6.3 구조(`auth.repo.js`, `db/ops/`), G-09. 6.1 `docs/` 주석을 문서 1–7로 정정(ERD 추가 반영 누락) |
 | v0.11 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11). API 명세(`docs/8-swagger.yaml`) 확인 필요 결정 반영: SEC-04 공개 경로에 `GET /api/health` 추가(응답 고정), SEC-11에 날짜만 보낸 값 예외(근거에 R5 추가), N-14에 같은 예외 연결, G-06에 헬스 공개와 날짜만 예외 명시 |
+| v0.12 | 2026-11-05 | hjining | 백엔드 구현(실행 계획 DB-03, API-12) 결과 반영: SEC-02 비밀번호 변경 시 리프레시 토큰을 폐기 표시가 아니라 삭제(EX-44, 재사용 감지와 충돌 방지), OPS-18 마이그레이션 적용 기록 `schema_migrations` 테이블 |

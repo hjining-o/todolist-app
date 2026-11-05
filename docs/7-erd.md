@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.4 |
+| 문서 버전 | v0.5 |
 | 상태 | 초안 |
-| 최종 수정일 | 2026-11-04 |
+| 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/4-wireframe.md` v0.11, `docs/5-project-principle.md` v0.11, `docs/6-arch-diagram.md` v0.6 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.14, `docs/4-wireframe.md` v0.11, `docs/5-project-principle.md` v0.12, `docs/6-arch-diagram.md` v0.7 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`, 프로젝트 원칙 `N-xx`·`G-xx`·`OPS-xx`·`P-xx`.
@@ -19,7 +19,7 @@
 ## 1. 개요
 
 ### 1.1 범위
-도메인 정의서 3장의 엔티티 7개와 인증용 기술 테이블 `refresh_tokens` 1개(PRD §5.2 A25, 도메인 엔티티 아님)를 PostgreSQL 17 테이블로 옮긴 논리·물리 혼합 모델이다. P1 테이블(`todo_histories`)도 Day 1에 한 번에 만든다(P-08). DDL은 `backend/src/db/migrations/`의 순번 SQL 파일로 쓴다(OPS-18, G-07). 이 문서는 DDL이 아니다.
+도메인 정의서 3장의 엔티티 7개와 인증용 기술 테이블 `refresh_tokens` 1개(PRD §5.2 A25, 도메인 엔티티 아님)를 PostgreSQL 17 테이블로 옮긴 논리·물리 혼합 모델이다. P1 테이블(`todo_histories`)도 Day 1에 한 번에 만든다(P-08). DDL은 `backend/src/db/migrations/`의 순번 SQL 파일로 쓴다(OPS-18, G-07). 이 문서는 DDL이 아니다. 마이그레이션 실행 스크립트가 만드는 적용 기록 테이블 `schema_migrations`(파일 이름, 적용 시각)는 도구 테이블이라 이 문서의 테이블 수에 넣지 않는다(OPS-18).
 
 ### 1.2 공통 결정
 
@@ -221,6 +221,7 @@ erDiagram
 | 저장 값 | 토큰 원문은 저장하지 않고 SHA-256 해시만 저장한다 | PRD §5.2, P-06 |
 | 회전 | 갱신 때 쓴 행에 `revoked_at`을 채우고 새 행을 INSERT한다. 새 행의 `expires_at`은 쓴 행의 값을 그대로 쓴다(7일 절대 만료) | PRD A25, SEC-02 |
 | 폐기 행 | 만료 전까지 남긴다. 다시 오면 재사용으로 판정해 그 사용자의 유효 행을 모두 폐기한다 | SEC-02 |
+| 비밀번호 변경 | 그 사용자의 행을 모두 **삭제**하고 새 행 1개를 INSERT한다. 폐기 행으로 남기면 다른 브라우저의 옛 토큰이 재사용으로 판정되어 새 행까지 폐기되므로 삭제한다 | PRD FR-03 #5, SEC-02, EX-44 |
 | 정리 | `pg_cron`이 매일 04:00 `expires_at < now()` 행을 삭제한다. 마이그레이션이 아니라 운영 작업 SQL(`backend/src/db/ops/`)이다. `expires_at` 인덱스는 두지 않는다(느려지면 추가) | PRD A27, OPS-24, K12 |
 | 사용자 삭제 | 회원 탈퇴가 범위 밖이라 생기지 않는다. FK는 RESTRICT | 도메인 §7, OPS-23 ① |
 
@@ -270,3 +271,4 @@ E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반�
 | v0.2 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.12, 와이어프레임 v0.9 추가). 문서 정합성 검토로 찾은 E-13·E-14 결정 반영: 이력의 카테고리 변경은 그 시점 `{ id, name }`(3.5), 카테고리 삭제로 인한 할일 이동은 이력을 남기지 않음. 구버전 Mermaid(9.x) 호환: 키는 `PK`·`FK`만, `UK`·복합 PK의 FK·문자열 길이는 주석으로 이동. 확인 필요 E-01–E-12 결정 반영(도메인 v0.13, 프로젝트 원칙 v0.9에도 반영): 카테고리 복합 FK·RESTRICT, 기본 카테고리 부분 유니크, `changes` 구조(3.5 신설), 완료 일관성·공백·이메일 소문자 CHECK, `password_hash`, `text`+CHECK, 인덱스 이름, `updated_at` 갱신, `idx_todos_category_id` |
 | v0.3 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.13, 와이어프레임 v0.10, 프로젝트 원칙 v0.10, 기술 아키텍처 v0.5). PRD A25·A27·A28 반영(E-15): `refresh_tokens` 테이블(1.1, 2장 다이어그램, 관계 10개), FK `user_id` RESTRICT(3.1), `uq_refresh_tokens_token_hash`·`idx_refresh_tokens_user_id`(3.2), 보존 규칙 3.6 신설, 4장 모듈 `auth`, 1.2 삭제·시간대 행 |
 | v0.4 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6). 프로젝트 원칙 v0.10·기술 아키텍처 v0.5를 가리키던 낡은 참조 정정. 테이블·제약 변경 없음 |
+| v0.5 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7). 백엔드 구현 결과 반영: 1장에 적용 기록 테이블 `schema_migrations`는 ERD 밖이라는 설명, 3.6에 비밀번호 변경 시 행 삭제 규칙. 도메인 테이블·제약 변경 없음 |
