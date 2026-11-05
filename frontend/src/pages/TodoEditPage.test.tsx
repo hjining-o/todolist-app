@@ -179,12 +179,12 @@ describe('TodoEditPage 등록', () => {
 
     post.mockRejectedValueOnce(new ApiError(400, 'INVALID_PERIOD', '서버: 기간 오류'))
     await save()
-    expect(await screen.findByText('서버: 기간 오류')).toBeInTheDocument()
+    expect(await screen.findByText('종료 일시는 시작 일시보다 빠를 수 없습니다.')).toBeInTheDocument()
 
     post.mockRejectedValueOnce(new ApiError(400, 'VALIDATION_ERROR', '입력값을 확인해 주세요.', { title: '서버: 제목 오류' }))
     await save()
     expect(await screen.findByText('서버: 제목 오류')).toBeInTheDocument()
-    expect(screen.queryByText('서버: 기간 오류')).not.toBeInTheDocument()
+    expect(screen.queryByText('종료 일시는 시작 일시보다 빠를 수 없습니다.')).not.toBeInTheDocument()
 
     post.mockRejectedValueOnce(new ApiError(400, 'INVALID_SHARE_TEAM', '속한 팀에만 공유할 수 있습니다.'))
     await save()

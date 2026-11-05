@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useLogin } from '@/features/auth/hooks'
 import { safeNext } from '@/features/auth/safeNext'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage } from '@/shared/api/errorMessage'
 import { LanguageSelect } from '@/shared/components/LanguageSelect'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
@@ -48,7 +49,7 @@ export function LoginPage() {
             <FieldGroup>
               {error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error.message}</AlertDescription>
+                  <AlertDescription>{errorMessage(error)}</AlertDescription>
                 </Alert>
               )}
               <Field>

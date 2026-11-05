@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useMe } from '@/features/auth/hooks'
 import { useUpdateMe } from '@/features/users/hooks'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage, fieldErrors } from '@/shared/api/errorMessage'
 import { CharCounter } from '@/shared/components/CharCounter'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { RequiredMark } from '@/shared/components/RequiredMark'
@@ -85,7 +86,7 @@ function ProfileCard({ me }: { me: Me }) {
           <FieldGroup>
             {error && !error.fields && (
               <Alert variant="destructive">
-                <AlertDescription>{error.message}</AlertDescription>
+                <AlertDescription>{errorMessage(error)}</AlertDescription>
               </Alert>
             )}
             <Field>
@@ -94,20 +95,20 @@ function ProfileCard({ me }: { me: Me }) {
                 {me.email} <span className="text-muted-foreground">{t('profile.emailReadonly')}</span>
               </p>
             </Field>
-            <Field data-invalid={!!error?.fields?.name}>
+            <Field data-invalid={!!fieldErrors(error)?.name}>
               <FieldLabel htmlFor="name">
                 {t('auth.name')} <RequiredMark />
               </FieldLabel>
-              <Input id="name" value={name} maxLength={50} autoComplete="name" aria-invalid={!!error?.fields?.name} onChange={(e) => setName(e.target.value)} />
+              <Input id="name" value={name} maxLength={50} autoComplete="name" aria-invalid={!!fieldErrors(error)?.name} onChange={(e) => setName(e.target.value)} />
               <div className="flex justify-end">
                 <CharCounter value={name} max={50} />
               </div>
-              <FieldError>{error?.fields?.name}</FieldError>
+              <FieldError>{fieldErrors(error)?.name}</FieldError>
             </Field>
-            <Field data-invalid={!!error?.fields?.timezone}>
+            <Field data-invalid={!!fieldErrors(error)?.timezone}>
               <FieldLabel htmlFor="timezone">{t('profile.timezone')}</FieldLabel>
               <TimezoneCombobox value={timezone} onChange={setTimezone} />
-              <FieldError>{error?.fields?.timezone}</FieldError>
+              <FieldError>{fieldErrors(error)?.timezone}</FieldError>
             </Field>
             <Button type="submit" className="self-end" disabled={update.isPending}>
               {update.isPending && <Spinner />}
@@ -126,8 +127,8 @@ function PasswordCard() {
   const [newPassword, setNew] = useState('')
   const update = useUpdateMe()
   const error = clientError(update.error)
-  const currentError = error?.fields?.currentPassword ?? (error?.code === 'WRONG_PASSWORD' ? error.message : undefined)
-  const newError = error?.fields?.newPassword
+  const currentError = fieldErrors(error)?.currentPassword ?? (error?.code === 'WRONG_PASSWORD' ? errorMessage(error) : undefined)
+  const newError = fieldErrors(error)?.newPassword
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -153,7 +154,7 @@ function PasswordCard() {
           <FieldGroup>
             {error && !currentError && !newError && (
               <Alert variant="destructive">
-                <AlertDescription>{error.message}</AlertDescription>
+                <AlertDescription>{errorMessage(error)}</AlertDescription>
               </Alert>
             )}
             <Field data-invalid={!!currentError}>

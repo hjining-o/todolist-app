@@ -137,7 +137,7 @@ describe('TeamDetailPage', () => {
   })
 
   it.each([
-    ['USER_NOT_FOUND', 404, '가입된 사용자가 아닙니다.'],
+    ['USER_NOT_FOUND', 404, '가입되지 않은 이메일입니다.'],
     ['ALREADY_MEMBER', 409, '이미 팀 구성원입니다.'],
   ])('%s 는 추가 폼 이메일 입력란 아래에 보인다', async (code, status, message) => {
     setup([{ id: '5', name: '마케팅팀', role: 'OWNER', color: null }])

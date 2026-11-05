@@ -16,6 +16,7 @@ import {
 } from '@/features/teams/hooks'
 import { resolveTeamColor } from '@/features/teams/teamColors'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage, fieldErrors } from '@/shared/api/errorMessage'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { RequiredMark } from '@/shared/components/RequiredMark'
@@ -37,10 +38,10 @@ function AddMemberForm({ teamId }: { teamId: string }) {
   const add = useAddTeamMember(teamId)
   const error = add.error instanceof ApiError && add.error.status > 0 && add.error.status < 500 ? add.error : null
   const emailError =
-    error?.fields?.email ?? (error?.code === 'USER_NOT_FOUND' || error?.code === 'ALREADY_MEMBER' ? error.message : undefined)
-  const roleError = error?.fields?.role
+    fieldErrors(error)?.email ?? (error?.code === 'USER_NOT_FOUND' || error?.code === 'ALREADY_MEMBER' ? errorMessage(error) : undefined)
+  const roleError = fieldErrors(error)?.role
   // 필드 오류가 아닌 그 밖의 4xx(403 등)는 폼 아래에 보인다
-  const formError = error && !emailError && !roleError ? error.message : undefined
+  const formError = error && !emailError && !roleError ? errorMessage(error) : undefined
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()

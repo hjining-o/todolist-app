@@ -43,7 +43,7 @@ async function send<T>(method: string, path: string, { query, body }: Options): 
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
-    throw new ApiError(0, 'NETWORK_ERROR', i18n.t('common.networkError'))
+    throw new ApiError(0, 'NETWORK_ERROR', i18n.t('error.NETWORK_ERROR'))
   }
 
   if (!res.ok) {
@@ -51,7 +51,7 @@ async function send<T>(method: string, path: string, { query, body }: Options): 
     throw new ApiError(
       res.status,
       data?.error?.code ?? 'UNKNOWN',
-      data?.error?.message ?? i18n.t('common.unknownError'),
+      data?.error?.message ?? i18n.t('error.UNKNOWN'),
       data?.error?.fields,
     )
   }

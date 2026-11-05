@@ -1,6 +1,8 @@
 // SC-05
 import { cn } from '@/shared/lib/utils'
+import jaLocale from '@fullcalendar/core/locales/ja'
 import koLocale from '@fullcalendar/core/locales/ko'
+import zhCnLocale from '@fullcalendar/core/locales/zh-cn'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react'
@@ -63,10 +65,12 @@ function BarContent({ arg }: { arg: EventContentArg }) {
   )
 }
 
+const FC_LOCALE: Record<string, string> = { ko: 'ko', en: 'en', zh: 'zh-cn', ja: 'ja' } // en은 FullCalendar 기본 locale
+
 const ymd = (d: Date) => d.toISOString().slice(0, 10) // timeZone:'UTC' 라 UTC 날짜가 곧 벽시계 날짜
 
 export function CalendarPage() {
-  const { t: tr } = useTranslation()
+  const { t: tr, i18n: i18nInst } = useTranslation()
   const navigate = useNavigate()
   const calendarRef = useRef<FullCalendar>(null)
   const { data: me } = useMe()
@@ -163,8 +167,8 @@ export function CalendarPage() {
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        locales={[koLocale]}
-        locale="ko"
+        locales={[koLocale, zhCnLocale, jaLocale]}
+        locale={FC_LOCALE[i18nInst.language.slice(0, 2)] ?? 'ko'}
         timeZone="UTC"
         firstDay={0}
         dayMaxEvents={3}

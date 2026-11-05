@@ -1,5 +1,6 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage } from '@/shared/api/errorMessage'
 import i18n from '@/shared/i18n'
 import { useBannerStore } from '@/stores/bannerStore'
 
@@ -7,15 +8,15 @@ import { useBannerStore } from '@/stores/bannerStore'
 // me 쿼리(meta.ownsAuth)의 401은 AuthGuard가 화면 이동을 맡는다
 function handleError(error: unknown, onRetry?: () => void, ownsAuth = false) {
   if (!(error instanceof ApiError)) return
-  const { status, message } = error
+  const { status } = error
   if (status === 401) {
     const { pathname, search } = window.location
     if (!ownsAuth && pathname !== '/login' && pathname !== '/signup')
       window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`)
   } else if (status === 403) {
-    useBannerStore.getState().show(i18n.t('common.forbidden'))
+    useBannerStore.getState().show(i18n.t('error.FORBIDDEN'))
   } else if (status === 413 || status === 0 || status >= 500) {
-    useBannerStore.getState().show(message, onRetry)
+    useBannerStore.getState().show(errorMessage(error), onRetry)
   }
 }
 

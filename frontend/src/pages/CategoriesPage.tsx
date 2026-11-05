@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCategories, useCreateCategory, useDeleteCategory, useRenameCategory } from '@/features/categories/hooks'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage, fieldErrors } from '@/shared/api/errorMessage'
 import { CharCounter } from '@/shared/components/CharCounter'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -19,7 +20,7 @@ const MAX = 50
 // 이름 입력란 아래에 보일 메시지(5xx·네트워크 오류는 전역 배너가 처리)
 function nameError(error: Error | null) {
   if (!(error instanceof ApiError) || error.status === 0 || error.status >= 500) return undefined
-  return error.fields?.name ?? error.message
+  return fieldErrors(error)?.name ?? errorMessage(error)
 }
 
 interface NameFieldProps {

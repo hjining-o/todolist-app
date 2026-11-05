@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { useSignup } from '@/features/auth/hooks'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage, fieldErrors } from '@/shared/api/errorMessage'
 import { RequiredMark } from '@/shared/components/RequiredMark'
 import { LanguageSelect } from '@/shared/components/LanguageSelect'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
@@ -30,7 +31,7 @@ export function SignupPage() {
   // 5xx·네트워크 오류는 전역 배너(ST-04)가 보여준다
   const error = signup.error instanceof ApiError && signup.error.status > 0 && signup.error.status < 500 ? signup.error : null
   const emailTaken = error?.code === 'EMAIL_TAKEN'
-  const fieldError = (name: Name) => error?.fields?.[name] ?? (name === 'email' && emailTaken ? error.message : undefined)
+  const fieldError = (name: Name) => fieldErrors(error)?.[name] ?? (name === 'email' && emailTaken ? errorMessage(error) : undefined)
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -51,7 +52,7 @@ export function SignupPage() {
             <FieldGroup>
               {error && !emailTaken && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error.message}</AlertDescription>
+                  <AlertDescription>{errorMessage(error)}</AlertDescription>
                 </Alert>
               )}
               {FIELDS.map(({ name, label, hint, ...inputProps }) => (

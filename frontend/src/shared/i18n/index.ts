@@ -18,4 +18,10 @@ void i18n
     detection: { order: ['localStorage', 'navigator'], lookupLocalStorage: 'lang', caches: ['localStorage'] },
   })
 
+const setHtmlLang = (lng: string) => {
+  document.documentElement.lang = lng.slice(0, 2)
+}
+i18n.on('languageChanged', setHtmlLang)
+setHtmlLang(i18n.language)
+
 export default i18n

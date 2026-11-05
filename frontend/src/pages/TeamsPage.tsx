@@ -6,6 +6,7 @@ import { TeamColorDot } from '@/features/teams/components/TeamColorDot'
 import { resolveTeamColor } from '@/features/teams/teamColors'
 import { ROLE_KEY, useCreateTeam, useTeams } from '@/features/teams/hooks'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage, fieldErrors } from '@/shared/api/errorMessage'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { RequiredMark } from '@/shared/components/RequiredMark'
 import { Badge } from '@/shared/components/ui/badge'
@@ -25,7 +26,7 @@ function CreateTeamDialog({ onOpenChange }: { onOpenChange: (o: boolean) => void
   const navigate = useNavigate()
   const create = useCreateTeam()
   const error = create.error instanceof ApiError && create.error.status > 0 && create.error.status < 500 ? create.error : null
-  const message = error?.fields?.name ?? error?.message
+  const message = error ? (fieldErrors(error)?.name ?? errorMessage(error)) : undefined
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()

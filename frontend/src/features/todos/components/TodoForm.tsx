@@ -5,6 +5,7 @@ import { CategorySelect } from '@/features/categories/components/CategorySelect'
 import { useCategories } from '@/features/categories/hooks'
 import { useTeamMembers, useTeams } from '@/features/teams/hooks'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage, fieldErrors } from '@/shared/api/errorMessage'
 import { CharCounter } from '@/shared/components/CharCounter'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
@@ -122,9 +123,9 @@ export function TodoForm({ todo, defaultTeamId }: TodoFormProps) {
   const onError = (e: Error) => {
     if (!(e instanceof ApiError)) return
     if (e.status === 404) setGone(true)
-    else if (e.fields) setErrors(e.fields)
-    else if (e.code === 'INVALID_PERIOD') setErrors({ endAt: e.message })
-    else if (e.status === 400) setFormError(e.message) // INVALID_SHARE_TEAM, INVALID_OWNER 등
+    else if (e.fields) setErrors(fieldErrors(e)!)
+    else if (e.code === 'INVALID_PERIOD') setErrors({ endAt: errorMessage(e) })
+    else if (e.status === 400) setFormError(errorMessage(e)) // INVALID_SHARE_TEAM, INVALID_OWNER 등
   }
 
   function submit(e: FormEvent) {

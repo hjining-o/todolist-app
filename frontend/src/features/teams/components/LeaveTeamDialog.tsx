@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLeaveTeam } from '@/features/teams/hooks'
 import { ApiError } from '@/shared/api/client'
+import { errorMessage } from '@/shared/api/errorMessage'
 import { RequiredMark } from '@/shared/components/RequiredMark'
 import { Button } from '@/shared/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
@@ -22,7 +23,7 @@ export function LeaveTeamDialog({ teamId, candidates, onOpenChange, onLeft }: Pr
   const { t } = useTranslation()
   const [nextOwnerId, setNextOwnerId] = useState('')
   const leave = useLeaveTeam(teamId)
-  const error = leave.error instanceof ApiError ? leave.error.message : leave.error ? t('common.requestFailed') : null
+  const error = leave.error instanceof ApiError ? errorMessage(leave.error) : leave.error ? t('common.requestFailed') : null
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
