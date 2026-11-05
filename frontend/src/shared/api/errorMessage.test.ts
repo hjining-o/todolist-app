@@ -13,7 +13,7 @@ describe('errorMessage', () => {
     const e = new ApiError(400, 'VALIDATION_ERROR', 'x', { name: '이름은 필수입니다.' })
     expect(fieldErrors(e)).toEqual({ name: '이름은 필수입니다.' })
     await i18n.changeLanguage('en')
-    expect(fieldErrors(e)).toEqual({ name: '입력값을 확인해 주세요.' }) // en.json은 아직 비어 있어 ko로 대체된다
+    expect(fieldErrors(e)).toEqual({ name: 'Check your input.' })
     expect(fieldErrors(null)).toBeUndefined()
   })
 })
