@@ -141,3 +141,5 @@
 }
 .fc .fc-event { border-radius: calc(var(--radius) - 4px); }
 .fc .fc-col-header-cell-cushion { color: var(--muted-foreground); font-weight: 500; }
+/* 주·일 뷰: 고정 칸 높이(1.5em)를 풀어 24시간이 남은 높이를 나눠 갖게 한다(expandRows, 스크롤 없음) */
+.fc .fc-timegrid-slot { height: auto; line-height: 1; font-size: 0.75rem; } /* text-xs: 칸 최소 높이를 낮춘다 */

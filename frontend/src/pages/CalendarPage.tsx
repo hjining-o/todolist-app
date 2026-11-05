@@ -171,6 +171,9 @@ export function CalendarPage() {
         moreLinkContent={({ num }) => `+${num}`}
         headerToolbar={false}
         height={desktop ? '100%' : 'auto'}
+        // 주·일 뷰도 스크롤 없이 높이에 맞춘다: 1시간 칸 24개가 남은 높이를 나눠 갖는다
+        slotDuration="01:00:00"
+        expandRows
         initialView={initial.view}
         initialDate={initial.date}
         events={events}
