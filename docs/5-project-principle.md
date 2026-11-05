@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.13 |
+| 문서 버전 | v0.14 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
@@ -116,7 +116,7 @@
 | N-08 | 동의어 금지 | 할일은 `todo`(task, item 금지), 카테고리는 `category`(group, tag 금지), 팀은 `team`(group, workspace 금지), 이력은 `history`(audit 금지). `log`는 운영 로깅 전용이다. | — | 도메인 §2 |
 | N-09 | 상수, enum 값 | UPPER_SNAKE_CASE. 역할 `OWNER`, `MANAGER`, `MEMBER`와 이력 동작 `CREATED`, `UPDATED`, `COMPLETED`, `UNCOMPLETED`는 도메인 값을 그대로 쓴다. 상태 값은 `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`, `OVERDUE`로 쓴다. | `TodoStatus.OVERDUE` | 도메인 §3.3, §3.8, [가정 G-06] |
 | N-10 | 컴포넌트 이름 | PascalCase 명사. 화면 요소는 도메인 이름을 쓴다. shadcn 컴포넌트 이름(`Button`, `AlertDialog`)과 겹치는 이름을 만들지 않는다. | `TodoRow`, `StatusBadge`, `CategorySelect`, `TeamMemberTable`, `ConfirmDialog` | 와이어프레임 §2.1 |
-| N-11 | API 경로 | `/api/` 아래 소문자 kebab-case 복수형 명사. 중첩은 최대 2단계. 동작은 HTTP 메서드로 나타낸다. 동사 경로는 로그인처럼 메서드로 나타낼 수 없는 동작에만 쓴다. 소유자가 팀을 나가는 일은 `POST /api/teams/:teamId/leave`로만 처리하고, 구성원 제거 경로에 자기 자신을 지정하면 400 `VALIDATION_ERROR`다. 예외: 로그인한 사용자 자신의 정보는 `/api/me`로 쓴다(ID를 경로에 받지 않아 다른 사용자 접근 경로가 생기지 않는다). | `GET`, `POST /api/todos`; `PATCH`, `DELETE /api/todos/:todoId`; `GET /api/todos/:todoId/histories`; `POST /api/teams/:teamId/members`; `POST /api/teams/:teamId/leave`; `GET /api/todos?from=&to=`(캘린더 조회. 목록 API에 기간 필터를 더한 것이며 별도 경로를 만들지 않는다); `GET /api/teams/:teamId/members`(구성원 목록. F4 사용자 선택지도 이 경로를 재사용한다); `GET`, `POST /api/categories`; `PATCH`, `DELETE /api/categories/:categoryId`; `DELETE /api/teams/:teamId/members/:userId`(구성원 제거); `PATCH /api/teams/:teamId/members/:userId`(역할 변경); `GET /api/teams`(내가 속한 팀 목록과 내 역할. SC-08, SC-09의 팀 이름·내 역할도 이 결과를 쓴다); `POST /api/teams`(팀 생성. 생성자가 OWNER, DLG-03). 팀 단건 조회·이름 변경·삭제 경로는 두지 않는다(요구사항 없음, 팀 삭제는 도메인 7장 범위 밖) | PRD §5.1, [가정 G-06] |
+| N-11 | API 경로 | `/api/` 아래 소문자 kebab-case 복수형 명사. 중첩은 최대 2단계. 동작은 HTTP 메서드로 나타낸다. 동사 경로는 로그인처럼 메서드로 나타낼 수 없는 동작에만 쓴다. 소유자가 팀을 나가는 일은 `POST /api/teams/:teamId/leave`로만 처리하고, 구성원 제거 경로에 자기 자신을 지정하면 400 `VALIDATION_ERROR`다. 예외: 로그인한 사용자 자신의 정보는 `/api/me`로 쓴다(ID를 경로에 받지 않아 다른 사용자 접근 경로가 생기지 않는다). | `GET`, `POST /api/todos`; `PATCH`, `DELETE /api/todos/:todoId`; `GET /api/todos/:todoId/histories`; `POST /api/teams/:teamId/members`; `POST /api/teams/:teamId/leave`; `GET /api/todos?from=&to=`(캘린더 조회. 목록 API에 기간 필터를 더한 것이며 별도 경로를 만들지 않는다); `GET /api/teams/:teamId/members`(구성원 목록. F4 사용자 선택지도 이 경로를 재사용한다); `GET`, `POST /api/categories`; `PATCH`, `DELETE /api/categories/:categoryId`; `DELETE /api/teams/:teamId/members/:userId`(구성원 제거); `PATCH /api/teams/:teamId/members/:userId`(역할 변경); `GET /api/teams`(내가 속한 팀 목록과 내 역할. SC-08, SC-09의 팀 이름·내 역할도 이 결과를 쓴다); `POST /api/teams`(팀 생성. 생성자가 OWNER, DLG-03); `PATCH /api/teams/:teamId/color`(캘린더 팀 색. 요청자 본인 `team_members` 행의 색만 바꾼다, 역할 무관, 계획서 6.3 CL-02). 팀 단건 조회·이름 변경·삭제 경로는 두지 않는다(요구사항 없음, 팀 삭제는 도메인 7장 범위 밖) | PRD §5.1, [가정 G-06] |
 | N-12 | 완료 처리 | 별도 경로를 만들지 않는다. `PATCH /api/todos/:todoId`의 `completed` 필드로 처리하고, `completedAt`은 서버가 설정한다. 이력은 요청 1건에 1건이다. 완료 여부가 바뀐 요청은 `COMPLETED`/`UNCOMPLETED`, 그 밖은 `UPDATED`이고 함께 바뀐 필드도 모두 `changes`에 담는다. | — | 도메인 R14, R20, §3.6, §3.8 |
 | N-13 | HTTP 메서드 | `GET`은 상태를 바꾸지 않는다. 상태 변경은 `POST`, `PATCH`, `DELETE`만 쓴다. | — | PRD §5.2 CSRF |
 | N-14 | JSON 필드, 쿼리 파라미터 | camelCase. 일시는 ISO 8601 + 오프셋 형식이다(요청에서 날짜만 보낸 값은 SEC-11 예외). 목록 파라미터는 `limit`, `offset`을 쓴다. | `startAt: "2026-11-04T09:00+09:00"` | PRD §5.1, §5.3 |
@@ -469,3 +469,4 @@ backend/
 | v0.11 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11). API 명세(`docs/8-swagger.yaml`) 확인 필요 결정 반영: SEC-04 공개 경로에 `GET /api/health` 추가(응답 고정), SEC-11에 날짜만 보낸 값 예외(근거에 R5 추가), N-14에 같은 예외 연결, G-06에 헬스 공개와 날짜만 예외 명시 |
 | v0.12 | 2026-11-05 | hjining | 백엔드 구현(실행 계획 DB-03, API-12) 결과 반영: SEC-02 비밀번호 변경 시 리프레시 토큰을 폐기 표시가 아니라 삭제(EX-44, 재사용 감지와 충돌 방지), OPS-18 마이그레이션 적용 기록 `schema_migrations` 테이블 |
 | v0.13 | 2026-11-05 | hjining | SEC-04 헬스 응답을 서버·DB 상태 분리로 변경(정상 200 `{"server":"ok","db":"ok"}`, DB 실패 503 `{"server":"ok","db":"error"}`). 1.2·6.3에 개발 모드 전용 Swagger UI(`/swagger`, 설명문 제외, 배포 경로에 없음) 추가. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 프론트·API 연결을 CORS로 변경(PRD v0.15): 1.2 배포, 2장 middleware, SEC-02(`COOKIE_SAMESITE`), SEC-07(CORS 허용 목록·Origin 검사), OPS-19, 6.2 `vite.config.ts`, 6.3 `cors.js`, G-08 환경변수, G-14 프록시 없음 |
+| v0.14 | 2026-11-05 | hjining | N-11 경로 예시에 `PATCH /api/teams/:teamId/color`(요청자 본인의 팀 캘린더 색상만 변경, 실행 계획 6.3 CL-02) 추가 |

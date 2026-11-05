@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { TEAM_COLORS } from '../domain/team-color.js';
 import * as teamsService from '../services/teams.service.js';
 import { bad, emailRule, nameRule, ok, optional, uuidParam, uuidRule, validate } from './validate.js';
 
@@ -16,6 +17,14 @@ teamsRouter.get('/', async (req, res) => {
 
 teamsRouter.post('/', async (req, res) => {
   res.status(201).json(await teamsService.createTeam(req.user.id, validate(req.body, { name: nameRule })));
+});
+
+const colorRule = (v) => (TEAM_COLORS.includes(v) ? ok(v) : bad('허용되지 않는 색입니다.'));
+
+teamsRouter.patch('/:teamId/color', async (req, res) => {
+  const teamId = uuidParam(req.params.teamId, 'teamId');
+  const { color } = validate(req.body, { color: colorRule });
+  res.json(await teamsService.changeMyColor(req.user.id, teamId, color));
 });
 
 teamsRouter.get('/:teamId/members', async (req, res) => {

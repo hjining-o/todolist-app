@@ -2,6 +2,8 @@ import { todoIsOwner } from './sql/access.js';
 
 const toMember = (r) => ({ userId: r.user_id, name: r.name, email: r.email, role: r.role });
 
+const toTeam = (r) => ({ id: r.id, name: r.name, role: r.role, color: r.color });
+
 export async function insertTeam(client, name) {
   const { rows } = await client.query('INSERT INTO teams (name) VALUES ($1) RETURNING id, name', [name]);
   return { id: rows[0].id, name: rows[0].name };
@@ -26,10 +28,10 @@ export async function listTeamIdsOfUser(client, userId) {
 
 export async function listTeamsOfUser(client, userId) {
   const { rows } = await client.query(
-    'SELECT t.id, t.name, m.role FROM team_members m JOIN teams t ON t.id = m.team_id WHERE m.user_id = $1 ORDER BY t.name, t.id',
+    'SELECT t.id, t.name, m.role, m.color FROM team_members m JOIN teams t ON t.id = m.team_id WHERE m.user_id = $1 ORDER BY t.name, t.id',
     [userId],
   );
-  return rows.map((r) => ({ id: r.id, name: r.name, role: r.role }));
+  return rows.map(toTeam);
 }
 
 // users 조인은 목록 1쿼리용 읽기(N+1 방지)
@@ -68,4 +70,15 @@ export async function deleteOwnerSharesInTeam(client, { teamId, ownerId }) {
     [teamId, ownerId],
   );
   return rowCount;
+}
+
+// 요청자 본인 행만 바꾼다. 0행 = 비구성원이거나 없는 팀
+export async function updateMyColor(client, { teamId, userId, color }) {
+  const { rows } = await client.query(
+    `UPDATE team_members m SET color = $3 FROM teams t
+     WHERE m.team_id = $1 AND m.user_id = $2 AND t.id = m.team_id
+     RETURNING t.id, t.name, m.role, m.color`,
+    [teamId, userId, color],
+  );
+  return rows[0] ? toTeam(rows[0]) : null;
 }

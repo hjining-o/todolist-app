@@ -40,7 +40,7 @@ afterEach(() => vi.restoreAllMocks());
 afterAll(() => pool.end());
 
 describe('팀 목록·생성', () => {
-  it('S-13 내 팀만 이름 오름차순, 키는 id·name·role, 팀 없으면 빈 배열', async () => {
+  it('S-13 내 팀만 이름 오름차순, 키는 id·name·role·color, 팀 없으면 빈 배열', async () => {
     const s = await setupScenario();
     const res = await agentFor(s.C.id).get(TEAMS);
     expect(res.status).toBe(200);
@@ -48,7 +48,7 @@ describe('팀 목록·생성', () => {
       ['마케팅팀', 'MEMBER'],
       ['영업팀', 'MEMBER'],
     ]);
-    for (const t of res.body.items) expect(Object.keys(t).sort()).toEqual(['id', 'name', 'role']);
+    for (const t of res.body.items) expect(Object.keys(t).sort()).toEqual(['color', 'id', 'name', 'role']);
 
     const e = await createUser();
     const empty = await agentFor(e.id).get(TEAMS);
@@ -61,10 +61,10 @@ describe('팀 목록·생성', () => {
     const agent = agentFor(s.A.id);
     const res = await agent.post(TEAMS).send({ name: '  디자인팀  ' });
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ id: res.body.id, name: '디자인팀', role: 'OWNER' });
+    expect(res.body).toEqual({ id: res.body.id, name: '디자인팀', role: 'OWNER', color: null });
     expect(await memberRows(res.body.id)).toEqual([{ user_id: s.A.id, role: 'OWNER' }]);
     const list = await agent.get(TEAMS);
-    expect(list.body.items).toContainEqual({ id: res.body.id, name: '디자인팀', role: 'OWNER' });
+    expect(list.body.items).toContainEqual({ id: res.body.id, name: '디자인팀', role: 'OWNER', color: null });
   });
 
   it('EX-35 시스템 전체에서 대소문자·공백만 다른 팀 이름은 409 TEAM_NAME_TAKEN', async () => {

@@ -2,7 +2,7 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.6 |
+| 문서 버전 | v0.7 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
@@ -65,6 +65,7 @@ erDiagram
         uuid user_id PK "FK, NOT NULL, RESTRICT"
         text role "NOT NULL, 기본 MEMBER, OWNER MANAGER MEMBER 중 하나"
         timestamptz joined_at "NOT NULL, 기본 now()"
+        text color "NULL, 캘린더 팀 색 8종 중 하나, NULL이면 화면 자동 배정"
     }
     categories {
         uuid id PK "NOT NULL, 기본 gen_random_uuid()"
@@ -168,6 +169,7 @@ erDiagram
 |------|------|------|
 | `todos` | `CHECK (end_at >= start_at)`. 같은 일시 허용 | R3 |
 | `team_members.role` | `CHECK (role IN ('OWNER', 'MANAGER', 'MEMBER'))`, 기본값 `'MEMBER'` | 도메인 §3.3, R18, N-09 (E-08) |
+| `team_members.color` | `NULL` 허용, `CHECK (color IN ('RED', 'ORANGE', 'YELLOW', 'GREEN', 'TEAL', 'BLUE', 'VIOLET', 'PINK'))`. 구성원마다 다른 개인 설정이며 기존 행은 `NULL`(자동 배정) | 계획서 6.3 CL-02·CL-03, DB-06 |
 | `todo_histories.action` | `CHECK (action IN ('CREATED', 'UPDATED', 'COMPLETED', 'UNCOMPLETED'))` | 도메인 §3.8, N-09 (E-08) |
 | `users.name`, `teams.name`, `categories.name`, `todos.title` | `CHECK (char_length(btrim(x)) >= 1)`. 공백만 있는 값 거부 | R11, 도메인 §3.2–3.6 (E-06) |
 | `users.email` | `CHECK (email = lower(email))`. 소문자로만 저장 | R16 (E-10) |
@@ -273,3 +275,4 @@ E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반�
 | v0.4 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 와이어프레임 v0.11, 프로젝트 원칙 v0.11, 기술 아키텍처 v0.6). 프로젝트 원칙 v0.10·기술 아키텍처 v0.5를 가리키던 낡은 참조 정정. 테이블·제약 변경 없음 |
 | v0.5 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7). 백엔드 구현 결과 반영: 1장에 적용 기록 테이블 `schema_migrations`는 ERD 밖이라는 설명, 3.6에 비밀번호 변경 시 행 삭제 규칙. 도메인 테이블·제약 변경 없음 |
 | v0.6 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13, 기술 아키텍처 v0.8). 테이블·제약 변경 없음. 기준 문서 버전 갱신(PRD v0.15, 와이어프레임 v0.12) |
+| v0.7 | 2026-11-05 | hjining | `team_members.color`(`text NULL`, 팔레트 8색 CHECK) 추가: 캘린더 팀 색을 구성원별 개인 설정으로 저장(마이그레이션 `002_team_member_color.sql`, DB-06). 2장 다이어그램·3.3 CHECK 반영 |

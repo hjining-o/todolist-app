@@ -32,12 +32,18 @@ export async function createTeam(userId, { name }) {
     return await withTransaction(async (client) => {
       const team = await teamsRepo.insertTeam(client, name);
       await teamsRepo.insertMember(client, { teamId: team.id, userId, role: 'OWNER' });
-      return { ...team, role: 'OWNER' };
+      return { ...team, role: 'OWNER', color: null };
     });
   } catch (err) {
     if (err.code === '23505' && err.constraint === 'uq_teams_name_lower') throw AppError.of('TEAM_NAME_TAKEN');
     throw err;
   }
+}
+
+export async function changeMyColor(userId, teamId, color) {
+  const team = await teamsRepo.updateMyColor(pool, { teamId, userId, color });
+  if (!team) throw AppError.of('NOT_FOUND');
+  return team;
 }
 
 export async function listMembers(requesterId, teamId) {

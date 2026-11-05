@@ -30,6 +30,7 @@ CREATE TABLE team_members (
     user_id   uuid        NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
     role      text        NOT NULL DEFAULT 'MEMBER' CHECK (role IN ('OWNER', 'MANAGER', 'MEMBER')),
     joined_at timestamptz NOT NULL DEFAULT now(),
+    color     text        NULL CHECK (color IN ('RED', 'ORANGE', 'YELLOW', 'GREEN', 'TEAL', 'BLUE', 'VIOLET', 'PINK')),
     PRIMARY KEY (team_id, user_id)
 );
 CREATE UNIQUE INDEX uq_team_members_team_id_owner ON team_members (team_id) WHERE role = 'OWNER';
