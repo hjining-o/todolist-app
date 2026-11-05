@@ -2,11 +2,11 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.7 |
+| 문서 버전 | v0.10 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.15, `docs/4-wireframe.md` v0.12, `docs/5-project-principle.md` v0.13, `docs/6-arch-diagram.md` v0.8 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.15, `docs/2-prd.md` v0.17, `docs/4-wireframe.md` v0.15, `docs/5-project-principle.md` v0.17, `docs/6-arch-diagram.md` v0.11 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`, 프로젝트 원칙 `N-xx`·`G-xx`·`OPS-xx`·`P-xx`.
@@ -19,17 +19,17 @@
 ## 1. 개요
 
 ### 1.1 범위
-도메인 정의서 3장의 엔티티 7개와 인증용 기술 테이블 `refresh_tokens` 1개(PRD §5.2 A25, 도메인 엔티티 아님)를 PostgreSQL 17 테이블로 옮긴 논리·물리 혼합 모델이다. P1 테이블(`todo_histories`)도 Day 1에 한 번에 만든다(P-08). DDL은 `backend/src/db/migrations/`의 순번 SQL 파일로 쓴다(OPS-18, G-07). 이 문서는 DDL이 아니다. 마이그레이션 실행 스크립트가 만드는 적용 기록 테이블 `schema_migrations`(파일 이름, 적용 시각)는 도구 테이블이라 이 문서의 테이블 수에 넣지 않는다(OPS-18).
+도메인 정의서 3장의 엔티티 8개(UserIdentity 포함, 도메인 §3.10)와 인증용 기술 테이블 `refresh_tokens` 1개(PRD §5.2 A25, 도메인 엔티티 아님)를 PostgreSQL 17 테이블로 옮긴 논리·물리 혼합 모델이다. P1 테이블(`todo_histories`)도 Day 1에 한 번에 만든다(P-08). DDL은 `backend/src/db/migrations/`의 순번 SQL 파일로 쓴다(OPS-18, G-07). 이 문서는 DDL이 아니다. 마이그레이션 실행 스크립트가 만드는 적용 기록 테이블 `schema_migrations`(파일 이름, 적용 시각)는 도구 테이블이라 이 문서의 테이블 수에 넣지 않는다(OPS-18).
 
 ### 1.2 공통 결정
 
 | 항목 | 결정 | 근거 |
 |------|------|------|
-| 식별자 | `uuid`, 기본값 `gen_random_uuid()`. 연결 테이블(`team_members`, `todo_shares`)은 복합 PK | G-07, 도메인 §3.3, §3.7 |
+| 식별자 | `uuid`, 기본값 `gen_random_uuid()`. 연결 테이블(`team_members`, `todo_shares`)과 `user_identities`는 복합 PK | G-07, 도메인 §3.3, §3.7 |
 | 일시 | 모든 일시 컬럼은 `timestamptz`, DB 세션 시간대는 `Asia/Seoul` | PRD §5.3, OPS-14, R5 |
 | 상태 | `status` 컬럼은 만들지 않는다. 저장하는 값은 `completed`, `start_at`, `end_at`뿐이다 | 도메인 §5.1, N-18, P-04 |
-| 비밀번호 | 평문을 저장하지 않고 bcrypt 해시만 저장한다 | 도메인 §3.4, PRD §5.2 |
-| 삭제 | 사용자·팀·카테고리는 삭제 시 참조되면 막고(RESTRICT), 할일 삭제만 이력·공유를 함께 지운다. `refresh_tokens`의 만료 행은 `pg_cron`이 매일 지운다(3.6) | 도메인 §3.9, OPS-23, OPS-24 |
+| 비밀번호 | 평문을 저장하지 않고 bcrypt 해시만 저장한다. 소셜 전용 계정은 해시가 없다(`password_hash` NULL 허용) | 도메인 §3.4, R22, PRD §5.2, FR-12 |
+| 삭제 | 사용자·팀·카테고리는 삭제 시 참조되면 막고(RESTRICT), 할일 삭제만 이력·공유를 함께 지운다. 예외로 `user_identities`는 사용자 삭제 때 함께 지운다(CASCADE, 3.1). `refresh_tokens`의 만료 행은 `pg_cron`이 매일 지운다(3.6) | 도메인 §3.9, OPS-23, OPS-24 |
 | 시간대 | DB 기본 시간대는 `ALTER DATABASE … SET timezone TO 'Asia/Seoul'`로 고정한다. 풀러 트랜잭션 모드라 연결별 `SET`은 쓰지 않는다 | PRD §5.3 A28, OPS-14 |
 
 ## 2. ERD
@@ -46,11 +46,12 @@ erDiagram
     todos ||--o{ todo_histories : "todo_id"
     users ||--o{ todo_histories : "actor_id"
     users ||--o{ refresh_tokens : "user_id"
+    users ||--o{ user_identities : "user_id"
 
     users {
         uuid id PK "NOT NULL, 기본 gen_random_uuid()"
         varchar email "UK, 최대 254자, NOT NULL, 소문자로만 저장, 변경 불가"
-        text password_hash "NOT NULL, bcrypt 해시"
+        text password_hash "NULL 허용, bcrypt 해시, 소셜 전용 계정은 NULL"
         varchar name "최대 50자, NOT NULL, 공백만 불가"
         text timezone "NOT NULL, 기본 Asia/Seoul, IANA 이름"
         timestamptz created_at "NOT NULL, 기본 now()"
@@ -107,9 +108,15 @@ erDiagram
         timestamptz revoked_at "NULL 허용, 폐기 시각"
         timestamptz created_at "NOT NULL, 기본 now()"
     }
+    user_identities {
+        text provider PK "NOT NULL, google 하나만 허용"
+        text provider_user_id PK "NOT NULL, 제공자의 사용자 ID, Google은 sub"
+        uuid user_id FK "NOT NULL, CASCADE"
+        timestamptz created_at "NOT NULL, 기본 now()"
+    }
 ```
 
-- 관계 10개는 모두 부모 1(필수) 대 자식 0개 이상이다. `todos`는 `categories` 정확히 1개와 `users`(소유자) 정확히 1개에 속하고, `todo_shares`와 `todo_histories`는 0개 이상이다(도메인 §3.1, R7, R21).
+- 관계 11개는 모두 부모 1(필수) 대 자식 0개 이상이다. `todos`는 `categories` 정확히 1개와 `users`(소유자) 정확히 1개에 속하고, `todo_shares`와 `todo_histories`는 0개 이상이다(도메인 §3.1, R7, R21).
 - `users`와 `teams`는 `team_members`로, `todos`와 `teams`는 `todo_shares`로 N 대 M 연결된다(도메인 §3.1).
 - 컬럼 이름은 도메인 속성명의 snake_case 변환이다(N-18). 예외로 도메인 `User.password`는 평문이 아님을 드러내도록 `password_hash`로 한다(E-07). `todo_histories.changes`는 도메인 속성명 그대로다.
 
@@ -129,7 +136,9 @@ erDiagram
 | `todo_histories.todo_id` | `todos.id` | CASCADE | R12, R20, 도메인 §3.9, OPS-23 ② |
 | `todo_histories.actor_id` | `users.id` | RESTRICT | 도메인 §3.9, OPS-23 ① |
 | `refresh_tokens.user_id` | `users.id` | RESTRICT | OPS-23 ①, PRD A25 (E-15) |
+| `user_identities.user_id` | `users.id` | CASCADE | 도메인 §3.9·§3.10, PRD A34 (E-16) |
 
+- `user_identities`는 사용자에 딸린 기록이라 다른 사용자 FK(RESTRICT)와 달리 CASCADE다. 회원 탈퇴가 범위 밖이라 실제로 연쇄되는 경우는 없다.
 - 회원 탈퇴와 팀 삭제는 범위 밖이라 `users`·`teams` 행이 삭제되는 경우는 없다(도메인 §7).
 - 구성원 제거 때의 `todo_shares` 정리는 FK 연쇄가 아니다. service가 같은 트랜잭션에서 직접 `DELETE`한다(R21, OPS-23 ③, BE-08).
 - 카테고리 삭제는 service가 한 트랜잭션에서 그 카테고리의 할일을 기본 카테고리로 `UPDATE`한 뒤 `DELETE`한다(R9, BE-08). `todos.category_id`가 RESTRICT라 이동을 빠뜨리면 삭제가 실패한다(할일이 조용히 사라지지 않음).
@@ -158,6 +167,8 @@ erDiagram
 | 카테고리별 할일 | 일반 | `idx_todos_category_id`: `(category_id)`. 카테고리 삭제 때 할일 이동 `UPDATE`(R9)가 쓴다 | R9 (E-12) |
 | 리프레시 토큰 조회 | 유일 | `uq_refresh_tokens_token_hash`: `UNIQUE (token_hash)`. 갱신·로그아웃 때 해시로 찾는다 | PRD A25, SEC-02 (E-15) |
 | 사용자별 리프레시 토큰 | 일반 | `idx_refresh_tokens_user_id`: `(user_id)`. 재사용 감지·비밀번호 변경 때 전체 폐기가 쓴다 | PRD A25, SEC-02 (E-15) |
+| 소셜 계정 연결 | PK | `PRIMARY KEY (provider, provider_user_id)`. 소셜 로그인이 (제공자, 제공자 사용자 ID)로 사용자를 찾는다 | 도메인 §3.10, R22 (E-16) |
+| 사용자별 소셜 계정 연결 | 일반 | `ix_user_identities_user`: `(user_id)`. 이름이 `idx_` 규칙(N-19)이 아니라 `ix_`인 것은 마이그레이션 003의 구현 결과이며 그대로 둔다 | R22 (E-16) |
 
 - 소유권 이전은 위 부분 유니크 인덱스 때문에 기존 소유자를 삭제(또는 강등)한 뒤 새 소유자를 승격하는 순서로만 처리한다(OPS-23 ⑤, 도메인 §3.9).
 - 사용자당 기본 카테고리 '최대 1개'는 부분 유니크 인덱스가, '최소 1개'는 가입 트랜잭션(R6)과 기본 카테고리 삭제 금지(R8)가 보장한다.
@@ -169,13 +180,14 @@ erDiagram
 |------|------|------|
 | `todos` | `CHECK (end_at >= start_at)`. 같은 일시 허용 | R3 |
 | `team_members.role` | `CHECK (role IN ('OWNER', 'MANAGER', 'MEMBER'))`, 기본값 `'MEMBER'` | 도메인 §3.3, R18, N-09 (E-08) |
-| `team_members.color` | `NULL` 허용, `CHECK (color IN ('RED', 'ORANGE', 'YELLOW', 'GREEN', 'TEAL', 'BLUE', 'VIOLET', 'PINK'))`. 구성원마다 다른 개인 설정이며 기존 행은 `NULL`(자동 배정) | 계획서 6.3 CL-02·CL-03, DB-06 |
+| `team_members.color` | `NULL` 허용, `CHECK (color IN ('RED', 'ORANGE', 'YELLOW', 'GREEN', 'TEAL', 'BLUE', 'VIOLET', 'PINK'))`. 구성원마다 다른 개인 설정이며 기존 행은 `NULL`(자동 배정) | 도메인 §3.3, PRD A29, 계획서 6.3 CL-02·CL-03, DB-06 |
 | `todo_histories.action` | `CHECK (action IN ('CREATED', 'UPDATED', 'COMPLETED', 'UNCOMPLETED'))` | 도메인 §3.8, N-09 (E-08) |
 | `users.name`, `teams.name`, `categories.name`, `todos.title` | `CHECK (char_length(btrim(x)) >= 1)`. 공백만 있는 값 거부 | R11, 도메인 §3.2–3.6 (E-06) |
 | `users.email` | `CHECK (email = lower(email))`. 소문자로만 저장 | R16 (E-10) |
 | `todos` 완료 일관성 | `CHECK (completed = (completed_at IS NOT NULL))` | 도메인 §3.6, R14 (E-05) |
 | 문자열 길이 | `users.email` `varchar(254)`, `users.name`·`teams.name`·`categories.name` `varchar(50)`, `todos.title` `varchar(200)`, `todos.description` `varchar(2000)` | 도메인 §3.2–3.6, PRD §5.2 |
-| `users.password_hash` | `text`, 길이는 DB에서 제한하지 않는다. 8자 이상·UTF-8 72바이트 이하는 평문 입력 규칙이고 저장 값은 해시다 | 도메인 §3.4, PRD §5.2 |
+| `users.password_hash` | `text`, 길이는 DB에서 제한하지 않는다. 8자 이상·UTF-8 72바이트 이하는 평문 입력 규칙이고 저장 값은 해시다. NULL을 허용한다(소셜 전용 계정, 마이그레이션 003). NULL이면 비밀번호 로그인·변경을 service가 거부하고, 응답의 `hasPassword`는 `password_hash IS NOT NULL`이다 | 도메인 §3.4, R22, PRD §5.2, FR-12 (E-16) |
+| `user_identities.provider` | `text NOT NULL`, `CHECK (provider IN ('google'))`. 제공자를 더하면 CHECK만 다시 만든다 | 도메인 §3.10 (E-16) |
 | `users.timezone` | `text NOT NULL DEFAULT 'Asia/Seoul'`. IANA 이름 여부는 DB가 아니라 routes가 `Intl.supportedValuesOf('timeZone')`로 검증한다 | 도메인 §3.4, PRD FR-03 (E-07) |
 | `role`, `action` 저장 형식 | PostgreSQL `enum` 타입이 아니라 `text` + CHECK. 값을 바꿀 때 CHECK만 다시 만들면 된다 | N-09 (E-08) |
 | `categories.is_default`, `todos.completed` | `boolean NOT NULL`, 기본값 각각 `false` | 도메인 §3.5, §3.6 |
@@ -238,11 +250,12 @@ erDiagram
 | Todo | `todos` | `todos` |
 | TodoShare | `todo_shares` | `todos` (상위 모듈) |
 | TodoHistory | `todo_histories` | `todo-histories` |
+| UserIdentity | `user_identities` | `auth` (`identities.repo.js`, `auth.service.js`의 `oauthLogin`) |
 | (도메인 엔티티 아님, 인증) | `refresh_tokens` | `auth` (`auth.repo.js`) |
 
 ## 5. 확인 필요 사항
 
-E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반영했다. E-13, E-14는 문서 정합성 검토에서 찾아 이해관계자 확인(2026-11-04)으로 결정했다. E-15는 PRD v0.13의 리프레시 토큰 결정(A25)을 반영한 것이다. 남은 확인 필요 사항은 없다.
+E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반영했다. E-13, E-14는 문서 정합성 검토에서 찾아 이해관계자 확인(2026-11-04)으로 결정했다. E-15는 PRD v0.13의 리프레시 토큰 결정(A25)을, E-16은 PRD v0.17의 소셜 로그인 결정(A32–A34)을 반영한 것이다. 남은 확인 필요 사항은 없다.
 
 | ID | 원래 문제 | 결정 | 반영 위치 |
 |----|-----------|------|-----------|
@@ -259,6 +272,7 @@ E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반�
 | E-11 | `updated_at` 갱신 방식 | **기본값 `now()`, repository의 `UPDATE` 문에서 `updated_at = now()`** (트리거 없음) | 3.3 |
 | E-12 | PRD 목록 밖 FK 인덱스 | **`idx_todos_category_id`만 추가** | 3.2, OPS-18 |
 | E-15 | 리프레시 토큰 저장 테이블이 없었다(PRD A25로 도입) | **`refresh_tokens` 추가**: 해시 유일, `user_id` RESTRICT·인덱스, 만료 행은 `pg_cron` 정리, 폐기 행은 만료까지 보존 | 1.1, 2장, 3.1, 3.2, 3.6, 4장, OPS-18, OPS-24 |
+| E-16 | 소셜 로그인(PRD A32–A34) 저장 방식 | **`user_identities` 추가**: PK `(provider, provider_user_id)`, `provider` CHECK `'google'`, `user_id` CASCADE·인덱스 `ix_user_identities_user`. **`users.password_hash` NULL 허용**(소셜 전용 계정). 마이그레이션 `003_social_login.sql`(로컬 DB 적용, 운영 DB 미적용) | 1.1, 1.2, 2장, 3.1–3.3, 4장 |
 
 | ID | 원래 문제 | 관련 문서·위치 | 상태 |
 |----|-----------|----------------|------|
@@ -276,3 +290,6 @@ E-01–E-12는 이해관계자 확인(2026-11-04)으로 결정해 본문에 반�
 | v0.5 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7). 백엔드 구현 결과 반영: 1장에 적용 기록 테이블 `schema_migrations`는 ERD 밖이라는 설명, 3.6에 비밀번호 변경 시 행 삭제 규칙. 도메인 테이블·제약 변경 없음 |
 | v0.6 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13, 기술 아키텍처 v0.8). 테이블·제약 변경 없음. 기준 문서 버전 갱신(PRD v0.15, 와이어프레임 v0.12) |
 | v0.7 | 2026-11-05 | hjining | `team_members.color`(`text NULL`, 팔레트 8색 CHECK) 추가: 캘린더 팀 색을 구성원별 개인 설정으로 저장(마이그레이션 `002_team_member_color.sql`, DB-06). 2장 다이어그램·3.3 CHECK 반영 |
+| v0.8 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 와이어프레임 v0.14, 프로젝트 원칙 v0.15, 기술 아키텍처 v0.9). `team_members.color`가 도메인 정의서 3.3 TeamMember 속성에 반영됨(도메인 v0.14). 테이블·제약 변경 없음 |
+| v0.9 | 2026-11-05 | hjining | 소셜 로그인 반영(DOC-01, 마이그레이션 `003_social_login.sql`, E-16), 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 와이어프레임 v0.15, 프로젝트 원칙 v0.16, 기술 아키텍처 v0.10): `user_identities` 테이블(1.1, 2장 다이어그램, 관계 11개, 3.1 FK CASCADE, 3.2 PK·`ix_user_identities_user`, 3.3 provider CHECK, 4장), `users.password_hash` NULL 허용(1.2, 2장, 3.3) |
+| v0.10 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.17, 기술 아키텍처 v0.11). 테이블·제약 변경 없음 |

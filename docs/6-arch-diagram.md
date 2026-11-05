@@ -1,12 +1,12 @@
-# TodoList 기술 아키텍처 (아키텍처. 문서 정합성 검토: 2장 설명과 다이어그램의 "단일 프로젝트·한 도메인"을 PRD v0.15(CORS 연결, 프로젝트 구성 미결 W-09)에 맞춤 |다이어그램)
+# TodoList 기술 아키텍처 다이어그램
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.8 |
+| 문서 버전 | v0.11 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/1-domain-definition.md` v0.13, `docs/2-prd.md` v0.15, `docs/3-user-scenario.md` v0.14, `docs/4-wireframe.md` v0.12, `docs/5-project-principle.md` v0.13 |
+| 기준 문서 | `docs/1-domain-definition.md` v0.15, `docs/2-prd.md` v0.17, `docs/3-user-scenario.md` v0.16, `docs/4-wireframe.md` v0.15, `docs/5-project-principle.md` v0.17 |
 
 > 표기
 > - 근거는 기준 문서의 ID와 절로 쓴다. 도메인 규칙 `R`·`S`·`F`·`UC`, 도메인 절 `도메인 §n`, PRD 절 `PRD §n`과 PRD ID(`A`, `B`, `K`, `M`), 시나리오 `US-xx`·`EX-xx`·`C-xx`(시나리오 6장은 `시나리오 §6`), 와이어프레임 `SC`·`ST`·`DLG`·`U-xx`, 프로젝트 원칙 `P-xx`·`BE-xx`·`FE-xx`·`SEC-xx`·`OPS-xx`·`G-xx`.
@@ -37,12 +37,15 @@
 | 5.8 | 소유자의 팀 나가기: 다음 소유자 지정 (P1) | sequenceDiagram |
 | 5.9 | 변경 이력 조회: 보는 사람별 필터링 (P1) | sequenceDiagram |
 | 5.10 | 토큰 갱신·로그아웃: 리프레시 토큰 회전과 폐기 | sequenceDiagram |
+| 5.11 | Google 소셜 로그인: state 검증과 계정 결정 | sequenceDiagram |
 
 ## 2. 시스템 전체 기술 아키텍처
 
 - 배포는 Vercel이고, 프론트엔드 정적 빌드와 Express API(Vercel Functions, `/api/*`)를 배포한다. 프론트는 `VITE_API_BASE_URL`의 API 출처를 CORS로 호출한다(PRD §5.1·§5.2, SEC-07, OPS-19). 프로젝트를 하나로 둘지 나눌지는 미결이다(실행 계획 W-09).
 - PostgreSQL 17은 Supabase를 DB로만 쓴다. Supabase Auth와 자동 생성 API는 쓰지 않는다(B1). 인증은 앱이 직접 발급하는 액세스 토큰(`HS384` JWT, 15분)과 리프레시 토큰(7일, DB에 해시) 쿠키다(PRD §5.2). 예외로 만료 리프레시 토큰 정리에 `pg_cron`을 쓴다(PRD A27, OPS-24).
-- 문서에 명시된 외부 인증 서비스는 없다. 소셜 로그인, 알림, 외부 캘린더 연동은 범위 밖이다(도메인 §7).
+- 외부 인증 서비스는 Google OAuth(소셜 로그인) 하나다. 앱 서버가 Google 인가·토큰·프로필 엔드포인트를 서버 `fetch`로 직접 호출하고(PRD §5.2 소셜 로그인, SEC-13), Supabase Auth는 쓰지 않는다. Google 외 소셜 로그인, 알림, 외부 캘린더 연동은 범위 밖이다(도메인 §7).
+- 언어(`react-i18next`)와 테마(`next-themes`)는 브라우저 안에서만 동작하고 서버·DB에 저장하지 않는다(PRD A30, A31). 번역 파일은 정적 번들에 포함된다.
+- 프론트엔드는 개발 모드(`import.meta.env.DEV`)에서만 `shared/lib/logger.ts`로 브라우저 콘솔에 로그를 남기고 운영 빌드는 출력하지 않는다. 서버·외부로 로그를 보내지 않으며, 운영 로그는 Vercel 함수 로그뿐이다(프로젝트 원칙 OPS-04, OPS-25).
 
 ```mermaid
 flowchart TB
@@ -57,6 +60,7 @@ flowchart TB
             TQ["TanStack Query<br/>서버 상태 조회, 캐시, invalidate"]
             ZS["Zustand<br/>UI 상태만: 필터, 캘린더 뷰와 기준일, 모달"]
             UI["shadcn/ui (Tailwind CSS, Radix UI, lucide-react)<br/>FullCalendar, 브라우저 기본 date/time input"]
+            I18["react-i18next 번역 4개(ko·en·zh·ja), next-themes<br/>localStorage lang, theme"]
         end
         subgraph BEL["백엔드/API 계층 (Vercel Functions, 서버리스)"]
             FN["api/index.js<br/>Express 앱 노출 (/api/*)"]
@@ -64,7 +68,7 @@ flowchart TB
             RS["routes → services → repositories<br/>domain: 순수 규칙"]
             POOL["config/db<br/>pg.Pool (max 5), withTransaction"]
         end
-        ENV["Vercel 환경변수<br/>DATABASE_URL, JWT_SECRET, CORS_ORIGINS"]
+        ENV["Vercel 환경변수<br/>DATABASE_URL, JWT_SECRET, CORS_ORIGINS,<br/>GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_URL, API_URL"]
         LOG["Vercel 함수 로그, 대시보드<br/>운영 지표 M1–M5 확인"]
     end
 
@@ -74,13 +78,17 @@ flowchart TB
         CRON["pg_cron<br/>매일 04:00 만료 refresh_tokens 삭제"]
     end
 
-    NOEXT["외부 인증 서비스 없음<br/>Supabase Auth, 자동 생성 API 미사용"]
+    GG["Google OAuth<br/>인가·토큰·userinfo 엔드포인트"]
+    NOEXT["Supabase Auth, 자동 생성 API 미사용"]
 
     BR -->|"HTTPS: 정적 자원"| SPA
     MB -->|"HTTPS: 정적 자원"| SPA
     SPA --> TQ
     SPA --> ZS
     SPA --> UI
+    SPA --> I18
+    BR -.->|"소셜 로그인: 페이지 이동 (302)"| GG
+    FN -->|"서버 fetch: code 교환, 프로필 조회 (10초 제한)"| GG
     TQ -->|"shared/api/client.ts<br/>VITE_API_BASE_URL/api/* (CORS, credentials include), httpOnly 쿠키 JWT"| FN
     FN --> MW
     MW --> RS
@@ -206,7 +214,7 @@ ERD는 `docs/7-erd.md`로 분리했다. 엔티티 관계, 컬럼 타입, FK `ON 
 ## 5. 복잡한 비즈니스 로직 상세 흐름
 
 ### 5.0 선별 기준
-단순 CRUD(카테고리 이름 수정, 프로필 수정, 팀 생성 등)는 그리지 않았다. 아래 중 하나 이상에 해당하는 흐름만 골랐다: 여러 쓰기를 한 트랜잭션으로 묶음, 역할별 권한 분기(404/403 구분), 입력에 따라 값이 바뀌는 기본값 규칙, 보는 사람에 따라 응답이 달라지는 규칙.
+단순 CRUD(카테고리 이름 수정, 프로필 수정, 팀 생성, 내 캘린더 팀 색 변경 `PATCH /api/teams/:teamId/color` 등)는 그리지 않았다. 아래 중 하나 이상에 해당하는 흐름만 골랐다: 여러 쓰기를 한 트랜잭션으로 묶음, 역할별 권한 분기(404/403 구분), 입력에 따라 값이 바뀌는 기본값 규칙, 보는 사람에 따라 응답이 달라지는 규칙.
 
 | 절 | 흐름 | 복잡한 이유 | 근거 |
 |----|------|-------------|------|
@@ -220,6 +228,7 @@ ERD는 `docs/7-erd.md`로 분리했다. 엔티티 관계, 컬럼 타입, FK `ON 
 | 5.8 | 팀 나가기 (P1) | 소유자 위임·제거·공유 해제를 한 번에 처리, 위임 불가 조건과 검사 순서, 기존 소유자 삭제 → 새 소유자 승격 순서 | FR-09 #12, R18, R21, C-11, EX-29, EX-36, EX-40, EX-41 |
 | 5.9 | 이력 조회 (P1) | 보는 사람에 따라 카테고리·공유 팀 변경을 걸러내고 빈 이력은 숨김 | FR-10 #4·#6, R20, C-17 |
 | 5.10 | 토큰 갱신·로그아웃 | 401 후 자동 갱신·재시도, 회전의 원자성, 재사용 감지, 로그아웃 폐기 | FR-01 #7·#10, PRD A25, SEC-02, OPS-10, EX-42, EX-43 |
+| 5.11 | Google 소셜 로그인 | 외부 제공자와의 리다이렉트·서버 간 호출, state 검증, 이메일 자동 연결·신규 가입을 한 트랜잭션으로, 실패 코드를 쿼리로 전달 | FR-12, R22, SEC-13, EX-45–EX-49 |
 
 ### 5.1 공통 요청 처리: 인증·권한 판정·에러 변환
 
@@ -238,7 +247,7 @@ sequenceDiagram
 
     U->>CL: 화면 조작
     CL->>AM: /api/* 요청 (쿠키 access_token)
-    alt 공개 경로 (signup, login, refresh, logout, health)
+    alt 공개 경로 (signup, login, refresh, logout, oauth, health)
         AM->>RT: 인증 없이 통과
     else 보호 경로
         alt 쿠키 없음, 서명 오류, HS384가 아닌 알고리즘, 만료(15분), 로그아웃으로 삭제됨
@@ -830,6 +839,59 @@ sequenceDiagram
     Note over SV,DB: 어느 경로든 finally에서 client.release()
 ```
 
+### 5.11 Google 소셜 로그인: state 검증과 계정 결정
+
+근거: 백엔드 주도 Authorization Code + state 흐름이고 제공자 설정은 `oauth.providers.js` 하나다(PRD §5.2 소셜 로그인, SEC-13). 계정 결정은 `oauthLogin` 한 곳이다(도메인 R22). 시작·콜백은 브라우저가 이동하는 공개 경로라 JSON이 아니라 302로 응답한다(N-11).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 사용자
+    participant BR as 브라우저
+    participant RT as auth.routes
+    participant PV as oauth.providers
+    participant GG as Google
+    participant SV as auth.service
+    participant DB as PostgreSQL
+
+    U->>BR: 'Google로 계속하기' (링크 이동, next 포함)
+    BR->>RT: GET /api/auth/oauth/google?next=...
+    RT->>PV: getProvider (키 없거나 알 수 없는 제공자면 404 NOT_FOUND)
+    RT->>RT: state 32바이트 생성, next 검증(내부 경로만, 아니면 /)
+    RT-->>BR: Set-Cookie oauth_state (10분, Lax) + 302 Google 인가 URL
+    BR->>GG: 로그인·동의
+    GG-->>BR: 302 /api/auth/oauth/google/callback?code&state
+    BR->>RT: GET callback (쿠키 oauth_state)
+    RT->>RT: oauth_state 쿠키 삭제, state 상수 시간 비교
+    alt code 없음 또는 state 불일치
+        RT-->>BR: 302 {APP_URL}/login?error=OAUTH_FAILED
+    else 일치
+        RT->>PV: fetchProfile(code)
+        PV->>GG: 토큰 교환 (client_secret, 10초 제한)
+        GG-->>PV: access_token
+        PV->>GG: userinfo
+        GG-->>PV: sub, email, email_verified, name
+        RT->>SV: oauthLogin(google, 프로필)
+        SV->>DB: BEGIN (withTransaction)
+        SV->>DB: (provider, sub)로 소셜 계정 연결 조회
+        alt 연결 있음 (R22 ①)
+            SV->>DB: 그 사용자로 리프레시 토큰 INSERT
+        else 연결 없음, 이메일 없음 또는 미확인 (R22 ④)
+            SV->>DB: ROLLBACK
+            RT-->>BR: 302 {APP_URL}/login?error=OAUTH_EMAIL_REQUIRED
+        else 연결 없음, 같은 이메일 사용자 있음 (R22 ② 자동 연결)
+            SV->>DB: user_identities INSERT, 리프레시 토큰 INSERT
+        else 연결도 사용자도 없음 (R22 ③)
+            SV->>DB: users INSERT (password_hash NULL), 기본 카테고리 INSERT, user_identities INSERT, 리프레시 토큰 INSERT
+        end
+        SV->>DB: COMMIT
+        Note over SV,DB: 동시 가입으로 이메일·identity 유일 충돌(23505)이면 1회 다시 시도
+        SV-->>RT: 토큰 2종
+        RT-->>BR: Set-Cookie access_token, refresh_token + 302 {APP_URL}{next}
+    end
+    Note over RT,BR: 그 밖의 예외는 서버 로그에 남기고 302 /login?error=OAUTH_FAILED
+```
+
 ## 6. 확인 필요 사항
 
 T-01–T-08은 모두 이해관계자 확인(2026-11-04)으로 결정해 기준 문서에 반영했다. 남은 확인 필요 사항은 없다. 각 항목의 원래 문제 뒤에 결정 내용을 적었다.
@@ -864,3 +926,6 @@ T-01–T-08은 모두 이해관계자 확인(2026-11-04)으로 결정해 기준 
 | v0.6 | 2026-11-04 | hjining | 기준 문서 버전 갱신(PRD v0.14, 사용자 시나리오 v0.13, 와이어프레임 v0.11, 프로젝트 원칙 v0.11). 5.1 공개 경로를 SEC-04와 맞춤(refresh, logout, health 추가). 5.3 등록 시퀀스의 일시 형식 검증에 날짜만 보낸 값 예외(SEC-11) 표시 |
 | v0.7 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12). 다이어그램 변경 없음 |
 | v0.8 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13). 다이어그램 변경 없음. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 2장 다이어그램: 프론트 → API 호출을 CORS(`VITE_API_BASE_URL`, `credentials: include`)로, 환경변수에 `CORS_ORIGINS` |
+| v0.9 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14, 프로젝트 원칙 v0.15). 제목 줄에 잘못 들어간 문구 제거(내용은 v0.8 이력에 있음). 5.0 단순 CRUD 목록에 내 캘린더 팀 색 변경(PRD A29) 추가. 다이어그램 변경 없음 |
+| v0.10 | 2026-11-05 | hjining | 다국어·테마·Google 소셜 로그인 반영(DOC-01), 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15, 프로젝트 원칙 v0.16): 2장 외부 인증 서비스를 Google OAuth로 정정(소셜 로그인 범위 밖 문구 수정)하고 다이어그램에 Google 노드·i18n/테마 노드·환경변수 추가, 5.1 공개 경로에 oauth, 5.11 Google 소셜 로그인 시퀀스 추가(1.2, 5.0 목록) |
+| v0.11 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.17). 2장에 프론트 개발 모드 전용 콘솔 로깅 설명 추가(프로젝트 원칙 OPS-25). 다이어그램 변경 없음 |

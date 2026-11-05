@@ -1,20 +1,21 @@
 # =============================================================================
 # TodoList API 명세 (OpenAPI 3.1 / Swagger)
 # -----------------------------------------------------------------------------
-# 문서 버전   : v0.6
+# 문서 버전   : v0.9
 # 상태        : 초안
 # 최종 수정일 : 2026-11-05
 # 작성자      : hjining
 # 기준 문서   :
-#   - docs/1-domain-definition.md  v0.13  (도메인 정의서)
-#   - docs/2-prd.md                v0.15  (PRD)
-#   - docs/3-user-scenario.md      v0.14  (사용자 시나리오)
-#   - docs/4-wireframe.md          v0.12  (와이어프레임)
-#   - docs/5-project-principle.md  v0.13  (프로젝트 구조 설계 원칙)
-#   - docs/6-arch-diagram.md       v0.8   (기술 아키텍처)
-#   - docs/7-erd.md                v0.6   (ERD)
+#   - docs/1-domain-definition.md  v0.15  (도메인 정의서)
+#   - docs/2-prd.md                v0.17  (PRD)
+#   - docs/3-user-scenario.md      v0.16  (사용자 시나리오)
+#   - docs/4-wireframe.md          v0.15  (와이어프레임)
+#   - docs/5-project-principle.md  v0.17  (프로젝트 구조 설계 원칙)
+#   - docs/6-arch-diagram.md       v0.11  (기술 아키텍처)
+#   - docs/7-erd.md                v0.10  (ERD)
 # 참고 자료(로컬, git 추적 제외):
 #   - docs-local/261104-full-stack-plan.md  (풀스택 실행 계획 WBS, 작성일 2026-11-04)
+#   - docs-local/261105-i18n-theme-social-plan.md  (다국어·테마·소셜 로그인 설계·실행 계획, 작성일 2026-11-05)
 #   - docs-local/schema.sql                 (초안 DDL, ERD v0.3 기준)
 #   docs/와 다르면 docs/를 따른다. docs/에 없는 API 세부는 참고 자료를 채택하고 근거로 적었다.
 #
@@ -30,21 +31,24 @@
 # | v0.4 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7, ERD v0.5). 백엔드 구현 결과 반영: `offset` 최대 999,999,999(넘으면 400), `PATCH /api/me` 비밀번호 변경 시 리프레시 토큰 삭제(폐기 표시 아님). 그 밖 API 변경 없음 |
 # | v0.5 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13, 기술 아키텍처 v0.8, ERD v0.6). `GET /api/health` 응답을 서버·DB 상태 분리로 변경: 정상 200 `{ server: ok, db: ok }`, DB 연결 실패 503 `{ server: ok, db: error }`(S-16). 개발 모드 Swagger UI `/swagger` 안내 추가. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 프론트·API 연결을 CORS로 변경: 공통 규칙 기본 경로·인증(SameSite)·CSRF·CORS 행, `servers` 설명 |
 # | v0.6 | 2026-11-05 | hjining | 팀 캘린더 색 추가(DB-06, API-15): `Team.color`(`TeamColor` enum, nullable), `PATCH /api/teams/{teamId}/color`(본인 색만, 역할 무관). `POST /api/teams` 응답에도 `color: null` 포함 |
+# | v0.7 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14, 프로젝트 원칙 v0.15, 기술 아키텍처 v0.9, ERD v0.8). `GET /api/teams` 설명·S-13·teams 태그에 `color` 명시. API 변경 없음 |
+# | v0.8 | 2026-11-05 | hjining | Google 소셜 로그인 반영(DOC-01, SOC-02·SOC-03), 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15, 프로젝트 원칙 v0.16, 기술 아키텍처 v0.10, ERD v0.9): `GET /api/auth/oauth/{provider}`(302)·`GET /api/auth/oauth/{provider}/callback`(302) 추가, `Me.hasPassword`(가입·로그인·`/api/me` 응답), 에러 코드 `OAUTH_FAILED`·`OAUTH_EMAIL_REQUIRED`(`/login?error=` 쿼리로 전달), 공개 경로·메서드 규칙의 예외, 소셜 전용 계정의 로그인·비밀번호 변경 처리 |
+# | v0.9 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.17, 기술 아키텍처 v0.11, ERD v0.10). API 변경 없음 |
 # =============================================================================
 openapi: 3.1.0
 info:
   title: TodoList API
   # 위 주석의 '문서 버전'과 같은 값이어야 한다.
-  version: v0.6
+  version: v0.9
   description: |
     인증된 사용자가 기간(시작·종료 일시)이 있는 할일을 카테고리별로 관리하고, 팀과 공유해
     목록·캘린더(월·주·일)로 보며, 변경 이력을 추적하는 웹 TodoList의 REST API다.
 
     - 상태: 초안 / 최종 수정일: 2026-11-05 / 작성자: hjining
-    - 기준 문서: 도메인 정의서 v0.13, PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12,
-      프로젝트 원칙 v0.13, 기술 아키텍처 v0.8, ERD v0.6
+    - 기준 문서: 도메인 정의서 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15,
+      프로젝트 원칙 v0.17, 기술 아키텍처 v0.11, ERD v0.10
     - 참고 자료(로컬, git 추적 제외): `docs-local/261104-full-stack-plan.md`(이하 '실행 계획', Task ID `API-nn`·`CM-nn`·`UI-nn`),
-      `docs-local/schema.sql`. 기준 문서와 다르면 기준 문서를 따르고, 기준 문서에 없는 API 세부는 실행 계획을 채택했다.
+      `docs-local/261105-i18n-theme-social-plan.md`(소셜 로그인 `SOC-nn`), `docs-local/schema.sql`. 기준 문서와 다르면 기준 문서를 따르고, 기준 문서에 없는 API 세부는 실행 계획을 채택했다.
     - 근거 표기: 도메인(`FR`, `R`, `S`, `F`, `UC`), PRD(`A`, `B`, `K`, `M`, `SC`, `PRD §n`),
       시나리오(`US`, `EX`, `C`, `시나리오 §6.2`), 와이어프레임(`U`, `ST`, `DLG`),
       프로젝트 원칙(`N`, `SEC`, `OPS`, `G`), 아키텍처(`T`, `6-arch 5.n`), ERD(`E`), 실행 계획(`API-nn`, `CM-nn`, `UI-nn`, `W-nn`).
@@ -61,6 +65,9 @@ info:
     | v0.4 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.12, 기술 아키텍처 v0.7, ERD v0.5). 백엔드 구현 결과 반영: `offset` 최대 999,999,999(넘으면 400), `PATCH /api/me` 비밀번호 변경 시 리프레시 토큰 삭제(폐기 표시 아님). 그 밖 API 변경 없음 |
     | v0.5 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13, 기술 아키텍처 v0.8, ERD v0.6). `GET /api/health` 응답을 서버·DB 상태 분리로 변경: 정상 200 `{ server: ok, db: ok }`, DB 연결 실패 503 `{ server: ok, db: error }`(S-16). 개발 모드 Swagger UI `/swagger` 안내 추가. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 프론트·API 연결을 CORS로 변경: 공통 규칙 기본 경로·인증(SameSite)·CSRF·CORS 행, `servers` 설명 |
     | v0.6 | 2026-11-05 | hjining | 팀 캘린더 색 추가(DB-06, API-15): `Team.color`(`TeamColor` enum, nullable), `PATCH /api/teams/{teamId}/color`(본인 색만, 역할 무관). `POST /api/teams` 응답에도 `color: null` 포함 |
+    | v0.7 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14, 프로젝트 원칙 v0.15, 기술 아키텍처 v0.9, ERD v0.8). `GET /api/teams` 설명·S-13·teams 태그에 `color` 명시. API 변경 없음 |
+    | v0.8 | 2026-11-05 | hjining | Google 소셜 로그인 반영(DOC-01, SOC-02·SOC-03), 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15, 프로젝트 원칙 v0.16, 기술 아키텍처 v0.10, ERD v0.9): `GET /api/auth/oauth/{provider}`(302)·`GET /api/auth/oauth/{provider}/callback`(302) 추가, `Me.hasPassword`(가입·로그인·`/api/me` 응답), 에러 코드 `OAUTH_FAILED`·`OAUTH_EMAIL_REQUIRED`(`/login?error=` 쿼리로 전달), 공개 경로·메서드 규칙의 예외, 소셜 전용 계정의 로그인·비밀번호 변경 처리 |
+    | v0.9 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.17, 기술 아키텍처 v0.11, ERD v0.10). API 변경 없음 |
 
     ## 공통 규칙
 
@@ -68,9 +75,9 @@ info:
     |------|------|------|
     | 기본 경로 | 모든 경로는 API 출처의 `/api/*`이고 프론트는 CORS로 호출한다(SEC-07). 경로는 소문자 kebab-case 복수형 명사, 중첩 최대 2단계, 동작은 HTTP 메서드로 표현. 예외 `/api/me` | N-11, OPS-19, PRD §5.1 |
     | 버전 관리 | 경로·헤더 버전 접두사는 기준 문서에 없어 두지 않는다 | - |
-    | 메서드 | `GET`은 상태를 바꾸지 않는다. 상태 변경은 `POST`·`PATCH`·`DELETE`만 | N-13, SEC-07 |
+    | 메서드 | `GET`은 상태를 바꾸지 않는다. 상태 변경은 `POST`·`PATCH`·`DELETE`만. 예외는 소셜 로그인 콜백 `GET /api/auth/oauth/{provider}/callback` 하나(제공자 리다이렉트가 `GET`) | N-13, SEC-07, SEC-13 |
     | 인증 | 액세스 토큰: `HS384` JWT, 15분, 쿠키 `access_token`(`Path=/`). 리프레시 토큰: `crypto.randomBytes(32)` 불투명 문자열, 7일 절대 만료, DB에는 SHA-256 해시만, 쿠키 `refresh_token`(`Path=/api/auth`). 두 쿠키 모두 `httpOnly; Secure; SameSite=Lax`(프론트·API가 다른 사이트면 `COOKIE_SAMESITE=none`으로 `None`). JWT 페이로드는 `sub`(사용자 ID)와 `exp`만 담고 권한은 요청마다 DB로 확인 | PRD §5.2 A18·A25·A26, SEC-02, SEC-03, G-09, API-06 |
-    | 공개 경로 | `POST /api/auth/signup`, `/login`, `/refresh`, `/logout`, `GET /api/health`만 인증 없이 호출. 그 밖의 모든 `/api/*`는 액세스 토큰 필요 | SEC-04, R1, API-02 |
+    | 공개 경로 | `POST /api/auth/signup`, `/login`, `/refresh`, `/logout`, `GET /api/auth/oauth/{provider}`, `GET /api/auth/oauth/{provider}/callback`, `GET /api/health`만 인증 없이 호출. 그 밖의 모든 `/api/*`는 액세스 토큰 필요 | SEC-04, R1, API-02 |
     | 401 처리 | 보호 API가 401 `UNAUTHENTICATED`를 주면 클라이언트는 `POST /api/auth/refresh`로 한 번 갱신한 뒤 원래 요청을 한 번 다시 보낸다. 갱신도 401이면 로그인 화면(ST-01) | OPS-10, EX-42, UI-02 |
     | CSRF·CORS | 허용 출처는 `CORS_ORIGINS`(개발 `http://localhost:5173`). 허용 출처에만 `Access-Control-Allow-Origin`(요청 출처)·`Allow-Credentials: true`, preflight는 204(`GET, POST, PATCH, DELETE`, `Content-Type`). 목록 밖 출처의 `POST`·`PATCH`·`DELETE`는 403 `FORBIDDEN`(같은 출처·`Origin` 없는 요청은 통과). 상태 변경 GET 금지, CSRF 토큰 없음 | PRD §5.2, SEC-07 |
     | JSON 이름 | 필드·쿼리 파라미터는 camelCase. 열거 값은 UPPER_SNAKE_CASE. 식별자는 `uuid` | N-09, N-14, N-20, G-07 |
@@ -86,7 +93,8 @@ info:
     ## 에러 응답
 
     본문은 항상 `{ "error": { "code", "message", "fields"? } }`이다. `fields`는 입력 오류일 때 필드별 메시지를 담을 수 있다.
-    메시지는 한국어이며 프론트엔드는 `code`로 분기하고 `message`를 그대로 표시한다(OPS-07, OPS-10, 시나리오 §6.2).
+    메시지는 한국어 한 가지이며 프론트엔드는 `code`로 분기하고, 화면에는 `code`의 번역을 우선 보여 주며 번역이 없는 코드만 `message`를 그대로 표시한다(OPS-07, OPS-10, 시나리오 §6.2, PRD FR-13).
+    `OAUTH_FAILED`·`OAUTH_EMAIL_REQUIRED`는 JSON 본문으로 오지 않고 소셜 로그인 콜백의 302 `Location`(`/login?error=<코드>`)으로 전달된다.
     새 코드는 시나리오 §6.2에 먼저 추가한 뒤 쓴다(N-16).
 
     | 상태 | code | 메시지 | 사용처 |
@@ -95,12 +103,14 @@ info:
     | 400 | `INVALID_PERIOD` | 종료 일시는 시작 일시보다 빠를 수 없습니다. | 종료 < 시작 |
     | 400 | `INVALID_SHARE_TEAM` | 속한 팀에만 공유할 수 있습니다. | 속하지 않은 팀 공유 |
     | 400 | `INVALID_OWNER` | 선택한 팀의 구성원만 소유자로 지정할 수 있습니다. | 대리 등록 시 비구성원 지정, 팀 나가기의 다음 소유자가 다른 구성원이 아님 |
-    | 400 | `WRONG_PASSWORD` | 현재 비밀번호가 올바르지 않습니다. | 비밀번호 변경 |
+    | 400 | `WRONG_PASSWORD` | 현재 비밀번호가 올바르지 않습니다. | 비밀번호 변경(소셜 전용 계정의 변경 요청 포함) |
+    | 400 | `OAUTH_FAILED` | 소셜 로그인에 실패했습니다. 다시 시도해 주세요. | 소셜 로그인 실패 전반. JSON이 아니라 `/login?error=` 쿼리로 전달 |
+    | 400 | `OAUTH_EMAIL_REQUIRED` | 확인된 이메일이 있는 계정으로 로그인해 주세요. | 소셜 로그인에서 이메일 없음·미확인. `/login?error=` 쿼리로 전달 |
     | 401 | `UNAUTHENTICATED` | 로그인이 필요합니다. | 미인증, 액세스 토큰 만료, 리프레시 토큰 만료·폐기·재사용 |
-    | 401 | `INVALID_CREDENTIALS` | 이메일 또는 비밀번호가 올바르지 않습니다. | 로그인 실패(이메일 존재 여부 비노출) |
+    | 401 | `INVALID_CREDENTIALS` | 이메일 또는 비밀번호가 올바르지 않습니다. | 로그인 실패(이메일 존재 여부 비노출). 소셜 전용 계정의 비밀번호 로그인 포함 |
     | 403 | `FORBIDDEN` | 권한이 없습니다. | 볼 수 있으나 변경 권한 없음, 일반 팀원의 소유자 지정, 비소유자의 팀 나가기 |
     | 403 | `DEFAULT_CATEGORY_PROTECTED` | 기본 카테고리는 삭제하거나 이름을 바꿀 수 없습니다. | 기본 카테고리 변경·삭제 |
-    | 404 | `NOT_FOUND` | 찾을 수 없습니다. | 볼 수 없거나 없는 할일·카테고리·팀 |
+    | 404 | `NOT_FOUND` | 찾을 수 없습니다. | 볼 수 없거나 없는 할일·카테고리·팀, 키가 없거나 알 수 없는 소셜 제공자 경로 |
     | 404 | `USER_NOT_FOUND` | 가입되지 않은 이메일입니다. | 구성원 추가 |
     | 409 | `EMAIL_TAKEN` | 이미 가입된 이메일입니다. | 회원가입 |
     | 409 | `CATEGORY_NAME_TAKEN` | 같은 이름의 카테고리가 있습니다. | 카테고리 추가·이름 변경 |
@@ -124,7 +134,7 @@ info:
     | 캘린더 겹침 | `startAt < to AND endAt >= from` | API-10 #1 |
     | 등록 요청 필드 | `teamId?`, `ownerId?`, `title`, `description?`, `startAt?`, `endAt?`, `categoryId?`, `sharedTeamIds?` | API-09 #1 |
     | 수정 요청 필드 | `title`, `description`, `startAt`, `endAt`, `completed`, `categoryId`, `sharedTeamIds` 중 보낸 것만 | API-11 #1 |
-    | 내 정보 | `GET /api/me` 응답 `id`, `email`, `name`, `timezone`. `PATCH /api/me` 필드 `name`, `timezone`, `currentPassword`, `newPassword`. 비밀번호 변경 시 그 사용자 리프레시 토큰 전체 삭제 + 현재 브라우저에 토큰 2종 재발급 | API-06 #6, API-12 |
+    | 내 정보 | `GET /api/me` 응답 `id`, `email`, `name`, `timezone`, `hasPassword`(SOC-03).`PATCH /api/me` 필드 `name`, `timezone`, `currentPassword`, `newPassword`. 비밀번호 변경 시 그 사용자 리프레시 토큰 전체 삭제 + 현재 브라우저에 토큰 2종 재발급 | API-06 #6, API-12 |
     | 토큰 갱신 실패 | 401 `UNAUTHENTICATED`와 함께 쿠키 2개 삭제 | API-06 #4 |
     | 역할 변경 | `MANAGER` ↔ `MEMBER`만, `OWNER` 지정은 400 | API-08 #4 |
     | 팀 나가기 본문 | `nextOwnerId` | API-14 #1 |
@@ -149,7 +159,7 @@ info:
     | S-10 | 이력 항목 필드 `id`, `action`, `actor { id, name }`(할일 응답의 `owner`와 같은 형태), `changedAt`, `changes`. 최신순, 페이지네이션 없음(전체 반환) | `GET /api/todos/{todoId}/histories` |
     | S-11 | 내 정보 수정: `newPassword`를 보내면 `currentPassword` 필수(없으면 400 `VALIDATION_ERROR`). 응답은 수정된 `Me` | `PATCH /api/me` |
     | S-12 | 가입·로그인 응답 본문은 `Me`(`GET /api/me`와 같은 형태). 가입도 토큰 쿠키 2종을 발급한다(가입 후 자동 로그인, R16·C-01 확인). 로그아웃은 쿠키가 없거나 무효여도 `204`이고 두 쿠키를 삭제한다 | `/api/auth/*` |
-    | S-13 | 팀 목록 항목 `id`, `name`, `role`(요청자의 역할). 구성원 항목에 `userId`를 더한다(경로 `{userId}`에 필요). 팀 목록은 이름 오름차순, 구성원은 소유자 → 관리자 → 일반 팀원, 같은 역할 안에서 이름 오름차순 | `GET /api/teams`, `GET /api/teams/{teamId}/members` |
+    | S-13 | 팀 목록 항목 `id`, `name`, `role`(요청자의 역할), `color`(요청자 본인의 캘린더 팀 색, 없으면 `null`). 구성원 항목에 `userId`를 더한다(경로 `{userId}`에 필요). 팀 목록은 이름 오름차순, 구성원은 소유자 → 관리자 → 일반 팀원, 같은 역할 안에서 이름 오름차순 | `GET /api/teams`, `GET /api/teams/{teamId}/members` |
     | S-14 | 역할 변경 대상이 소유자(요청자 자신)이면 400 `VALIDATION_ERROR`, 대상이 그 팀 구성원이 아니면 404 `NOT_FOUND`. 성공 시 `200`과 갱신된 구성원 | `PATCH /api/teams/{teamId}/members/{userId}` |
     | S-15 | 구성원 제거 대상이 그 팀 구성원이 아니면 404 `NOT_FOUND` | `DELETE /api/teams/{teamId}/members/{userId}` |
     | S-16 | 헬스는 공개 경로이고 응답은 서버·DB 상태만 담는다: 정상 `200 {"server":"ok","db":"ok"}`, DB 연결 실패 `503 {"server":"ok","db":"error"}`(내부 정보 없음). SEC-04 v0.11에 반영, v0.13에서 상태 분리로 변경 | `GET /api/health` |
@@ -174,7 +184,7 @@ servers:
 
 tags:
   - name: auth
-    description: 회원가입, 로그인, 토큰 갱신, 로그아웃 (FR-01, UC-01–UC-03)
+    description: 회원가입, 로그인, 토큰 갱신, 로그아웃 (FR-01, UC-01–UC-03), Google 소셜 로그인 (FR-12, UC-15)
   - name: me
     description: 내 정보 조회·수정 (FR-03, UC-04, 수정은 P1)
   - name: categories
@@ -184,7 +194,7 @@ tags:
   - name: todo-histories
     description: 할일 변경 이력 조회 (FR-10, UC-12, P1)
   - name: teams
-    description: 팀 생성·목록, 구성원 관리, 팀 나가기 (FR-09, UC-13, UC-14)
+    description: 팀 생성·목록, 구성원 관리, 팀 나가기, 내 캘린더 팀 색 (FR-09, UC-13, UC-14, PRD A29)
   - name: health
     description: 배포 확인용 헬스 경로 (OPS-21)
 
@@ -249,7 +259,8 @@ paths:
         - 이메일은 소문자로 바꿔 비교한다(대소문자 무시).
         - 없는 이메일과 틀린 비밀번호는 같은 `INVALID_CREDENTIALS` 응답이다(이메일 존재 여부 비노출).
         - 이 경로의 401은 로그인 화면 이동 신호가 아니라 폼 오류로 표시한다(OPS-10).
-        - 근거: FR-01 #5·#9, R1, R16, UC-02, A8, C-02, SEC-05, EX-04, US-02, API-06 #2
+        - 비밀번호가 없는 소셜 전용 계정(`hasPassword = false`)도 bcrypt 비교 없이 같은 `INVALID_CREDENTIALS`다(R22).
+        - 근거: FR-01 #5·#9, FR-12 #8, R1, R16, R22, UC-02, A8, C-02, SEC-05, EX-04, EX-47, US-02, API-06 #2
         - S-01(200), S-12(응답 본문)
       security: []
       requestBody:
@@ -344,6 +355,99 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/auth/oauth/{provider}:
+    get:
+      tags: [auth]
+      operationId: oauthStart
+      summary: 소셜 로그인 시작(제공자 인가 URL로 이동)
+      description: |
+        브라우저가 페이지 이동으로 호출하는 경로다(fetch·XHR이 아님). 무작위 `state`(32바이트)와 검증한 `next`를
+        쿠키 `oauth_state`에 담고 제공자의 인가 URL로 302한다. 현재 제공자는 `google`(`openid email profile`)뿐이다.
+
+        - `oauth_state` 쿠키: `httpOnly; Secure; SameSite=Lax; Path=/api/auth/oauth`, 10분. 값은 `{ state, next }`.
+        - `next`는 앱 내부 경로(`/`로 시작하고 `//`·`/\`로 시작하지 않음)만 받고, 그 밖의 값이거나 없으면 `/`로 저장한다(오픈 리다이렉트 방지). 요청은 거부하지 않는다.
+        - 인가 URL의 `redirect_uri`는 `{API_URL}/api/auth/oauth/{provider}/callback`이다. 제공자 콘솔에 이 URI를 등록해야 한다.
+        - 제공자 키(`GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`)가 설정되지 않았거나 알 수 없는 제공자 이름이면 404 `NOT_FOUND`(JSON)다.
+        - 공개 경로다(SEC-04). 상태를 바꾸지 않는다(쿠키 설정만).
+        - 근거: FR-12 #1·#7·#9, R22, SEC-04, SEC-13, N-11, A32, A34, US-19 #1, EX-48, EX-49, 실행 계획(`docs-local/261105-i18n-theme-social-plan.md`) 1.3, SOC-02
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/OauthProvider'
+        - name: next
+          in: query
+          required: false
+          description: '로그인 후 돌아올 앱 내부 경로(예: `/calendar`). 앱 내부 경로가 아니면 `/`로 바꾼다.'
+          schema:
+            type: string
+          example: /calendar
+      responses:
+        '302':
+          description: 제공자 인가 URL(`client_id`, `redirect_uri`, `response_type=code`, `scope`, `state`)로 이동한다. `oauth_state` 쿠키를 발급한다.
+          headers:
+            Location:
+              description: 제공자 인가 URL
+              schema:
+                type: string
+            Set-Cookie:
+              description: '`oauth_state=<{state,next}>; HttpOnly; Secure; SameSite=Lax; Path=/api/auth/oauth; Max-Age=600`'
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 키가 설정되지 않았거나 알 수 없는 제공자(EX-49)'
+
+  /api/auth/oauth/{provider}/callback:
+    get:
+      tags: [auth]
+      operationId: oauthCallback
+      summary: 소셜 로그인 콜백(계정 결정 후 프론트로 이동)
+      description: |
+        제공자가 브라우저를 되돌려 보내는 경로다. 응답은 항상 302이고 JSON 본문이 없다. 성공하면 인증 쿠키 2종을 발급해
+        `{APP_URL}{next}`로, 실패하면 인증 쿠키 없이 `{APP_URL}/login?error=<코드>`로 보낸다.
+
+        처리 순서: ① `oauth_state` 쿠키를 지우고 쿠키의 `state`와 쿼리의 `state`를 상수 시간 비교(불일치·쿠키 없음·`code` 없음이면 실패)
+        ② `code`를 토큰으로 교환(서버 `fetch`, 클라이언트 비밀 사용) ③ 프로필(`sub`, `email`, `email_verified`, `name`) 조회
+        ④ 계정 결정(`oauthLogin`, 한 트랜잭션): 연결된 계정이면 그 사용자, 아니면 확인된 같은 이메일의 사용자에 연결(자동 연결),
+        둘 다 없으면 사용자(비밀번호 없음)·기본 카테고리·연결 생성 ⑤ 토큰 쿠키 발급(`issueTokens`, `setTokenCookies`)과 이동.
+
+        - 실패 코드(`error` 쿼리): `OAUTH_EMAIL_REQUIRED`(이메일이 없거나 확인되지 않았고 연결된 계정도 없음), 그 밖의 모든 실패(제공자 거절·취소, `state` 불일치, 교환·프로필 조회 실패, 10초 제한 초과, 내부 오류)는 `OAUTH_FAILED`. 예외 내용은 서버 로그에만 남긴다.
+        - 제공자 호출 `fetch`는 10초 제한이다. 같은 이메일·같은 연결의 동시 가입으로 유일 제약 충돌이 나면 1회 다시 시도한다.
+        - 제공자 키가 없거나 알 수 없는 제공자면 404 `NOT_FOUND`(JSON)다.
+        - 공개 경로다(SEC-04). 이 경로는 `GET`이지만 계정 생성·연결과 쿠키 발급을 한다(N-13·SEC-07의 유일한 예외, `state` 쿠키 비교가 요청 위조를 막는다, SEC-13).
+        - 근거: FR-12 #1–#7·#9, R22, SEC-04, SEC-07, SEC-13, A32–A34, US-19, EX-45–EX-49, 6-arch 5.11, 실행 계획(`docs-local/261105-i18n-theme-social-plan.md`) 1.3, SOC-02
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/OauthProvider'
+        - name: code
+          in: query
+          required: false
+          description: '제공자가 준 인가 코드. 없으면(제공자 거절·취소 포함) `OAUTH_FAILED`로 이동한다.'
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          description: '시작 경로가 만든 `state`. 쿠키의 값과 다르면 `OAUTH_FAILED`로 이동한다.'
+          schema:
+            type: string
+      responses:
+        '302':
+          description: |
+            이동한다. `Location`은 다음 중 하나다.
+            - 성공: `{APP_URL}{next}`(`next`는 시작 때 검증한 값, 없으면 `/`). 인증 쿠키 2종을 발급한다.
+            - 실패: `{APP_URL}/login?error=OAUTH_FAILED` 또는 `{APP_URL}/login?error=OAUTH_EMAIL_REQUIRED`. 인증 쿠키를 발급하지 않는다.
+            어느 경우에도 `oauth_state` 쿠키를 삭제한다.
+          headers:
+            Location:
+              description: '`{APP_URL}{next}` 또는 `{APP_URL}/login?error=<코드>`'
+              schema:
+                type: string
+            Set-Cookie:
+              $ref: '#/components/headers/SetAuthCookies'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: '`NOT_FOUND` — 키가 설정되지 않았거나 알 수 없는 제공자(EX-49). 이 외의 실패는 모두 302다.'
+
   /api/me:
     get:
       tags: [me]
@@ -373,7 +477,7 @@ paths:
         이름, 시간대, 비밀번호를 수정한다. 보낸 필드만 바꾼다. 이메일은 수정할 수 없다. 다른 사람의 프로필은 수정할 수 없다(경로 없음).
 
         - 시간대는 `Intl.supportedValuesOf('timeZone')`에 있는 IANA 이름만 받는다. 바꾸면 이후 모든 일시 응답의 오프셋과 '오늘' 판정(R4)이 새 시간대 기준이다.
-        - 비밀번호를 바꿀 때는 현재 비밀번호를 확인한다. 틀리면 400 `WRONG_PASSWORD`(401이 아님, 401은 로그인 화면 이동 신호).
+        - 비밀번호를 바꿀 때는 현재 비밀번호를 확인한다. 틀리면 400 `WRONG_PASSWORD`(401이 아님, 401은 로그인 화면 이동 신호). 비밀번호가 없는 소셜 전용 계정(`hasPassword = false`)의 변경 요청도 `WRONG_PASSWORD`다(비밀번호 설정은 범위 밖, R22).
         - 비밀번호를 바꾸면 같은 트랜잭션에서 그 사용자의 리프레시 토큰 행을 모두 삭제하고(폐기 표시로 남기면 다른 브라우저의 옛 토큰이 재사용 감지를 일으켜 새 토큰까지 폐기된다, ERD 3.6), 이 요청에 토큰 2종을 새로 발급해 변경한 브라우저의 로그인을 유지한다.
         - 이름·시간대 저장과 비밀번호 변경은 화면에서 별도 폼이지만 같은 경로를 쓴다(U-17).
         - 근거: FR-03 #1–#5, R5, R17, UC-04, A9, U-17, C-23, SEC-02, SEC-09, EX-30, EX-31, EX-44, US-16, API-12
@@ -933,7 +1037,7 @@ paths:
       operationId: listTeams
       summary: 내가 속한 팀 목록과 내 역할
       description: |
-        내가 속한 팀과 각 팀에서의 내 역할을 조회한다. SC-08 목록, SC-09의 팀 이름·내 역할, 등록 화면의 팀·공유 팀 선택지,
+        내가 속한 팀과 각 팀에서의 내 역할·내 캘린더 색(`color`)을 조회한다. SC-08 목록, SC-09의 팀 이름·내 역할, 등록 화면의 팀·공유 팀 선택지,
         F4 팀 선택지에 이 결과를 쓴다. 팀 단건 조회·이름 변경·삭제 경로는 두지 않는다.
 
         - 근거: FR-09, R18, UC-13, SC-08, SC-09, N-11, API-08 #1
@@ -1288,6 +1392,14 @@ components:
       schema:
         type: string
         format: uuid
+    OauthProvider:
+      name: provider
+      in: path
+      required: true
+      description: '소셜 로그인 제공자 이름. 현재 `google`만 동작한다. 알 수 없는 값이거나 그 제공자의 키가 설정되지 않았으면 404 `NOT_FOUND`다(A32, EX-49).'
+      schema:
+        type: string
+      example: google
     MemberUserId:
       name: userId
       in: path
@@ -1386,7 +1498,7 @@ components:
     Me:
       type: object
       description: '로그인한 사용자 자신의 정보(API-06 #6, S-12). 비밀번호·해시는 담지 않는다(P-06).'
-      required: [id, email, name, timezone]
+      required: [id, email, name, timezone, hasPassword]
       properties:
         id:
           $ref: '#/components/schemas/Uuid'
@@ -1396,11 +1508,15 @@ components:
           $ref: '#/components/schemas/PersonName'
         timezone:
           $ref: '#/components/schemas/Timezone'
+        hasPassword:
+          type: boolean
+          description: '비밀번호가 있는 계정이면 `true`, 소셜 전용 계정(해시 없음)이면 `false`(FR-12 #8, R22). `false`이면 비밀번호 로그인은 `INVALID_CREDENTIALS`, 비밀번호 변경은 `WRONG_PASSWORD`이고 화면은 비밀번호 변경 카드를 숨긴다. 가입·로그인·`GET`·`PATCH /api/me` 응답에 모두 들어 있다.'
       example:
         id: 7e9a1c3b-5d2f-4e6a-8b0c-1d2e3f4a5b6c
         email: a@example.com
         name: 홍길동
         timezone: Asia/Seoul
+        hasPassword: true
 
     SignupRequest:
       type: object
@@ -1941,13 +2057,15 @@ components:
 
     ErrorCode:
       type: string
-      description: '에러 코드(시나리오 §6.2, N-16). 상태 코드별 의미는 info.description의 에러 응답 표를 본다.'
+      description: '에러 코드(시나리오 §6.2, N-16). 상태 코드별 의미는 info.description의 에러 응답 표를 본다. `OAUTH_FAILED`·`OAUTH_EMAIL_REQUIRED`는 JSON 본문이 아니라 소셜 로그인 콜백이 `/login?error=<코드>`로 보내는 쿼리 값이다.'
       enum:
         - VALIDATION_ERROR
         - INVALID_PERIOD
         - INVALID_SHARE_TEAM
         - INVALID_OWNER
         - WRONG_PASSWORD
+        - OAUTH_FAILED
+        - OAUTH_EMAIL_REQUIRED
         - UNAUTHENTICATED
         - INVALID_CREDENTIALS
         - FORBIDDEN

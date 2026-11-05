@@ -2,20 +2,20 @@
 
 | 항목 | 내용 |
 |------|------|
-| 문서 버전 | v0.2 |
+| 문서 버전 | v0.4 |
 | 상태 | 초안 |
 | 최종 수정일 | 2026-11-05 |
 | 작성자 | hjining |
-| 기준 문서 | `docs/4-wireframe.md` v0.13, `docs/5-project-principle.md`(FE-08, FE-09, G-11, G-16) |
+| 기준 문서 | `docs/4-wireframe.md` v0.15, `docs/5-project-principle.md`(FE-08, FE-09, FE-12, G-11, G-16) |
 
 > - 이 문서는 와이어프레임의 요소를 **어떤 shadcn 컴포넌트와 어떤 Tailwind 클래스로 그릴지**만 정한다. 기능·문구는 와이어프레임을 따른다.
 > - 컴포넌트는 shadcn MCP(`@shadcn` 레지스트리)로 추가한다(FE-08). 레지스트리에 없는 부품은 6장 규칙으로 만든다.
-> - 다크 모드, 브랜드 색, 커스텀 폰트는 두지 않는다(기준 문서에 없음).
+> - 브랜드 색, 커스텀 폰트는 두지 않는다(기준 문서에 없음). 다크 테마는 shadcn 기본 `.dark` 토큰을 그대로 쓴다(2.1.1, PRD FR-14).
 
 ## 1. 기본 원칙
 
-1. **shadcn 기본 테마 그대로.** `npx shadcn init`이 만든 neutral 테마 변수(`src/index.css`)를 바꾸지 않는다(G-16).
-2. **색은 토큰으로만.** `bg-primary`, `text-muted-foreground`, `border-input`, `text-destructive`처럼 테마 변수 클래스만 쓴다. `bg-blue-500`, `#hex` 같은 고정 색은 쓰지 않는다. **예외**: 팀 캘린더 팔레트(6.3 CL-03)와 여러 팀 전용 색(슬레이트)은 사용자가 고르는 데이터 색이라 7장 표의 hex를 그대로 쓴다(`style`의 `backgroundColor` 허용).
+1. **shadcn 기본 테마 그대로.** `npx shadcn init`이 만든 neutral 테마 변수(`src/index.css`)를 바꾸지 않는다(G-16). 라이트(`:root`)와 다크(`.dark`) 모두 같다. 추가한 변수는 캘린더 막대 글자색 `--bar-*` 3개뿐이다(2.1.1).
+2. **색은 토큰으로만.** `bg-primary`, `text-muted-foreground`, `border-input`, `text-destructive`처럼 테마 변수 클래스만 쓴다. `bg-blue-500`, `#hex` 같은 고정 색은 쓰지 않는다. **예외**: 팀 캘린더 팔레트(실행 계획 6.3 CL-03)와 여러 팀 전용 색(슬레이트)은 사용자가 고르는 데이터 색이라 7장 표의 hex를 그대로 쓴다(`style`의 `backgroundColor` 허용). 'Google로 계속하기' 버튼의 Google 로고(SVG)도 브랜드 가이드의 고정 색을 쓴다.
 3. **생성 파일은 고치지 않는다.** `shared/components/ui/*`는 그대로 두고, 도메인 표현은 감싼 컴포넌트에서 `variant`·`className`으로 만든다(FE-09).
 4. **스타일 수단은 Tailwind 클래스뿐.** 별도 CSS 파일과 인라인 `style`은 FullCalendar 덮어쓰기(7장) 외에는 쓰지 않는다(FE-09).
 5. **아이콘은 `lucide-react`**, 크기는 shadcn 기본(`size-4`)을 따른다.
@@ -32,6 +32,36 @@
 | 위험 | `text-destructive` / `variant="destructive"` | 삭제·제거 확인 버튼, 필드 오류, 필수 `*` |
 | 테두리 | `border` (`border-border`) / `border-input` | 구분선, 입력란 |
 | 포커스 | `ring-ring/50` | 6장 직접 만드는 부품 |
+
+#### 2.1.1 다크 토큰 (PRD FR-14, 실행 계획 `docs-local/261105-i18n-theme-social-plan.md` THM-01·THM-02)
+`next-themes`가 `<html>`에 `dark` 클래스를 붙이면(`attribute="class"`, 기본 `system`) `.dark` 블록의 값이 쓰인다(`@custom-variant dark (&:is(.dark *))`). 컴포넌트는 2.1의 같은 클래스를 쓰고 `dark:` 분기를 늘리지 않는다(FE-12). 값은 `src/index.css`의 shadcn 기본이다.
+
+| 변수 | 라이트 `:root` | 다크 `.dark` |
+|------|----------------|--------------|
+| `--background` | `oklch(1 0 0)` | `oklch(0.145 0 0)` |
+| `--foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` |
+| `--card`, `--popover` | `oklch(1 0 0)` | `oklch(0.205 0 0)` |
+| `--primary` | `oklch(0.205 0 0)` | `oklch(0.922 0 0)` |
+| `--primary-foreground` | `oklch(0.985 0 0)` | `oklch(0.205 0 0)` |
+| `--secondary`, `--muted`, `--accent` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` |
+| `--muted-foreground` | `oklch(0.556 0 0)` | `oklch(0.708 0 0)` |
+| `--destructive` | `oklch(0.577 0.245 27.325)` | `oklch(0.704 0.191 22.216)` |
+| `--border` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 10%)` |
+| `--input` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 15%)` |
+| `--ring` | `oklch(0.708 0 0)` | `oklch(0.556 0 0)` |
+
+- `--radius`, `--chart-*`, `--sidebar-*`도 `:root`·`.dark`에 모두 정의되어 있다(표 생략, shadcn 기본).
+- **캘린더 막대 글자색 변수**(THM-02, 이 프로젝트가 추가한 유일한 변수): 연한 막대(시작 전·완료)의 글자는 팀 색을 `--bar-mix`와 섞어 만든다. 식은 `color-mix(in srgb, <팀 색> <비율>, var(--bar-mix))`이다.
+
+  | 변수 | 라이트 | 다크 | 뜻 |
+  |------|--------|------|----|
+  | `--bar-ink` | `100%` | `65%` | 채움 글자가 흰색인 팀 색(노랑 제외 7색, 여러 팀 색)에서 팀 색의 비율 |
+  | `--bar-ink-y` | `40%` | `65%` | 채움 글자가 검정인 팀 색(노랑)에서 팀 색의 비율 |
+  | `--bar-mix` | `black` | `white` | 섞는 색. 라이트는 검정 쪽, 다크는 흰색 쪽으로 밝게 |
+
+  구현: `CalendarPage.tsx`의 `ink()`. `FullCalendar`의 `--fc-*` 변수는 7장에서 이미 `--border`·`--background`·`--muted`·`--primary` 같은 토큰을 가리키므로 `.dark`에 따로 덮어쓰지 않아도 따라온다.
+- 토스트(`sonner`)는 `useTheme`로 테마를 따른다.
+- 로그인·가입 화면에는 테마 선택이 없고 시스템 설정을 따른다(PRD FR-14 #3).
 
 ### 2.2 타이포그래피
 | 요소 | 클래스 |
@@ -250,7 +280,7 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 - 막대 색은 팀 기준이고 모양은 상태 기준이다(아래 7.1·7.2). 상태 배지는 캘린더에 표시하지 않는다(와이어프레임 4.6).
 - 모바일 월 뷰의 '개수만 표시'도 같은 토큰(`text-muted-foreground text-xs`)을 쓴다.
 
-### 7.1 팀 캘린더 팔레트 (6.3 CL-03, 고정 색 금지의 예외)
+### 7.1 팀 캘린더 팔레트 (실행 계획 6.3 CL-03, 고정 색 금지의 예외)
 키로 저장하고, 화면은 아래 hex로 그린다. 구현: `src/features/teams/teamColors.ts`.
 
 | 키 | 이름 | 색 | 채움일 때 글자 |
@@ -267,11 +297,11 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 
 색 미설정 팀은 내 팀 목록 순서로 위 8색을 순환 배정한다. 개인 할일(공유 팀 0개)은 `--primary`·`--primary-foreground`다.
 
-### 7.2 막대 상태 규칙 (6.3 CL-04·CL-05)
+### 7.2 막대 상태 규칙 (실행 계획 6.3 CL-04·CL-05)
 | 상태 | 모양 |
 |------|------|
 | 진행 중 | 배경 = 색, 글자 = 채움 글자색 |
-| 시작 전 | 배경 = 색 15%(`color-mix`), 테두리 = 색, 글자 = 색(노랑은 검정 쪽으로 어둡게) |
+| 시작 전 | 배경 = 색 15%(`color-mix`), 테두리 = 색, 글자 = 색과 `--bar-mix`를 `--bar-ink`(노랑은 `--bar-ink-y`) 비율로 섞은 색(라이트는 노랑만 검정 쪽으로 어둡게, 다크는 전부 흰색 쪽으로 밝게, 2.1.1·7.3) |
 | 완료 | 시작 전과 같은 연한 배경 + 취소선(`line-through`) + `opacity-50` |
 | 기한 초과 | 채움 + 왼쪽 굵은 띠(`border-l-4`, `destructive`) + `TriangleAlert`(`size-3`) |
 
@@ -279,9 +309,23 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 - 막대 라벨은 제목만 `font-semibold`로 쓰고 시각은 쓰지 않는다. 막대 `title`(툴팁)은 `공유 팀: A, B`만(공유 팀 없으면 툴팁 없음).
 - 색 견본(`TeamColorPicker`)은 `radiogroup`/`radio`(`aria-label` = 색 이름, `aria-checked`)이며 6.1의 포커스·비활성 클래스를 쓴다. 색 점(`TeamColorDot`)은 `size-2.5 rounded-full`, `aria-hidden`.
 
+### 7.3 다크 대비 결과 (실행 계획 `docs-local/261105-i18n-theme-social-plan.md` THM-02)
+다크 배경에서 글자 대비 4.5:1 이상을 목표로 점검했다(PRD FR-14 #4).
+
+| 대상 | 결과 | 조치 |
+|------|------|------|
+| 캘린더 연한 막대 글자(시작 전·완료), 팀 색 8종과 여러 팀 색 | 다크에서 4.5:1 이상. 하드코딩이던 `color-mix(…, black)` 때문에 노랑 글자가 1.94였다 | `--bar-ink`·`--bar-ink-y`·`--bar-mix`로 교체(다크는 팀 색 65% + 흰색 35%, 2.1.1) |
+| FullCalendar 격자선·오늘 강조·더보기 팝오버 | 이미 `--border`·`--primary`·`--muted` 등 토큰을 가리킴 | `--fc-*`를 `.dark`에 추가하지 않음 |
+| 하드코딩 색 | 점검 결과 캘린더 막대 글자 1곳뿐이었다 | 위 변수로 교체 |
+| 라이트 모드 연한 막대 글자 5색 | 3.82–4.43:1(기존 동작, 이번 범위 밖) | 유지 |
+| 분홍 팀 색 점·카드 | 2.97:1(장식 요소) | 유지 |
+
+- 육안 확인: 2026-11-05 Playwright로 목록·편집·캘린더(월·주·일)·팀·프로필·다이얼로그를 다크에서 확인했다. 흰 배경 잔존·안 보이는 글자·테두리 없음(계획서 2.1 브라우저 검증).
+
 ## 8. 체크리스트 (화면 구현 후)
 
-- [ ] 고정 색(`*-blue-500`, `#hex`)을 쓰지 않았다
+- [ ] 고정 색(`*-blue-500`, `#hex`)을 쓰지 않았다(예외: 팀 팔레트, Google 로고)
+- [ ] 라이트·다크 두 테마에서 확인했다(다크 글자 대비 4.5:1, 7.3)
 - [ ] `shared/components/ui/` 파일을 고치지 않았다
 - [ ] 상태는 `StatusBadge`(글자 포함)로만 표시했다
 - [ ] 한 화면(섹션)에 `default` 버튼은 하나다
@@ -295,3 +339,5 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 |------|------|--------|------|
 | v0.1 | 2026-11-05 | hjining | 초안. 와이어프레임 v0.12 기준 shadcn 컴포넌트 매핑, 토큰, 상태 배지, 비-shadcn 부품 규칙, FullCalendar 테마 연결 |
 | v0.2 | 2026-11-05 | hjining | 팀 캘린더 팔레트·여러 팀 색을 고정 색 금지의 예외로 명시(1장), 7장에 팔레트 표(7.1)와 막대 상태 규칙(7.2) 추가(UI-13, 6.3 CL-01–CL-06) |
+| v0.3 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(와이어프레임 v0.14). '6.3 CL-xx' 참조를 '실행 계획 6.3'으로 명확화(이 문서 6.3 '읽기 전용 값'과 구분). 내용 변경 없음 |
+| v0.4 | 2026-11-05 | hjining | 다크 테마 반영(DOC-01, 실행 계획 `docs-local/261105-i18n-theme-social-plan.md` THM-01·THM-02), 기준 문서 버전 갱신(와이어프레임 v0.15, 프로젝트 원칙 FE-12): 머리말·1장 '다크 모드 없음' 문구 정정, 2.1.1 다크 토큰 표와 캘린더 막대 변수 `--bar-ink`·`--bar-ink-y`·`--bar-mix`, 7.2 시작 전 글자색, 7.3 다크 대비 결과, 1장·8장 Google 로고 예외·테마 점검 |

@@ -143,17 +143,17 @@ CREATE INDEX ix_user_identities_user ON user_identities(user_id);
 | 영역 | Task | 이름 | 선행 | 상태 |
 |------|------|------|------|------|
 | 테마 | THM-01 | ThemeProvider·토글 UI | - | ✅ 완료 |
-| 테마 | THM-02 | 다크 대비 점검·FullCalendar 토큰·스타일 가이드 | THM-01 | 🔶 일부 |
-| 다국어 | I18N-01 | i18n 초기화·언어 선택 UI·테스트 셋업 | - | 🔶 일부 |
+| 테마 | THM-02 | 다크 대비 점검·FullCalendar 토큰·스타일 가이드 | THM-01 | ✅ 완료 |
+| 다국어 | I18N-01 | i18n 초기화·언어 선택 UI·테스트 셋업 | - | ✅ 완료 |
 | 다국어 | I18N-02 | 문자열 추출(ko.json)·컴포넌트 치환 | I18N-01 | ✅ 완료 |
-| 다국어 | I18N-03 | 에러 코드 번역·FullCalendar locale·`<html lang>` | I18N-02 | 🔶 일부 |
-| 다국어 | I18N-04 | en·zh·ja 번역·키 누락 테스트 | I18N-02 | |
+| 다국어 | I18N-03 | 에러 코드 번역·FullCalendar locale·`<html lang>` | I18N-02 | ✅ 완료 |
+| 다국어 | I18N-04 | en·zh·ja 번역·키 누락 테스트 | I18N-02 | ✅ 완료 |
 | 소셜 | SOC-00 | Google 앱 등록, 키 발급 (**사용자 작업**) | - | ✅ 완료 |
 | 소셜 | SOC-01 | 마이그레이션 003·repo | - | ✅ 완료 |
 | 소셜 | SOC-02 | OAuth 라우트·서비스·env·에러 코드 | SOC-01 | 🔶 일부 |
 | 소셜 | SOC-03 | 기존 로그인·비밀번호 변경·`/me` 영향 처리 | SOC-01 | ✅ 완료 |
 | 소셜 | SOC-04 | 프론트 버튼·에러 배너·PasswordCard 조건부 | SOC-02, SOC-03, I18N-01 | 🔶 일부 |
-| 공통 | DOC-01 | 기준 문서 반영(`sync-docs`) | 전체 | |
+| 공통 | DOC-01 | 기준 문서 반영(`sync-docs`) | 전체 | ✅ 완료 |
 
 권장 순서: **THM(가장 작음) → I18N → SOC**. SOC-01–03(백엔드)은 I18N과 병행할 수 있다. SOC-04는 I18N-01 뒤에 해야 새 문자열을 처음부터 `t()`로 쓸 수 있다.
 
@@ -171,6 +171,9 @@ CREATE INDEX ix_user_identities_user ON user_identities(user_id);
 | I18N-02 | `5716b9d` `a6acc94` `010ac10` `0e4a1ca` `9c7d37a` `764c364` | ko.json 키 173개, 남은 한국어(테스트·locales·주석 제외) 0건, 테스트 204건 통과. 라벨 맵을 키 맵으로 변경(`STATUS_KEY`, `ROLE_KEY`, `ACTION_KEY`, 팀 색상 `team.color.*`). 컴포넌트 밖 문자열은 `i18n.t` 사용(`client.ts`, `queryClient.ts`, 캘린더 툴팁 — 툴팁은 데이터 재계산 전까지 이전 언어로 남음). `TeamLeave.test.tsx`의 타이밍 의존 단언 1건을 `waitFor`로 수정 |
 | I18N-03 | `16b6b25` | 에러 번역 helper `shared/api/errorMessage.ts`(`errorMessage`, `fieldErrors`), 화면의 모든 `ApiError` 표시 지점에 적용. `common.networkError`·`unknownError`·`forbidden`을 `error.NETWORK_ERROR`·`UNKNOWN`·`FORBIDDEN`으로 이동. 코드 번역이 서버 message보다 우선해 기존 테스트 단언 2건 수정. 전역 5xx 배너는 표시 시점 문구를 저장(떠 있는 동안 언어 변경 미반영). **남은 것**: en 화면에서 로그인 에러·캘린더 요일 육안 확인(I18N-04 번역 후 가능) |
 | SOC-04 | `3df8ba9` | `SocialLoginButtons`를 Login·Signup 폼 아래 배치, `?error=` 배너, `hasPassword`가 false면 PasswordCard 숨김. 테스트 209건 통과. **남은 것**: 실제 Google OAuth 왕복 확인 |
+| I18N-04 | `bef69f6` | 키 수 ko·zh·ja 196, en 198(`todo.list.total`·`calendar.count`를 `_one`/`_other`로 분리). 키·보간 변수 일치 테스트 `shared/i18n/locales.test.ts` 추가, 테스트 213건 통과. `dateTime.ts`는 숫자 형식이라 변경 없음(시간대 약칭만 `en-US` 고정). 용어: 할일 = todo / 任务 / タスク, 내 정보 = Profile / 个人信息 / マイページ. **남은 것**: 4개 언어 화면·en 모바일 폭 넘침 육안 확인(`Make manager`, `Remove manager`, `Assign and leave`, `Reset filters`가 길 수 있음), 원어민 검수(X-02) |
+| 브라우저 검증 | `adc867a` | 2026-11-05 Playwright로 확인(로컬 서버, 테스트 계정 `pw-check-*@example.com` 2개 생성). **통과**: THM-02 다크 화면(목록·편집·캘린더 월/주/일·팀·내 정보·다이얼로그), 라이트/다크/시스템 즉시 전환·새로고침 유지·OS 설정 추종 / I18N-01 언어 전환·새로고침 유지·`html lang`·로그인/가입 언어 메뉴 / I18N-03 en 로그인 에러, 캘린더 en·zh·ja locale / I18N-04 4개 언어 키 노출·번역 누락 0건, en 390px 넘침·겹침 0건 / SOC-04 버튼 href, `?error=` 배너 ko·en / SOC-02 Google 인가 페이지로 오류 없이 이동(redirect_uri·scope·state 확인), 잘못된 state → `OAUTH_FAILED`. 검증 중 발견한 보조 문구(닫기·페이지 이동 aria) 미번역과 en "All team" 오역은 `adc867a`에서 수정. 원어민 검수(X-02)는 Task 완료 조건이 아니라 3장 확인 사항으로 남긴다. **범위 밖 발견**: ① 모바일 목록 필터 접기가 동작하지 않음(`FilterBar.tsx` `CollapsibleContent forceMount`에 닫힘 숨김 클래스 없음, 기존 버그) ② 기본 카테고리 이름 "기본"이 DB 데이터라 모든 언어에서 한국어로 표시 ③ next-themes 인라인 script로 React 콘솔 경고(기능 영향 없음) |
+| DOC-01 | (커밋 안 함) | docs 9개 버전 올림: 도메인 v0.15, PRD v0.17, 시나리오 v0.16, 와이어프레임 v0.15, 원칙 v0.16, 아키텍처 v0.10, ERD v0.9, swagger v0.8, 스타일 가이드 v0.4. 새 ID: FR-12–14, R22, UC-15·16, US-19–22, EX-45–49, FE-11·12, SEC-13, A30–A34, K13, E-16. sync-docs 불일치 D-05(범위 밖 문구), D-06(GET 콜백 예외), D-07(`user_identities` CASCADE·`ix_` 이름 예외) 정정. FR-12–14 우선순위는 P1로 적음(결정 필요). swagger YAML 파싱 확인 |
 
 ### THM-01 ThemeProvider·토글 UI
 - 작업: `main.tsx`에 `ThemeProvider` 추가, `shared/components/ThemeToggle.tsx`(DropdownMenu 3항목) 작성, `AppLayout` 헤더·모바일 Sheet에 배치, `index.html`에 color-scheme 메타 추가
@@ -230,3 +233,6 @@ CREATE INDEX ix_user_identities_user ON user_identities(user_id);
 |----|------|--------|
 | X-02 | 번역 품질 검수 주체 | Claude 초안으로 출시, 피드백 반영 |
 | X-03 | 운영 도메인 확정 전 Redirect URI | 로컬만 등록해 개발하고, 배포(CM-05) 때 운영 URI 추가 |
+| X-04 | SOC-02·SOC-04 남은 완료 조건: 실제 Google 계정 로그인(신규 가입·재로그인·같은 이메일 자동 연결) | 자동화 브라우저 로그인은 Google이 차단하므로 사용자가 직접 확인 |
+| X-05 | 기본 카테고리 이름 "기본"의 다국어 표시 | 미결. 표시할 때 기본 카테고리면 `t()`로 바꾸는 방안 가능 |
+| X-06 | 모바일 목록 필터 접기 버그(`FilterBar.tsx`) | 미결. 이번 범위 밖의 기존 버그 |
