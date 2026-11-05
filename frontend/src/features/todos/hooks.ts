@@ -25,9 +25,36 @@ function useTodoMutation<V>(mutationFn: (v: V) => Promise<unknown>, idOf: (v: V)
   })
 }
 
+export function useTodo(id: string) {
+  return useQuery({ queryKey: queryKeys.todo(id), queryFn: () => api.get<Todo>(`/api/todos/${id}`), enabled: id !== '' })
+}
+
+// 요청 본문. 고르지 않은 값은 필드를 뺀다(BD-01). description 만 null 허용
+export interface TodoWrite {
+  title?: string
+  description?: string | null
+  startAt?: string
+  endAt?: string
+  categoryId?: string
+  sharedTeamIds?: string[]
+}
+export interface TodoCreate extends TodoWrite {
+  teamId?: string
+  ownerId?: string
+}
+
+export function useCreateTodo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: TodoCreate) => api.post<Todo>('/api/todos', body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+  })
+}
+
+// 바뀐 필드만 보낸다(S-09)
 export const useUpdateTodo = () =>
   useTodoMutation(
-    ({ id, completed }: { id: string; completed: boolean }) => api.patch<Todo>(`/api/todos/${id}`, { completed }),
+    ({ id, ...body }: TodoWrite & { id: string; completed?: boolean }) => api.patch<Todo>(`/api/todos/${id}`, body),
     (v) => v.id,
   )
 export const useDeleteTodo = () =>

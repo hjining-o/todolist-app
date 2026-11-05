@@ -1,7 +1,7 @@
 const SEOUL = 'Asia/Seoul'
 
 // 서버 ISO 문자열을 지정 시간대의 날짜·시각·약칭으로 나눈다(현재 시각은 쓰지 않는다, FE-06)
-function parts(iso: string, timeZone: string) {
+export function parts(iso: string, timeZone: string) {
   const p = Object.fromEntries(
     new Intl.DateTimeFormat('en-US', {
       timeZone,
