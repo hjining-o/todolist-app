@@ -1,5 +1,6 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/shared/api/client'
+import i18n from '@/shared/i18n'
 import { useBannerStore } from '@/stores/bannerStore'
 
 // 401(갱신 실패 포함)·403·413·5xx·네트워크 오류만 전역 처리한다. 400·404·409는 화면이 처리한다
@@ -12,7 +13,7 @@ function handleError(error: unknown, onRetry?: () => void, ownsAuth = false) {
     if (!ownsAuth && pathname !== '/login' && pathname !== '/signup')
       window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`)
   } else if (status === 403) {
-    useBannerStore.getState().show('권한이 없습니다.')
+    useBannerStore.getState().show(i18n.t('common.forbidden'))
   } else if (status === 413 || status === 0 || status >= 500) {
     useBannerStore.getState().show(message, onRetry)
   }

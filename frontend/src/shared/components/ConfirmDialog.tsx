@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,7 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, confirmVariant = 'destructive', onConfirm }: ConfirmDialogProps) {
+  const { t } = useTranslation()
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -28,7 +30,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>취소</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction variant={confirmVariant} onClick={onConfirm}>
             {confirmLabel}
           </AlertDialogAction>

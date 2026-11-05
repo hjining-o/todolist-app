@@ -1,3 +1,4 @@
+import i18n from '@/shared/i18n'
 import type { ErrorResponse } from '@/shared/types'
 
 export class ApiError extends Error {
@@ -42,7 +43,7 @@ async function send<T>(method: string, path: string, { query, body }: Options): 
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
-    throw new ApiError(0, 'NETWORK_ERROR', '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.')
+    throw new ApiError(0, 'NETWORK_ERROR', i18n.t('common.networkError'))
   }
 
   if (!res.ok) {
@@ -50,7 +51,7 @@ async function send<T>(method: string, path: string, { query, body }: Options): 
     throw new ApiError(
       res.status,
       data?.error?.code ?? 'UNKNOWN',
-      data?.error?.message ?? '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+      data?.error?.message ?? i18n.t('common.unknownError'),
       data?.error?.fields,
     )
   }

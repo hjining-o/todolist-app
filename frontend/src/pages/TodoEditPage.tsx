@@ -1,4 +1,5 @@
 // SC-04: /todos/new 는 등록, /todos/:todoId 는 응답의 canEdit 로 편집·읽기 전용을 정한다(FE-07)
+import { useTranslation } from 'react-i18next'
 import { useParams, useSearchParams } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
 import { HistoryList } from '@/features/todo-histories/components/HistoryList'
@@ -12,17 +13,18 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 export function TodoEditPage() {
+  const { t } = useTranslation()
   const { todoId = '' } = useParams()
   const [search] = useSearchParams()
   const { data: me } = useMe()
   const { data: todo, error } = useTodo(todoId)
 
-  const title = !todoId ? '할일 등록' : todo && !todo.canEdit ? '할일 보기 (읽기 전용)' : '할일 편집'
+  const title = !todoId ? t('todo.edit.create') : todo && !todo.canEdit ? t('todo.edit.readonly') : t('todo.edit.edit')
   let body
   if (error instanceof ApiError && error.status === 404) body = <TodoNotFound />
   else if (!me || (todoId && !todo))
     body = (
-      <div className="grid gap-4" aria-label="불러오는 중">
+      <div className="grid gap-4" aria-label={t('common.loading')}>
         <Skeleton className="h-9" />
         <Skeleton className="h-9" />
         <Skeleton className="h-9" />
@@ -37,8 +39,8 @@ export function TodoEditPage() {
     body = (
       <Tabs defaultValue="detail">
         <TabsList>
-          <TabsTrigger value="detail">상세</TabsTrigger>
-          <TabsTrigger value="history">변경 이력</TabsTrigger>
+          <TabsTrigger value="detail">{t('todo.edit.detail')}</TabsTrigger>
+          <TabsTrigger value="history">{t('todo.edit.history')}</TabsTrigger>
         </TabsList>
         <TabsContent value="detail" forceMount className="data-[state=inactive]:hidden">
           {body}

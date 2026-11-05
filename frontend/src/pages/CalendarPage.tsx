@@ -8,6 +8,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import type { DatesSetArg, EventClickArg, EventContentArg } from '@fullcalendar/core'
 import { ChevronLeft, ChevronRight, Plus, TriangleAlert, Users } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
 import { useTeams } from '@/features/teams/hooks'
@@ -15,6 +16,7 @@ import { resolveTeamColor, todoBarColor } from '@/features/teams/teamColors'
 import { countTodosByDate, toCalendarRange, toWallClock } from '@/features/todos/calendar/calendarRange'
 import { useCalendarTodos } from '@/features/todos/calendar/useCalendarTodos'
 import { ViewSelect } from '@/features/todos/components/FilterBar'
+import i18n from '@/shared/i18n'
 import type { Todo } from '@/shared/types'
 import { useMediaQuery } from '@/shared/lib/useMediaQuery'
 import { PageHeader } from '@/shared/components/PageHeader'
@@ -46,7 +48,7 @@ function barProps(t: Todo, colors: ReturnType<typeof resolveTeamColor>) {
     ? { backgroundColor: tint(hex), borderColor: hex, textColor: bar.fg ? ink(hex, bar.fg) : hex }
     : { backgroundColor: hex, borderColor: hex, textColor: fg }
   // 툴팁은 공유 팀만(상세는 클릭하면 SC-04). 공유 팀이 없으면 툴팁 없음
-  const title = t.sharedTeams.length > 0 ? `공유 팀: ${t.sharedTeams.map((x) => x.name).join(', ')}` : undefined
+  const title = t.sharedTeams.length > 0 ? i18n.t('calendar.sharedTeams', { names: t.sharedTeams.map((x) => x.name).join(', ') }) : undefined
   return { ...color, classNames: ['bar-' + t.status.toLowerCase(), STATUS_CLASS[t.status]], extendedProps: { title, multi: bar.multi, overdue: t.status === 'OVERDUE', completed: t.status === 'COMPLETED' } }
 }
 
@@ -64,6 +66,7 @@ function BarContent({ arg }: { arg: EventContentArg }) {
 const ymd = (d: Date) => d.toISOString().slice(0, 10) // timeZone:'UTC' 라 UTC 날짜가 곧 벽시계 날짜
 
 export function CalendarPage() {
+  const { t: tr } = useTranslation()
   const navigate = useNavigate()
   const calendarRef = useRef<FullCalendar>(null)
   const { data: me } = useMe()
@@ -112,15 +115,15 @@ export function CalendarPage() {
   return (
     // 데스크톱은 화면 높이에 맞추고 캘린더가 남은 높이를 채운다: 100svh - 헤더(h-14) - main 여백(py-6)
     <div className="flex flex-col gap-4 md:h-[calc(100svh-6.5rem)]">
-      <PageHeader title="캘린더" />
+      <PageHeader title={tr('menu.calendar')} />
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="icon" aria-label="이전" onClick={() => api().prev()}>
+        <Button variant="outline" size="icon" aria-label={tr('calendar.prev')} onClick={() => api().prev()}>
           <ChevronLeft />
         </Button>
         <Button variant="outline" onClick={() => api().gotoDate(browserToday())}>
-          오늘
+          {tr('calendar.today')}
         </Button>
-        <Button variant="outline" size="icon" aria-label="다음" onClick={() => api().next()}>
+        <Button variant="outline" size="icon" aria-label={tr('calendar.next')} onClick={() => api().next()}>
           <ChevronRight />
         </Button>
         <span className="text-lg font-semibold" aria-live="polite">
@@ -129,18 +132,18 @@ export function CalendarPage() {
         <ToggleGroup
           type="single"
           variant="outline"
-          aria-label="보기 단위"
+          aria-label={tr('calendar.viewUnit')}
           value={calView}
           // 같은 항목을 다시 누르면 빈 값이 오므로 무시한다
           onValueChange={(v) => v && api().changeView(v)}
         >
-          <ToggleGroupItem value="dayGridMonth">월</ToggleGroupItem>
-          <ToggleGroupItem value="timeGridWeek">주</ToggleGroupItem>
-          <ToggleGroupItem value="timeGridDay">일</ToggleGroupItem>
+          <ToggleGroupItem value="dayGridMonth">{tr('calendar.month')}</ToggleGroupItem>
+          <ToggleGroupItem value="timeGridWeek">{tr('calendar.week')}</ToggleGroupItem>
+          <ToggleGroupItem value="timeGridDay">{tr('calendar.day')}</ToggleGroupItem>
         </ToggleGroup>
         <Button asChild className="ml-auto">
           <Link to={newPath}>
-            <Plus /> 할일 등록
+            <Plus /> {tr('todo.register')}
           </Link>
         </Button>
       </div>
@@ -149,12 +152,12 @@ export function CalendarPage() {
       </div>
       {data?.truncated && (
         <Alert>
-          <AlertDescription>일부 할일만 표시됩니다. 필터를 좁혀 주세요.</AlertDescription>
+          <AlertDescription>{tr('calendar.truncated')}</AlertDescription>
         </Alert>
       )}
-      {isPending && dates && <p className="text-sm text-muted-foreground">불러오는 중...</p>}
+      {isPending && dates && <p className="text-sm text-muted-foreground">{tr('calendar.loading')}</p>}
       {calView === 'timeGridDay' && data && data.items.length === 0 && (
-        <p className="text-sm text-muted-foreground">이 날 할일이 없습니다.</p>
+        <p className="text-sm text-muted-foreground">{tr('calendar.emptyDay')}</p>
       )}
       <div className="md:min-h-0 md:flex-1">
       <FullCalendar
@@ -187,7 +190,7 @@ export function CalendarPage() {
                 return (
                   <>
                     {arg.dayNumberText}
-                    {n ? <div className="text-xs text-muted-foreground">{n}건</div> : null}
+                    {n ? <div className="text-xs text-muted-foreground">{tr('calendar.count', { count: n })}</div> : null}
                   </>
                 )
               }

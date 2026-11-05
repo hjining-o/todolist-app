@@ -1,6 +1,7 @@
 // SC-03
 import { Plus } from 'lucide-react'
 import { useState, type MouseEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { useMe } from '@/features/auth/hooks'
 import { FilterBar } from '@/features/todos/components/FilterBar'
@@ -18,6 +19,7 @@ import type { Todo } from '@/shared/types'
 import { ALL_STATUS, useTodoFilterStore } from '@/stores/todoFilterStore'
 
 export function TodoListPage() {
+  const { t } = useTranslation()
   const filter = useTodoFilterStore()
   const { data: me } = useMe()
   const { data, isPending } = useTodos(toTodoListParams(filter))
@@ -34,7 +36,7 @@ export function TodoListPage() {
   const register = (
     <Button asChild>
       <Link to={newPath}>
-        <Plus /> 할일 등록
+        <Plus /> {t('todo.register')}
       </Link>
     </Button>
   )
@@ -50,10 +52,10 @@ export function TodoListPage() {
   return (
     // 데스크톱은 화면 높이에 맞추고 할일 행만 안에서 스크롤해 페이지 바가 항상 보인다: 100svh - 헤더(h-14) - main 여백(py-6)
     <div className="flex flex-col gap-4 md:h-[calc(100svh-6.5rem)]">
-      <PageHeader title="할일 목록" actions={register} />
+      <PageHeader title={t('todo.list.title')} actions={register} />
       <FilterBar />
       {isPending ? (
-        <div className="grid gap-2" aria-label="불러오는 중">
+        <div className="grid gap-2" aria-label={t('common.loading')}>
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
@@ -66,24 +68,24 @@ export function TodoListPage() {
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead />
-                <TableHead>제목</TableHead>
-                <TableHead>기간</TableHead>
-                <TableHead>상태</TableHead>
-                <TableHead>소유자</TableHead>
-                <TableHead>카테고리</TableHead>
+                <TableHead>{t('todo.form.title')}</TableHead>
+                <TableHead>{t('todo.list.period')}</TableHead>
+                <TableHead>{t('todo.filter.status')}</TableHead>
+                <TableHead>{t('todo.form.owner')}</TableHead>
+                <TableHead>{t('todo.form.category')}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((t) => (
-                <TodoRow key={t.id} todo={t} {...rowProps} />
+              {data.items.map((todo) => (
+                <TodoRow key={todo.id} todo={todo} {...rowProps} />
               ))}
             </TableBody>
           </Table>
           </div>
           <ul className="divide-y md:hidden">
-            {data.items.map((t) => (
-              <TodoMobileRow key={t.id} todo={t} {...rowProps} />
+            {data.items.map((todo) => (
+              <TodoMobileRow key={todo.id} todo={todo} {...rowProps} />
             ))}
           </ul>
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -93,8 +95,8 @@ export function TodoListPage() {
                   <PaginationPrevious
                     href="#"
                     role="button"
-                    aria-label="이전 쪽"
-                    text="이전"
+                    aria-label={t('todo.list.prevPage')}
+                    text={t('todo.list.prev')}
                     aria-disabled={first}
                     className={first ? 'pointer-events-none opacity-50' : undefined}
                     onClick={move(!first, filter.offset - PAGE_SIZE)}
@@ -109,8 +111,8 @@ export function TodoListPage() {
                   <PaginationNext
                     href="#"
                     role="button"
-                    aria-label="다음 쪽"
-                    text="다음"
+                    aria-label={t('todo.list.nextPage')}
+                    text={t('todo.list.next')}
                     aria-disabled={last}
                     className={last ? 'pointer-events-none opacity-50' : undefined}
                     onClick={move(!last, filter.offset + PAGE_SIZE)}
@@ -118,18 +120,18 @@ export function TodoListPage() {
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
-            <span className="text-sm text-muted-foreground">총 {total}건</span>
+            <span className="text-sm text-muted-foreground">{t('todo.list.total', { count: total })}</span>
           </div>
         </>
       ) : (
         <Empty>
           <EmptyHeader>
-            <EmptyDescription>{filtered ? '조건에 맞는 할일이 없습니다.' : '등록된 할일이 없습니다.'}</EmptyDescription>
+            <EmptyDescription>{filtered ? t('todo.list.emptyFiltered') : t('todo.list.empty')}</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             {filtered ? (
               <Button variant="outline" onClick={filter.reset}>
-                필터 초기화
+                {t('todo.filter.reset')}
               </Button>
             ) : (
               register
@@ -140,9 +142,9 @@ export function TodoListPage() {
       <ConfirmDialog
         open={target !== null}
         onOpenChange={(o) => !o && setTarget(null)}
-        title="할일 삭제"
-        description={`'${target?.title ?? ''}' 할일을 삭제할까요? 삭제하면 복구할 수 없습니다.`}
-        confirmLabel="삭제"
+        title={t('todo.form.deleteTitle')}
+        description={t('todo.form.deleteDescription', { title: target?.title ?? '' })}
+        confirmLabel={t('common.delete')}
         onConfirm={() => target && remove.mutate(target.id)}
       />
     </div>

@@ -1,5 +1,6 @@
 // SC-06
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useCategories, useCreateCategory, useDeleteCategory, useRenameCategory } from '@/features/categories/hooks'
 import { ApiError } from '@/shared/api/client'
 import { CharCounter } from '@/shared/components/CharCounter'
@@ -41,6 +42,7 @@ function NameField({ label, value, onChange, error }: NameFieldProps) {
 }
 
 function CategoryRow({ category, onDelete }: { category: Category; onDelete: (c: Category) => void }) {
+  const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(category.name)
   const rename = useRenameCategory()
@@ -54,10 +56,10 @@ function CategoryRow({ category, onDelete }: { category: Category; onDelete: (c:
     return (
       <li>
         <form onSubmit={onSubmit} noValidate className="flex items-start gap-2 p-3">
-          <NameField label={`${category.name} 이름`} value={name} onChange={setName} error={nameError(rename.error)} />
+          <NameField label={t('category.nameOf', { name: category.name })} value={name} onChange={setName} error={nameError(rename.error)} />
           <Button type="submit" disabled={rename.isPending}>
             {rename.isPending && <Spinner />}
-            저장
+            {t('common.save')}
           </Button>
           <Button
             type="button"
@@ -67,7 +69,7 @@ function CategoryRow({ category, onDelete }: { category: Category; onDelete: (c:
               rename.reset()
             }}
           >
-            취소
+            {t('common.cancel')}
           </Button>
         </form>
       </li>
@@ -78,7 +80,7 @@ function CategoryRow({ category, onDelete }: { category: Category; onDelete: (c:
     <li className="flex items-center justify-between gap-2 p-3">
       <span className="flex items-center gap-2">
         {category.name}
-        {category.isDefault && <Badge variant="secondary">기본</Badge>}
+        {category.isDefault && <Badge variant="secondary">{t('category.default')}</Badge>}
       </span>
       <span className="flex gap-2">
         <Button
@@ -90,10 +92,10 @@ function CategoryRow({ category, onDelete }: { category: Category; onDelete: (c:
             setEditing(true)
           }}
         >
-          수정
+          {t('common.edit')}
         </Button>
         <Button variant="destructive" size="sm" disabled={category.isDefault} onClick={() => onDelete(category)}>
-          삭제
+          {t('common.delete')}
         </Button>
       </span>
     </li>
@@ -101,6 +103,7 @@ function CategoryRow({ category, onDelete }: { category: Category; onDelete: (c:
 }
 
 export function CategoriesPage() {
+  const { t } = useTranslation()
   const { data, isPending } = useCategories()
   const create = useCreateCategory()
   const remove = useDeleteCategory()
@@ -114,16 +117,16 @@ export function CategoriesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="카테고리" />
+      <PageHeader title={t('menu.categories')} />
       <form onSubmit={onSubmit} noValidate className="flex items-start gap-2">
-        <NameField label="새 카테고리" value={name} onChange={setName} error={nameError(create.error)} />
+        <NameField label={t('category.new')} value={name} onChange={setName} error={nameError(create.error)} />
         <Button type="submit" disabled={create.isPending}>
           {create.isPending && <Spinner />}
-          추가
+          {t('common.add')}
         </Button>
       </form>
       {isPending ? (
-        <div className="flex flex-col gap-2" aria-label="불러오는 중">
+        <div className="flex flex-col gap-2" aria-label={t('common.loading')}>
           <Skeleton className="h-12" />
           <Skeleton className="h-12" />
         </div>
@@ -138,9 +141,9 @@ export function CategoriesPage() {
       <ConfirmDialog
         open={!!target}
         onOpenChange={(open) => !open && setTarget(null)}
-        title="카테고리 삭제"
-        description={`'${target?.name}' 카테고리를 삭제할까요? 이 카테고리의 할일은 '기본'으로 옮겨집니다.`}
-        confirmLabel="삭제"
+        title={t('category.deleteTitle')}
+        description={t('category.deleteDescription', { name: target?.name })}
+        confirmLabel={t('common.delete')}
         onConfirm={() => target && remove.mutate(target.id)}
       />
     </div>

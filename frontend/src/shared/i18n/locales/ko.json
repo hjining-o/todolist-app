@@ -32,7 +32,13 @@
     "notFound": "찾을 수 없습니다.",
     "loading": "불러오는 중",
     "select": "선택",
-    "requestFailed": "요청에 실패했습니다."
+    "requestFailed": "요청에 실패했습니다.",
+    "networkError": "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    "unknownError": "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+    "forbidden": "권한이 없습니다.",
+    "retry": "다시 시도",
+    "edit": "수정",
+    "add": "추가"
   },
   "todo": {
     "view": {
@@ -82,10 +88,34 @@
       "leave": "나가기",
       "deleteTitle": "할일 삭제",
       "deleteDescription": "'{{title}}' 할일을 삭제할까요? 삭제하면 복구할 수 없습니다."
+    },
+    "edit": {
+      "create": "할일 등록",
+      "readonly": "할일 보기 (읽기 전용)",
+      "edit": "할일 편집",
+      "detail": "상세",
+      "history": "변경 이력"
+    },
+    "register": "할일 등록",
+    "list": {
+      "title": "할일 목록",
+      "period": "기간",
+      "prevPage": "이전 쪽",
+      "prev": "이전",
+      "nextPage": "다음 쪽",
+      "next": "다음",
+      "total": "총 {{count}}건",
+      "emptyFiltered": "조건에 맞는 할일이 없습니다.",
+      "empty": "등록된 할일이 없습니다."
     }
   },
   "category": {
-    "select": "카테고리 선택"
+    "select": "카테고리 선택",
+    "nameOf": "{{name}} 이름",
+    "default": "기본",
+    "new": "새 카테고리",
+    "deleteTitle": "카테고리 삭제",
+    "deleteDescription": "'{{name}}' 카테고리를 삭제할까요? 이 카테고리의 할일은 '기본'으로 옮겨집니다."
   },
   "team": {
     "title": "팀",
@@ -152,5 +182,48 @@
       "COMPLETED": "완료",
       "UNCOMPLETED": "완료 해제"
     }
+  },
+  "theme": {
+    "change": "테마 변경",
+    "light": "라이트",
+    "dark": "다크",
+    "system": "시스템"
+  },
+  "menu": {
+    "list": "목록",
+    "calendar": "캘린더",
+    "categories": "카테고리",
+    "teams": "팀",
+    "profile": "내 정보",
+    "logout": "로그아웃",
+    "open": "메뉴 열기",
+    "title": "메뉴",
+    "mobile": "모바일 메뉴",
+    "main": "주 메뉴"
+  },
+  "calendar": {
+    "sharedTeams": "공유 팀: {{names}}",
+    "prev": "이전",
+    "today": "오늘",
+    "next": "다음",
+    "viewUnit": "보기 단위",
+    "month": "월",
+    "week": "주",
+    "day": "일",
+    "truncated": "일부 할일만 표시됩니다. 필터를 좁혀 주세요.",
+    "loading": "불러오는 중...",
+    "emptyDay": "이 날 할일이 없습니다.",
+    "count": "{{count}}건"
+  },
+  "profile": {
+    "timezone": "시간대",
+    "timezoneSearch": "시간대 검색",
+    "noResult": "검색 결과가 없습니다.",
+    "saved": "저장했습니다.",
+    "emailReadonly": "(변경할 수 없습니다)",
+    "passwordChanged": "비밀번호를 변경했습니다.",
+    "passwordChange": "비밀번호 변경",
+    "currentPassword": "현재 비밀번호",
+    "newPassword": "새 비밀번호"
   }
 }

@@ -1,6 +1,7 @@
 // SC-07
 import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useMe } from '@/features/auth/hooks'
 import { useUpdateMe } from '@/features/users/hooks'
@@ -23,22 +24,23 @@ import type { Me } from '@/shared/types'
 const clientError = (e: Error | null) => (e instanceof ApiError && e.status > 0 && e.status < 500 ? e : null)
 
 function TimezoneCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const zones = Intl.supportedValuesOf('timeZone')
   if (!zones.includes(value)) zones.unshift(value) // 엔진 목록에 없는 값(UTC 등)도 현재 값으로 보인다
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button id="timezone" type="button" variant="outline" role="combobox" aria-expanded={open} aria-label="시간대" className="justify-between font-normal">
+        <Button id="timezone" type="button" variant="outline" role="combobox" aria-expanded={open} aria-label={t('profile.timezone')} className="justify-between font-normal">
           {value}
           <ChevronsUpDownIcon className="opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="start">
         <Command>
-          <CommandInput placeholder="시간대 검색" />
+          <CommandInput placeholder={t('profile.timezoneSearch')} />
           <CommandList>
-            <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+            <CommandEmpty>{t('profile.noResult')}</CommandEmpty>
             {zones.map((z) => (
               <CommandItem
                 key={z}
@@ -60,6 +62,7 @@ function TimezoneCombobox({ value, onChange }: { value: string; onChange: (v: st
 }
 
 function ProfileCard({ me }: { me: Me }) {
+  const { t } = useTranslation()
   const [name, setName] = useState(me.name)
   const [timezone, setTimezone] = useState(me.timezone)
   const update = useUpdateMe()
@@ -69,13 +72,13 @@ function ProfileCard({ me }: { me: Me }) {
     e.preventDefault()
     const body = { ...(name !== me.name && { name }), ...(timezone !== me.timezone && { timezone }) }
     if (Object.keys(body).length === 0) return // 바뀐 게 없으면 요청하지 않는다
-    update.mutate(body, { onSuccess: () => toast.success('저장했습니다.') })
+    update.mutate(body, { onSuccess: () => toast.success(t('profile.saved')) })
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>내 정보</CardTitle>
+        <CardTitle>{t('menu.profile')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate>
@@ -86,14 +89,14 @@ function ProfileCard({ me }: { me: Me }) {
               </Alert>
             )}
             <Field>
-              <FieldLabel>이메일</FieldLabel>
+              <FieldLabel>{t('auth.email')}</FieldLabel>
               <p className="text-sm">
-                {me.email} <span className="text-muted-foreground">(변경할 수 없습니다)</span>
+                {me.email} <span className="text-muted-foreground">{t('profile.emailReadonly')}</span>
               </p>
             </Field>
             <Field data-invalid={!!error?.fields?.name}>
               <FieldLabel htmlFor="name">
-                이름 <RequiredMark />
+                {t('auth.name')} <RequiredMark />
               </FieldLabel>
               <Input id="name" value={name} maxLength={50} autoComplete="name" aria-invalid={!!error?.fields?.name} onChange={(e) => setName(e.target.value)} />
               <div className="flex justify-end">
@@ -102,13 +105,13 @@ function ProfileCard({ me }: { me: Me }) {
               <FieldError>{error?.fields?.name}</FieldError>
             </Field>
             <Field data-invalid={!!error?.fields?.timezone}>
-              <FieldLabel htmlFor="timezone">시간대</FieldLabel>
+              <FieldLabel htmlFor="timezone">{t('profile.timezone')}</FieldLabel>
               <TimezoneCombobox value={timezone} onChange={setTimezone} />
               <FieldError>{error?.fields?.timezone}</FieldError>
             </Field>
             <Button type="submit" className="self-end" disabled={update.isPending}>
               {update.isPending && <Spinner />}
-              저장
+              {t('common.save')}
             </Button>
           </FieldGroup>
         </form>
@@ -118,6 +121,7 @@ function ProfileCard({ me }: { me: Me }) {
 }
 
 function PasswordCard() {
+  const { t } = useTranslation()
   const [currentPassword, setCurrent] = useState('')
   const [newPassword, setNew] = useState('')
   const update = useUpdateMe()
@@ -133,7 +137,7 @@ function PasswordCard() {
         onSuccess: () => {
           setCurrent('')
           setNew('')
-          toast.success('비밀번호를 변경했습니다.')
+          toast.success(t('profile.passwordChanged'))
         },
       },
     )
@@ -142,7 +146,7 @@ function PasswordCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>비밀번호 변경</CardTitle>
+        <CardTitle>{t('profile.passwordChange')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate>
@@ -153,20 +157,20 @@ function PasswordCard() {
               </Alert>
             )}
             <Field data-invalid={!!currentError}>
-              <FieldLabel htmlFor="currentPassword">현재 비밀번호</FieldLabel>
+              <FieldLabel htmlFor="currentPassword">{t('profile.currentPassword')}</FieldLabel>
               <Input id="currentPassword" type="password" value={currentPassword} maxLength={72} autoComplete="current-password" aria-invalid={!!currentError} onChange={(e) => setCurrent(e.target.value)} />
               <FieldError>{currentError}</FieldError>
             </Field>
             <Field data-invalid={!!newError}>
               <FieldLabel htmlFor="newPassword">
-                새 비밀번호 <span className="font-normal text-muted-foreground">(8자 이상, 72바이트 이하)</span>
+                {t('profile.newPassword')} <span className="font-normal text-muted-foreground">{t('auth.passwordHint')}</span>
               </FieldLabel>
               <Input id="newPassword" type="password" value={newPassword} maxLength={72} autoComplete="new-password" aria-invalid={!!newError} onChange={(e) => setNew(e.target.value)} />
               <FieldError>{newError}</FieldError>
             </Field>
             <Button type="submit" className="self-end" disabled={update.isPending}>
               {update.isPending && <Spinner />}
-              비밀번호 변경
+              {t('profile.passwordChange')}
             </Button>
           </FieldGroup>
         </form>
@@ -176,10 +180,11 @@ function PasswordCard() {
 }
 
 export function ProfilePage() {
+  const { t } = useTranslation()
   const { data: me } = useMe()
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <PageHeader title="내 정보" />
+      <PageHeader title={t('menu.profile')} />
       {me ? <ProfileCard me={me} /> : <Skeleton className="h-64 w-full" />}
       <PasswordCard />
     </div>
