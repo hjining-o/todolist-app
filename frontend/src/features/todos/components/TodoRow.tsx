@@ -1,3 +1,4 @@
+import { categoryName } from '@/features/categories/categoryName'
 import type { MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
@@ -57,7 +58,7 @@ export function TodoRow({ todo, timeZone, onToggle, onDelete }: RowProps) {
         <StatusBadge status={todo.status} />
       </TableCell>
       <TableCell>{ownerName(todo)}</TableCell>
-      <TableCell>{todo.category?.name ?? t('common.none')}</TableCell>
+      <TableCell>{todo.category ? categoryName(todo.category.name) : t('common.none')}</TableCell>
       <TableCell className="text-right" onClick={stop}>
         {todo.canEdit && <DeleteButton todo={todo} onDelete={onDelete} />}
       </TableCell>

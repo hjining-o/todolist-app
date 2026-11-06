@@ -1,3 +1,4 @@
+import { categoryName } from '@/features/categories/categoryName'
 import { useTranslation } from 'react-i18next'
 import { useMe } from '@/features/auth/hooks'
 import { useTeams } from '@/features/teams/hooks'
@@ -35,7 +36,7 @@ export function HistoryList({ todoId }: { todoId: string }) {
     if (c.description) rows.push([tr('todo.form.description'), text(c.description.old), text(c.description.new)])
     if (c.startAt) rows.push([tr('todo.form.start'), time(c.startAt.old), time(c.startAt.new)])
     if (c.endAt) rows.push([tr('todo.form.end'), time(c.endAt.old), time(c.endAt.new)])
-    if (c.category) rows.push([tr('todo.form.category'), text(c.category.old?.name ?? null), text(c.category.new.name)])
+    if (c.category) rows.push([tr('todo.form.category'), text(c.category.old ? categoryName(c.category.old.name) : null), text(categoryName(c.category.new.name))])
     if (c.completed) {
       const done = (v: boolean | null) => (v === null ? NONE : v ? tr('common.completed') : tr('todo.incomplete'))
       rows.push([tr('todo.form.completed'), done(c.completed.old), done(c.completed.new)])

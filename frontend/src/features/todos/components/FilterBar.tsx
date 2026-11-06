@@ -109,8 +109,8 @@ export function FilterBar() {
           <ListFilter /> {t('todo.filter.open')}
         </Button>
       </CollapsibleTrigger>
-      {/* forceMount: 데스크톱(md 이상)은 항상 펼친다 */}
-      <CollapsibleContent forceMount className="grid gap-2 md:flex md:flex-wrap md:items-end">
+      {/* forceMount면 Radix가 닫힘에도 숨기지 않으므로 모바일에서만 data-state로 숨긴다. 데스크톱(md 이상)은 항상 펼친다 */}
+      <CollapsibleContent forceMount className="grid gap-2 max-md:data-[state=closed]:hidden md:flex md:flex-wrap md:items-end">
         <ViewSelect />
         <div className="grid gap-1 md:w-48">
           <span className="text-sm">{t('todo.filter.category')}</span>

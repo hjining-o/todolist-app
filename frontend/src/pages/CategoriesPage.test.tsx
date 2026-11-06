@@ -99,7 +99,6 @@ describe('CategoriesPage', () => {
   it('기본 카테고리의 수정·삭제 버튼은 비활성이다', async () => {
     renderApp('/categories')
     await screen.findByText('Work')
-    expect(screen.getByText('기본', { selector: '[data-slot="badge"]' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: '수정' })[0]).toBeDisabled()
     expect(screen.getAllByRole('button', { name: '삭제' })[0]).toBeDisabled()
     expect(screen.getAllByRole('button', { name: '수정' })[1]).toBeEnabled()

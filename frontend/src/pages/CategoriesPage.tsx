@@ -1,3 +1,4 @@
+import { categoryName } from '@/features/categories/categoryName'
 // SC-06
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,7 +8,6 @@ import { errorMessage, fieldErrors } from '@/shared/api/errorMessage'
 import { CharCounter } from '@/shared/components/CharCounter'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Field, FieldError } from '@/shared/components/ui/field'
 import { Input } from '@/shared/components/ui/input'
@@ -80,8 +80,7 @@ function CategoryRow({ category, onDelete }: { category: Category; onDelete: (c:
   return (
     <li className="flex items-center justify-between gap-2 p-3">
       <span className="flex items-center gap-2">
-        {category.name}
-        {category.isDefault && <Badge variant="secondary">{t('category.default')}</Badge>}
+        {categoryName(category.name)}
       </span>
       <span className="flex gap-2">
         <Button

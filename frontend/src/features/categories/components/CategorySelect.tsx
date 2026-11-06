@@ -1,3 +1,4 @@
+import { categoryName } from '@/features/categories/categoryName'
 import { useTranslation } from 'react-i18next'
 import { useCategories } from '@/features/categories/hooks'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
@@ -24,7 +25,7 @@ export function CategorySelect({ value, onValueChange, allLabel, id, 'aria-label
         {allLabel && <SelectItem value={ALL_CATEGORIES}>{allLabel}</SelectItem>}
         {data?.items.map((c) => (
           <SelectItem key={c.id} value={c.id}>
-            {c.name}
+            {categoryName(c.name)}
           </SelectItem>
         ))}
       </SelectContent>
