@@ -41,7 +41,7 @@
 
 ## 2. 시스템 전체 기술 아키텍처
 
-- 배포는 Vercel이고, 프론트엔드 정적 빌드와 Express API(Vercel Functions, `/api/*`)를 배포한다. 프론트는 `VITE_API_BASE_URL`의 API 출처를 CORS로 호출한다(PRD §5.1·§5.2, SEC-07, OPS-19). 프로젝트를 하나로 둘지 나눌지는 미결이다(실행 계획 W-09).
+- 배포는 Vercel이고, 프론트엔드 정적 빌드와 Express API(Vercel Functions, `/api/*`)를 배포한다. 프론트는 `VITE_API_BASE_URL`의 API 출처를 CORS로 호출한다(PRD §5.1·§5.2, SEC-07, OPS-19). Vercel 프로젝트는 프론트(Root Directory `frontend`)와 API(`backend`) 둘로 나눈다(실행 계획 W-09).
 - PostgreSQL 17은 Supabase를 DB로만 쓴다. Supabase Auth와 자동 생성 API는 쓰지 않는다(B1). 인증은 앱이 직접 발급하는 액세스 토큰(`HS384` JWT, 15분)과 리프레시 토큰(7일, DB에 해시) 쿠키다(PRD §5.2). 예외로 만료 리프레시 토큰 정리에 `pg_cron`을 쓴다(PRD A27, OPS-24).
 - 외부 인증 서비스는 Google OAuth(소셜 로그인) 하나다. 앱 서버가 Google 인가·토큰·프로필 엔드포인트를 서버 `fetch`로 직접 호출하고(PRD §5.2 소셜 로그인, SEC-13), Supabase Auth는 쓰지 않는다. Google 외 소셜 로그인, 알림, 외부 캘린더 연동은 범위 밖이다(도메인 §7).
 - 언어(`react-i18next`)와 테마(`next-themes`)는 브라우저 안에서만 동작하고 서버·DB에 저장하지 않는다(PRD A30, A31). 번역 파일은 정적 번들에 포함된다.
@@ -63,7 +63,7 @@ flowchart TB
             I18["react-i18next 번역 4개(ko·en·zh·ja), next-themes<br/>localStorage lang, theme"]
         end
         subgraph BEL["백엔드/API 계층 (Vercel Functions, 서버리스)"]
-            FN["api/index.js<br/>Express 앱 노출 (/api/*)"]
+            FN["backend/api/index.js<br/>Express 앱 노출 (/api/*)"]
             MW["middleware<br/>authenticate (쿠키 JWT), error-handler"]
             RS["routes → services → repositories<br/>domain: 순수 규칙"]
             POOL["config/db<br/>pg.Pool (max 5), withTransaction"]
@@ -172,7 +172,7 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph BE["backend/src (api/index.js가 app.js를 노출)"]
+    subgraph BE["backend/src (backend/api/index.js가 app.js를 노출)"]
         APPJS["app.js<br/>JSON 100kb, /api 라우터, error-handler 마지막 등록"]
         MWA["middleware/authenticate<br/>쿠키 JWT → req.user, 실패 401"]
         MWE["middleware/error-handler<br/>AppError → 에러 응답, 그 밖은 500"]
@@ -928,4 +928,4 @@ T-01–T-08은 모두 이해관계자 확인(2026-11-04)으로 결정해 기준 
 | v0.8 | 2026-11-05 | hjining | 기준 문서 버전 갱신(프로젝트 원칙 v0.13). 다이어그램 변경 없음. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 2장 다이어그램: 프론트 → API 호출을 CORS(`VITE_API_BASE_URL`, `credentials: include`)로, 환경변수에 `CORS_ORIGINS` |
 | v0.9 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14, 프로젝트 원칙 v0.15). 제목 줄에 잘못 들어간 문구 제거(내용은 v0.8 이력에 있음). 5.0 단순 CRUD 목록에 내 캘린더 팀 색 변경(PRD A29) 추가. 다이어그램 변경 없음 |
 | v0.10 | 2026-11-05 | hjining | 다국어·테마·Google 소셜 로그인 반영(DOC-01), 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14, 프로젝트 원칙 v0.16): 2장 외부 인증 서비스를 Google OAuth로 정정(소셜 로그인 범위 밖 문구 수정)하고 다이어그램에 Google 노드·i18n/테마 노드·환경변수 추가, 5.1 공개 경로에 oauth, 5.11 Google 소셜 로그인 시퀀스 추가(1.2, 5.0 목록). 2장에 프론트 개발 모드 전용 콘솔 로깅 설명 추가(프로젝트 원칙 OPS-25). 다이어그램 변경 없음 |
-| v0.11 | 2026-11-06 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15, 프로젝트 원칙 v0.17). 내용·다이어그램 변경 없음 |
+| v0.11 | 2026-11-06 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15, 프로젝트 원칙 v0.17). 배포 구성 결정(W-09) 반영: 2장 배포 설명을 Vercel 프로젝트 2개로, 다이어그램 함수 진입점을 `backend/api/index.js`로 정정 |

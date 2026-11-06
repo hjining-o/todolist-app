@@ -44,10 +44,10 @@
 | 백엔드 | Node.js + JavaScript(TypeScript 아님) + Express | PRD §6 |
 | DB 접근 | `pg`(node-postgres). Prisma와 다른 ORM 금지 | PRD §6 |
 | 데이터베이스 | PostgreSQL 17, Supabase 사용. DB로만 쓰며 Supabase Auth와 자동 생성 API는 쓰지 않음 | PRD §5.1 B1 |
-| 배포 | Vercel. 프론트 정적 빌드와 Express(Vercel Functions)를 배포하고, 프론트는 `VITE_API_BASE_URL`의 API 출처로 `/api/*`를 직접 호출한다(CORS, SEC-07). 프로젝트 구성은 실행 계획 W-09 | PRD §5.1 |
+| 배포 | Vercel. 프론트 정적 빌드와 Express(Vercel Functions)를 배포하고, 프론트는 `VITE_API_BASE_URL`의 API 출처로 `/api/*`를 직접 호출한다(CORS, SEC-07). 프로젝트는 프론트(Root Directory `frontend`)와 API(`backend`) 둘로 나눈다(실행 계획 W-09) | PRD §5.1 |
 | 인증 | 액세스 토큰은 `HS384` JWT(쿠키 `access_token`, 15분), 리프레시 토큰은 불투명 문자열(쿠키 `refresh_token`, 7일, DB에 해시). `jsonwebtoken`, `cookie-parser`, Node `crypto`. 비밀번호는 `bcryptjs`, cost 10 | PRD §5.2 B4, A25, A26, [가정 G-09] |
 | 테스트 | Vitest(단위, 통합), supertest(API 통합), `@playwright/test`(E2E 회귀), Playwright MCP(E2E 탐색과 스크립트 작성 보조) | [가정 G-04] |
-| API 문서 화면 | `swagger-ui-express` + `js-yaml`(백엔드 개발 의존성). 개발 모드(`npm run dev`)에서만 Swagger UI를 `/swagger`에 붙인다. 명세 원본은 `docs/8-swagger.yaml` 하나이고, 화면에는 문자열 `description`을 뺀 명세를 보낸다(설명문은 문서에만 둔다). 배포 진입점(`api/index.js` → `app.js`)에는 없다 | `docs/8-swagger.yaml` |
+| API 문서 화면 | `swagger-ui-express` + `js-yaml`(백엔드 개발 의존성). 개발 모드(`npm run dev`)에서만 Swagger UI를 `/swagger`에 붙인다. 명세 원본은 `docs/8-swagger.yaml` 하나이고, 화면에는 문자열 `description`을 뺀 명세를 보낸다(설명문은 문서에만 둔다). 배포 진입점(`backend/api/index.js` → `app.js`)에는 없다 | `docs/8-swagger.yaml` |
 
 ## 2. 의존성 및 레이어 원칙
 
@@ -258,7 +258,7 @@
 
 | ID | 원칙 | 근거 |
 |----|------|------|
-| OPS-19 | Vercel로 배포한다. 프론트는 정적 빌드하고, `api/index.js`가 Express 앱을 함수로 노출한다. 브라우저는 `VITE_API_BASE_URL`의 API 출처로 `/api/*`를 호출하고 API는 CORS로 허용한다(SEC-07). 프로젝트를 하나로 둘지 나눌지는 실행 계획 W-09 | PRD §5.1 Q1 |
+| OPS-19 | Vercel로 배포한다. Vercel 프로젝트를 둘로 나눈다. 프론트 프로젝트(Root Directory `frontend`)는 정적 빌드하고 `frontend/vercel.json`으로 SPA 경로를 `index.html`로 돌린다. API 프로젝트(`backend`)는 `backend/api/index.js`가 Express 앱을 함수로 노출하고 `backend/vercel.json`으로 모든 경로를 이 함수로 보낸다. 브라우저는 `VITE_API_BASE_URL`의 API 출처로 `/api/*`를 호출하고 API는 CORS로 허용한다(SEC-07). (실행 계획 W-09) | PRD §5.1 Q1 |
 | OPS-20 | 운영은 HTTPS만 쓴다. 쿠키 `Secure`는 운영 전제이며, 로컬 개발은 `localhost`에서 확인한다 [가정 G-13]. | PRD §5.2 |
 | OPS-21 | Day 1 오전에 빈 API(`/api/health` [가정 G-06])를 먼저 배포해 Express 함수와 콜드 스타트를 확인한다. | PRD K10 |
 | OPS-22 | 배포 순서는 마이그레이션 적용(003 소셜 로그인 포함. 운영 DB 적용 전에 사용자 확인을 받는다), 운영 작업(OPS-24) 등록 확인, 소셜 로그인 환경변수·Google 콘솔 Redirect URI 등록(`{API_URL}/api/auth/oauth/google/callback`), 백엔드와 프론트 배포다. 운영 지표 M1–M5는 Vercel과 Supabase 대시보드로 확인한다. 부하 테스트는 하지 않는다. | PRD K3, Q2 [가정 G-15] |
@@ -269,8 +269,6 @@
 
 ```
 todolist-app/
-├─ api/
-│  └─ index.js          # Vercel Functions 진입점. backend/src/app.js를 import해 export
 ├─ backend/             # Express API (JavaScript)
 ├─ frontend/            # React 19 + TypeScript SPA (Vite)
 ├─ docs/                # 기획·설계 문서 1–9 (8은 API 명세 yaml, 9는 스타일 가이드)
@@ -283,12 +281,12 @@ todolist-app/
 │  ├─ teams.spec.ts     # 팀 생성, 구성원 관리, 공유
 │  └─ permissions.spec.ts  # 비구성원 404, 일반 팀원 403, 관리자 수정, 공유 없는 할일 404 (EX-20, EX-21, US-14, EX-25)
 ├─ playwright.config.ts # webServer(백엔드, 프론트), Chromium, baseURL
-├─ vercel.json          # /api/* 라우팅, SPA 경로 fallback [가정 G-01]
 ├─ package.json         # 루트 공통 스크립트와 의존성 [가정 G-01]
 └─ .gitignore           # .env*, playwright-report/, test-results/ 포함
 ```
 
-- `api/` 아래에는 `index.js`만 둔다. Vercel은 이 폴더의 모든 파일을 함수로 취급한다.
+- Vercel 프로젝트별 설정은 각 Root Directory의 `vercel.json`에 둔다(`frontend/vercel.json`, `backend/vercel.json`).
+- `backend/api/` 아래에는 `index.js`만 둔다. Vercel은 이 폴더의 모든 파일을 함수로 취급한다.
 
 ### 6.2 프론트엔드 구조
 
@@ -416,9 +414,10 @@ backend/
 
 | 경로 | 역할 | 허용 import |
 |------|------|-------------|
-| `api/index.js` (루트) | Vercel 함수 진입점. `backend/src/app.js`를 export한다 | app |
+| `api/index.js` | Vercel 함수 진입점. `src/app.js`를 export한다 | app |
+| `vercel.json` | API 프로젝트 설정. 프레임워크 감지를 끄고(`framework: null`) 모든 경로를 `api/index.js`로 보낸다 | 없음 |
 | `src/app.js` | Express 앱 조립. 에러 핸들러는 마지막에 등록한다 | routes, middleware, config |
-| `src/server.js` | 로컬 실행 전용. 개발 모드(`npm run dev`)에서만 Swagger UI를 `/swagger`에 붙인다. 명세 원본은 `docs/8-swagger.yaml` 하나이고, 화면에는 문자열 `description`을 뺀 명세를 보낸다(설명문은 문서에만 둔다). 배포 진입점(`api/index.js` → `app.js`)에는 없다 | app, config, `swagger-ui-express`, `js-yaml` |
+| `src/server.js` | 로컬 실행 전용. 개발 모드(`npm run dev`)에서만 Swagger UI를 `/swagger`에 붙인다. 명세 원본은 `docs/8-swagger.yaml` 하나이고, 화면에는 문자열 `description`을 뺀 명세를 보낸다(설명문은 문서에만 둔다). 배포 진입점(`backend/api/index.js` → `app.js`)에는 없다 | app, config, `swagger-ui-express`, `js-yaml` |
 | `src/config/` | 환경변수 검증, 풀, 트랜잭션 헬퍼 | 없음 |
 | `src/middleware/` | CORS·Origin 검사, 인증, 에러 응답 변환 | config/env, domain/errors |
 | `src/routes/` | HTTP 요청과 응답. 비즈니스 규칙을 두지 않는다 | services, middleware, domain/errors |
@@ -453,7 +452,7 @@ backend/
 
 | ID | 항목 | 가정 내용 |
 |----|------|-----------|
-| G-01 | 저장소 구조 | `api/`, `backend/`, `frontend/`를 한 저장소에 둔다. 루트 `package.json` 하나를 쓴다. `vercel.json`으로 `/api/*`를 함수로 라우팅한다. |
+| G-01 | 저장소 구조 | `backend/`, `frontend/`를 한 저장소에 두고 루트 `package.json`(npm workspaces)을 쓴다. Vercel 프로젝트는 둘이고, 각 Root Directory의 `vercel.json`으로 라우팅한다(함수 진입점은 `backend/api/index.js`). |
 | G-02 | 모듈 방식 | 백엔드와 프론트는 ESM(`import`, `export`)을 쓴다. Node는 Vercel이 지원하는 최신 LTS를 쓰고 `package.json`의 `engines`에 고정한다. 패키지 매니저는 npm이다. |
 | G-03 | 빌드 도구 | 프론트 빌드는 Vite다(PRD §6, §8.1 근거). |
 | G-04 | 테스트 도구, 테스트 DB | 단위 테스트는 Vitest, 백엔드 통합 테스트는 Vitest와 supertest, E2E 회귀는 `@playwright/test`(루트 `e2e/`), Playwright MCP는 탐색과 스크립트 작성 보조(Q-05, Q-17–Q-21). 통합 테스트와 E2E는 운영과 분리한 Supabase 테스트 전용 프로젝트(PostgreSQL 17)를 쓴다. 연결 문자열은 커밋하지 않는 `.env.test`의 `DATABASE_URL`에 두고, 스키마는 운영과 같은 마이그레이션(OPS-18)으로 만든다. Docker는 쓰지 않는다. |
@@ -492,4 +491,4 @@ backend/
 | v0.14 | 2026-11-05 | hjining | N-11 경로 예시에 `PATCH /api/teams/:teamId/color`(요청자 본인의 팀 캘린더 색상만 변경, 실행 계획 6.3 CL-02) 추가 |
 | v0.15 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14). 제목 줄에 잘못 들어가 있던 변경 요약을 이력으로 이동: OPS-19에서 '단일 프로젝트' 삭제(PRD v0.15, W-09 미결), G-08에 토큰 만료 환경변수 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`(기본 15분·7일), `.env.example`을 `backend/.env.example`로 이동(프론트는 UI-01에서 `frontend/.env.example`, 6.1·6.3 구조, OPS-01). FE-09에 팀 캘린더 팔레트 색의 인라인 `style` 예외(PRD A29, 스타일 가이드 1장), 6.1 `docs/` 주석 1–9로 정정, 6.3 `teams.routes.js` 주석에 내 캘린더 색. 6.2에 화면 경로(SC-01–SC-09) 목록 추가 |
 | v0.16 | 2026-11-05 | hjining | 다국어·테마·Google 소셜 로그인 반영(DOC-01, 계획서 `docs-local/261105-i18n-theme-social-plan.md`), 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14): P-07 범위 밖 목록 조정, 1.2 다국어·테마·소셜 로그인 스택, FE-11(i18n 문자열·번역 파일 규칙)·FE-12(테마 구현), 5.1 환경변수 `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`·`APP_URL`·`API_URL`, SEC-04 공개 경로에 OAuth 두 경로, SEC-05 소셜 전용 계정, SEC-07·N-13 콜백 `GET` 예외, SEC-13(OAuth 흐름·state·`next` 검증), OPS-10 오류 번역 우선, OPS-22 배포 순서, N-11·N-16·N-17·N-19, G-08, 6.2·6.3 구조(`shared/i18n/`, `errorMessage.ts`, `LanguageSelect`·`ThemeToggle`, `SocialLoginButtons`, `oauth.providers.js`, `identities.repo.js`), 6.4. 프론트 개발 모드 전용 콘솔 로깅 구현(`shared/lib/logger.ts`, 커밋 7c6a5f7) 반영: OPS-25 추가(출력 조건, 로깅 지점, 미기록 항목, 한국어 메시지, 테스트 무음 처리), Q-13(프론트 `console` 직접 호출은 `logger.ts` 한 파일), OPS-04(백엔드 한정, 프론트는 OPS-25), OPS-05(요청·응답 본문 추가), FE-11 예외(로그 메시지는 `t()` 대상 아님), N-08, G-10, 6.2 구조(`shared/lib/logger.ts`, `test/setup.ts`), 7장 기록 |
-| v0.17 | 2026-11-06 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15). 기본 카테고리 이름 번역 표시(커밋 fb235b4) 반영: FE-11에 `categoryName()` 규칙, 6.2 `categories/` 주석에 `categoryName.ts`. 구현 기준 추가 동기화: 1.2 캘린더 행의 `moreLinkClick`을 실제 구현(`timeGridDay` 전환)으로 정정, `defaultTimedEventDuration` 추가(E2E 결함 수정 bf5d8ca) |
+| v0.17 | 2026-11-06 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15). 기본 카테고리 이름 번역 표시(커밋 fb235b4) 반영: FE-11에 `categoryName()` 규칙, 6.2 `categories/` 주석에 `categoryName.ts`. 구현 기준 추가 동기화: 1.2 캘린더 행의 `moreLinkClick`을 실제 구현(`timeGridDay` 전환)으로 정정, `defaultTimedEventDuration` 추가(E2E 결함 수정 bf5d8ca). 배포 구성 결정(W-09, Vercel 프로젝트 2개) 반영: 1.2 배포, OPS-19, 6.1 구조(루트 `api/`·`vercel.json` 삭제), 6.3 `api/index.js`·`vercel.json` 행, G-01 |

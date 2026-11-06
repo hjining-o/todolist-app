@@ -1,4 +1,4 @@
-// 로컬 실행 전용. 배포 진입점(api/index.js)은 app.js를 쓰므로 Swagger UI는 개발 모드에만 붙는다
+// 로컬 실행 전용. 배포 진입점(backend/api/index.js)은 app.js를 쓰므로 Swagger UI는 개발 모드에만 붙는다
 import { readFile } from 'node:fs/promises';
 import yaml from 'js-yaml';
 import swaggerUi from 'swagger-ui-express';
