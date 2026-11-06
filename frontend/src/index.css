@@ -146,6 +146,10 @@
   --fc-more-link-text-color: var(--muted-foreground);
   font-size: 0.875rem; /* text-sm */
 }
+/* 바깥 테두리를 버튼(rounded-md)처럼 둥글게. 오른쪽·아래 바깥선은 셀이 그리므로 표 자체에 옮기고 셀 쪽은 지운다 */
+.fc .fc-scrollgrid { border-radius: var(--radius-md); overflow: hidden; border-right-width: 1px; border-bottom-width: 1px; }
+.fc .fc-scrollgrid-section > *:last-child { border-right-width: 0; }
+.fc .fc-scrollgrid-section:last-child > * { border-bottom-width: 0; }
 .fc .fc-event { border-radius: calc(var(--radius) - 4px); }
 .fc .fc-col-header-cell-cushion { color: var(--muted-foreground); font-weight: 500; }
 /* 주·일 뷰: 고정 칸 높이(1.5em)를 풀어 24시간이 남은 높이를 나눠 갖게 한다(expandRows, 스크롤 없음) */
