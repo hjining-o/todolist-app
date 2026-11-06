@@ -272,8 +272,14 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
   --fc-more-link-text-color: var(--muted-foreground);
   font-size: 0.875rem; /* text-sm */
 }
+/* 바깥 테두리를 버튼(rounded-md)처럼 둥글게. 오른쪽·아래 바깥선은 셀이 그리므로 표 자체에 옮기고 셀 쪽은 지운다 */
+.fc .fc-scrollgrid { border-radius: var(--radius-md); overflow: hidden; border-right-width: 1px; border-bottom-width: 1px; }
+.fc .fc-scrollgrid-section > *:last-child { border-right-width: 0; }
+.fc .fc-scrollgrid-section:last-child > * { border-bottom-width: 0; }
 .fc .fc-event { border-radius: calc(var(--radius) - 4px); }
 .fc .fc-col-header-cell-cushion { color: var(--muted-foreground); font-weight: 500; }
+/* 주·일 뷰: 고정 칸 높이(1.5em)를 풀어 24시간이 남은 높이를 나눠 갖게 한다(expandRows, 스크롤 없음) */
+.fc .fc-timegrid-slot { height: auto; line-height: 1; font-size: 0.75rem; } /* text-xs: 칸 최소 높이를 낮춘다 */
 ```
 
 - FullCalendar 자체 툴바는 끈다(`headerToolbar={false}`). 이동·뷰 전환은 3.2의 shadcn `Button`·`ToggleGroup`으로 만들고 `calendarRef.current.getApi()`로 조작한다. 버튼 모양을 따로 맞출 필요가 없어진다.
@@ -340,4 +346,4 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 | v0.1 | 2026-11-05 | hjining | 초안. 와이어프레임 v0.12 기준 shadcn 컴포넌트 매핑, 토큰, 상태 배지, 비-shadcn 부품 규칙, FullCalendar 테마 연결 |
 | v0.2 | 2026-11-05 | hjining | 팀 캘린더 팔레트·여러 팀 색을 고정 색 금지의 예외로 명시(1장), 7장에 팔레트 표(7.1)와 막대 상태 규칙(7.2) 추가(UI-13, 6.3 CL-01–CL-06) |
 | v0.3 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(와이어프레임 v0.14). '6.3 CL-xx' 참조를 '실행 계획 6.3'으로 명확화(이 문서 6.3 '읽기 전용 값'과 구분). 다크 테마 반영(DOC-01, 실행 계획 `docs-local/261105-i18n-theme-social-plan.md` THM-01·THM-02), 프로젝트 원칙 FE-12 참조 추가: 머리말·1장 '다크 모드 없음' 문구 정정, 2.1.1 다크 토큰 표와 캘린더 막대 변수 `--bar-ink`·`--bar-ink-y`·`--bar-mix`, 7.2 시작 전 글자색, 7.3 다크 대비 결과, 1장·8장 Google 로고 예외·테마 점검 |
-| v0.4 | 2026-11-06 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(와이어프레임 v0.15). 5장 SC-06에서 기본 카테고리 행의 `Badge`('기본') 삭제(커밋 fb235b4, 와이어프레임 4.7과 맞춤). 역할 `Badge`(3.2)·상태 `Badge`(4장)는 그대로 |
+| v0.4 | 2026-11-06 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(와이어프레임 v0.15). 5장 SC-06에서 기본 카테고리 행의 `Badge`('기본') 삭제(커밋 fb235b4, 와이어프레임 4.7과 맞춤). 역할 `Badge`(3.2)·상태 `Badge`(4장)는 그대로. 7장 CSS 블록을 `src/index.css`와 맞춤: 캘린더 바깥 테두리 둥글게(`.fc-scrollgrid`, `--radius-md` = 컨트롤 `rounded-md`, 커밋 00aa507)와 주·일 뷰 칸 높이(`.fc-timegrid-slot`, 커밋 b8f951d) 추가 |
