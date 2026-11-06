@@ -4,7 +4,7 @@
 |------|------|
 | 문서 버전 | v0.17 |
 | 상태 | 초안 |
-| 최종 수정일 | 2026-11-05 |
+| 최종 수정일 | 2026-11-06 |
 | 작성자 | hjining |
 | 기준 문서 | `docs/1-domain-definition.md` v0.15, `docs/2-prd.md` v0.17, `docs/3-user-scenario.md` v0.16, `docs/4-wireframe.md` v0.15 |
 
@@ -103,7 +103,7 @@
 | FE-10 | 캘린더에 넘기는 일시는 서버가 `User.timezone`의 오프셋으로 보낸 ISO 8601 문자열에서 오프셋을 뗀 벽시계 값(`2026-11-04T09:00`)이다. FullCalendar는 `timeZone: 'UTC'`로 설정해 다시 변환하지 않는다. 그래서 브라우저 시간대와 `User.timezone`이 달라도(US-16 #5) 사용자 시간대로 보이고, 시간대 플러그인은 두지 않는다. 변환 함수는 `features/todos/calendar/` 한 곳에 둔다. |
 | FE-07 | 편집, 완료, 삭제 버튼 노출과 카테고리 필드 활성 여부는 서버 응답의 권한 플래그(`canEdit`, `isOwner`, [가정 G-06])로만 결정한다. |
 | FE-08 | 버튼, 입력, 선택, 표, 배지, 대화상자 같은 기본 UI 부품은 `shared/components/ui/`의 shadcn 컴포넌트를 쓴다. 같은 부품을 직접 만들거나 다른 UI 라이브러리를 추가하지 않는다. 컴포넌트 추가는 shadcn CLI 또는 shadcn MCP로만 한다(PRD §6). |
-| FE-11 | 화면에 보이는 문구는 하드코딩하지 않고 `t('기능.항목')`으로 쓴다(예: `todo.status.done`, `auth.login.submit`, `error.EMAIL_TAKEN`). 상수 라벨 맵은 라벨 대신 키를 두고 렌더링할 때 `t()`로 바꾼다. 컴포넌트 밖(`client.ts`, 쿼리 클라이언트, 캘린더 툴팁)은 `i18n.t`를 쓴다. `ko.json`이 기준이고 새 키는 4개 번역 파일 모두에 넣는다(키 집합과 보간 변수 일치는 `locales.test.ts`가 확인한다). `ApiError`의 표시 번역은 `shared/api/errorMessage.ts` 한 곳에서만 한다. 언어가 바뀌면 `<html lang>`을 갱신한다(근거 PRD FR-13, A30). 예외: 개발자용 로그 메시지(`logger`, OPS-25)는 한국어 문자열이고 `t()`를 쓰지 않는다. |
+| FE-11 | 화면에 보이는 문구는 하드코딩하지 않고 `t('기능.항목')`으로 쓴다(예: `todo.status.done`, `auth.login.submit`, `error.EMAIL_TAKEN`). 상수 라벨 맵은 라벨 대신 키를 두고 렌더링할 때 `t()`로 바꾼다. 컴포넌트 밖(`client.ts`, 쿼리 클라이언트, 캘린더 툴팁)은 `i18n.t`를 쓴다. `ko.json`이 기준이고 새 키는 4개 번역 파일 모두에 넣는다(키 집합과 보간 변수 일치는 `locales.test.ts`가 확인한다). `ApiError`의 표시 번역은 `shared/api/errorMessage.ts` 한 곳에서만 한다. 언어가 바뀌면 `<html lang>`을 갱신한다(근거 PRD FR-13, A30). 사용자 입력 데이터는 번역하지 않되, 서버가 만든 기본 카테고리 이름 '기본'은 화면에 쓸 때마다 `features/categories/categoryName.ts`의 `categoryName(name)`을 거쳐 `category.default`로 번역한다(이름으로 판별: 이름은 소유자별 유일하고 기본 카테고리는 이름 변경 불가이며 할일·이력의 카테고리 ref에 `isDefault`가 없다. PRD FR-13 #5). 예외: 개발자용 로그 메시지(`logger`, OPS-25)는 한국어 문자열이고 `t()`를 쓰지 않는다. |
 | FE-12 | 테마는 `next-themes`가 `<html>`에 붙이는 `dark` 클래스와 `index.css`의 토큰으로만 구현한다. 컴포넌트에서 `isDark` 분기를 만들지 않고, 필요하면 `dark:` 변형이나 CSS 변수를 쓴다(근거 PRD FR-14, A31, 스타일 가이드 7.3). |
 | FE-09 | `shared/components/ui/`의 생성 파일은 직접 고치지 않는 것을 기본으로 한다. 도메인 표현(예: 상태 배지 색)은 features 컴포넌트에서 감싸서 만든다. 스타일은 Tailwind 유틸리티 클래스와 `src/index.css`의 테마 변수로만 지정하고, 별도 CSS 파일과 인라인 `style`은 캘린더 라이브러리 덮어쓰기 외에는 쓰지 않는다. 예외: 팀 캘린더 팔레트와 여러 팀 전용 색은 사용자가 고르는 데이터 색이라 `style`의 색 지정을 허용한다(스타일 가이드 1장·7.1, PRD A29). |
 
@@ -320,7 +320,7 @@ frontend/
    ├─ features/                 # 도메인 모듈
    │  ├─ auth/                  # 로그인, 가입, 로그아웃 훅 (User). `components/SocialLoginButtons.tsx`(Google 버튼)
    │  ├─ users/                 # 내 정보 조회, 수정 훅 (User, P1)
-   │  ├─ categories/            # 카테고리 훅과 컴포넌트 (Category)
+   │  ├─ categories/            # 카테고리 훅과 컴포넌트 (Category). `categoryName.ts`(기본 카테고리 이름 번역)
    │  ├─ todos/                 # 목록, 상세, 폼, 행, 필터 바, 상태 배지 (Todo, TodoShare)
    │  │  └─ calendar/           # 캘린더 뷰와 훅 (SC-05)
    │  ├─ teams/                 # 팀, 구성원 훅과 표 (Team, TeamMember)
@@ -449,7 +449,7 @@ backend/
 
 - 미결 없음. 아래 항목은 반영 완료(문서 v0.6): G-04 테스트 DB 위치(Supabase 테스트 전용 프로젝트), 그리고 v0.5 정합성 검토에서 나온 미결 ①–③(① FE-06 예외와 FE-10, ② N-11 `/api/me` 예외, ③ OPS-04를 Vercel 기본 로그로 대체).
 - (기록) v0.5 미결 내용: ① FE-06(클라이언트 시계 금지)과 G-11(날짜 라이브러리 없음)이 캘린더 요구와 맞는지. FullCalendar의 '오늘' 이동(FR-08 #1)은 기본으로 브라우저 시계를 쓰고, `User.timezone`이 브라우저 시간대와 다를 때(P1 FR-03, US-16 #5) 이름 있는 시간대 표시에는 별도 플러그인이 필요하다. ② `/api/me`(6.3 `users.routes.js`)가 N-11(복수형 명사 경로)의 예외인지. ③ OPS-04(요청 로그를 `console`로 기록)와 Q-13(`console.log` 커밋 금지, 에러 로그는 `error-handler.js`에서만)의 관계와 요청 로그를 남기는 위치(6.3 `middleware/`에 없음).
-- (기록) v0.17: 프론트 개발 모드 로깅 구현(`shared/lib/logger.ts`)으로 ③의 결론(코드의 로그는 백엔드 `error-handler.js`뿐, `console` 직접 호출 금지)이 프론트에는 맞지 않게 됐다. 구현된 사실만 OPS-25로 반영했다: 프론트의 `console` 직접 호출은 `logger.ts` 한 파일뿐이고 개발 모드에서만 출력한다. Q-13, OPS-04, OPS-05, FE-11 예외, G-10을 함께 고쳤다. 백엔드 규칙(요청 로그 코드 없음, 5xx는 `error-handler.js`에서만)은 그대로다. 미결 없음.
+- (기록) v0.16: 프론트 개발 모드 로깅 구현(`shared/lib/logger.ts`)으로 ③의 결론(코드의 로그는 백엔드 `error-handler.js`뿐, `console` 직접 호출 금지)이 프론트에는 맞지 않게 됐다. 구현된 사실만 OPS-25로 반영했다: 프론트의 `console` 직접 호출은 `logger.ts` 한 파일뿐이고 개발 모드에서만 출력한다. Q-13, OPS-04, OPS-05, FE-11 예외, G-10을 함께 고쳤다. 백엔드 규칙(요청 로그 코드 없음, 5xx는 `error-handler.js`에서만)은 그대로다. 미결 없음.
 
 | ID | 항목 | 가정 내용 |
 |----|------|-----------|
@@ -491,5 +491,5 @@ backend/
 | v0.13 | 2026-11-05 | hjining | SEC-04 헬스 응답을 서버·DB 상태 분리로 변경(정상 200 `{"server":"ok","db":"ok"}`, DB 실패 503 `{"server":"ok","db":"error"}`). 1.2·6.3에 개발 모드 전용 Swagger UI(`/swagger`, 설명문 제외, 배포 경로에 없음) 추가. 기준 문서 버전 갱신(PRD v0.15, 사용자 시나리오 v0.14, 와이어프레임 v0.12). 프론트·API 연결을 CORS로 변경(PRD v0.15): 1.2 배포, 2장 middleware, SEC-02(`COOKIE_SAMESITE`), SEC-07(CORS 허용 목록·Origin 검사), OPS-19, 6.2 `vite.config.ts`, 6.3 `cors.js`, G-08 환경변수, G-14 프록시 없음 |
 | v0.14 | 2026-11-05 | hjining | N-11 경로 예시에 `PATCH /api/teams/:teamId/color`(요청자 본인의 팀 캘린더 색상만 변경, 실행 계획 6.3 CL-02) 추가 |
 | v0.15 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14). 제목 줄에 잘못 들어가 있던 변경 요약을 이력으로 이동: OPS-19에서 '단일 프로젝트' 삭제(PRD v0.15, W-09 미결), G-08에 토큰 만료 환경변수 `ACCESS_TOKEN_TTL_MINUTES`·`REFRESH_TOKEN_TTL_DAYS`(기본 15분·7일), `.env.example`을 `backend/.env.example`로 이동(프론트는 UI-01에서 `frontend/.env.example`, 6.1·6.3 구조, OPS-01). FE-09에 팀 캘린더 팔레트 색의 인라인 `style` 예외(PRD A29, 스타일 가이드 1장), 6.1 `docs/` 주석 1–9로 정정, 6.3 `teams.routes.js` 주석에 내 캘린더 색. 6.2에 화면 경로(SC-01–SC-09) 목록 추가 |
-| v0.16 | 2026-11-05 | hjining | 다국어·테마·Google 소셜 로그인 반영(DOC-01, 계획서 `docs-local/261105-i18n-theme-social-plan.md`), 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15): P-07 범위 밖 목록 조정, 1.2 다국어·테마·소셜 로그인 스택, FE-11(i18n 문자열·번역 파일 규칙)·FE-12(테마 구현), 5.1 환경변수 `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`·`APP_URL`·`API_URL`, SEC-04 공개 경로에 OAuth 두 경로, SEC-05 소셜 전용 계정, SEC-07·N-13 콜백 `GET` 예외, SEC-13(OAuth 흐름·state·`next` 검증), OPS-10 오류 번역 우선, OPS-22 배포 순서, N-11·N-16·N-17·N-19, G-08, 6.2·6.3 구조(`shared/i18n/`, `errorMessage.ts`, `LanguageSelect`·`ThemeToggle`, `SocialLoginButtons`, `oauth.providers.js`, `identities.repo.js`), 6.4 |
-| v0.17 | 2026-11-05 | hjining | 프론트 개발 모드 전용 콘솔 로깅 구현(`shared/lib/logger.ts`, 커밋 7c6a5f7) 반영: OPS-25 추가(출력 조건, 로깅 지점, 미기록 항목, 한국어 메시지, 테스트 무음 처리), Q-13(프론트 `console` 직접 호출은 `logger.ts` 한 파일), OPS-04(백엔드 한정, 프론트는 OPS-25), OPS-05(요청·응답 본문 추가), FE-11 예외(로그 메시지는 `t()` 대상 아님), N-08, G-10, 6.2 구조(`shared/lib/logger.ts`, `test/setup.ts`), 7장 기록 |
+| v0.16 | 2026-11-05 | hjining | 다국어·테마·Google 소셜 로그인 반영(DOC-01, 계획서 `docs-local/261105-i18n-theme-social-plan.md`), 기준 문서 버전 갱신(도메인 v0.14, PRD v0.16, 사용자 시나리오 v0.15, 와이어프레임 v0.14): P-07 범위 밖 목록 조정, 1.2 다국어·테마·소셜 로그인 스택, FE-11(i18n 문자열·번역 파일 규칙)·FE-12(테마 구현), 5.1 환경변수 `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`·`APP_URL`·`API_URL`, SEC-04 공개 경로에 OAuth 두 경로, SEC-05 소셜 전용 계정, SEC-07·N-13 콜백 `GET` 예외, SEC-13(OAuth 흐름·state·`next` 검증), OPS-10 오류 번역 우선, OPS-22 배포 순서, N-11·N-16·N-17·N-19, G-08, 6.2·6.3 구조(`shared/i18n/`, `errorMessage.ts`, `LanguageSelect`·`ThemeToggle`, `SocialLoginButtons`, `oauth.providers.js`, `identities.repo.js`), 6.4. 프론트 개발 모드 전용 콘솔 로깅 구현(`shared/lib/logger.ts`, 커밋 7c6a5f7) 반영: OPS-25 추가(출력 조건, 로깅 지점, 미기록 항목, 한국어 메시지, 테스트 무음 처리), Q-13(프론트 `console` 직접 호출은 `logger.ts` 한 파일), OPS-04(백엔드 한정, 프론트는 OPS-25), OPS-05(요청·응답 본문 추가), FE-11 예외(로그 메시지는 `t()` 대상 아님), N-08, G-10, 6.2 구조(`shared/lib/logger.ts`, `test/setup.ts`), 7장 기록 |
+| v0.17 | 2026-11-06 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(도메인 v0.15, PRD v0.17, 사용자 시나리오 v0.16, 와이어프레임 v0.15). 기본 카테고리 이름 번역 표시(커밋 fb235b4) 반영: FE-11에 `categoryName()` 규칙, 6.2 `categories/` 주석에 `categoryName.ts` |

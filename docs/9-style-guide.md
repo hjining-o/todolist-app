@@ -4,7 +4,7 @@
 |------|------|
 | 문서 버전 | v0.4 |
 | 상태 | 초안 |
-| 최종 수정일 | 2026-11-05 |
+| 최종 수정일 | 2026-11-06 |
 | 작성자 | hjining |
 | 기준 문서 | `docs/4-wireframe.md` v0.15, `docs/5-project-principle.md`(FE-08, FE-09, FE-12, G-11, G-16) |
 
@@ -183,7 +183,7 @@ export function StatusBadge({ status }: { status: TodoStatus }) {
 | SC-03 | 페이지 머리 · 필터 바(`flex flex-wrap items-end gap-2`, 모바일 `Collapsible`) · `Table`/모바일 행 · `Pagination` + `총 N건`(`text-sm text-muted-foreground`) |
 | SC-04 | 머리(제목 + `Tabs`) · 소유자 텍스트(`text-sm text-muted-foreground`) · `FieldGroup`(라벨 왼쪽) · 하단 `flex justify-between`([삭제] 왼쪽, [취소][저장] 오른쪽). 읽기 전용은 입력 대신 `p.text-sm` |
 | SC-05 | 툴바(`flex flex-wrap items-center gap-2`: 이동 · 기간 제목 `text-lg font-semibold` · `ToggleGroup` · 등록 버튼 `ml-auto`) · 보기 `Select` · `Alert`(500건) · FullCalendar(7장) |
-| SC-06 | 추가 폼(`flex gap-2`: `Input` + 글자 수 + `Button`) · 목록 `divide-y rounded-md border` · 기본 카테고리 행에 `Badge variant="secondary"`('기본') + 비활성 버튼 |
+| SC-06 | 추가 폼(`flex gap-2`: `Input` + 글자 수 + `Button`) · 목록 `divide-y rounded-md border` · 기본 카테고리 행은 배지 없이 이름만 두고 수정·삭제 버튼을 `disabled`(이름은 `categoryName()`으로 번역) |
 | SC-07 | 두 개의 `Card`(내 정보 / 비밀번호 변경), 각자 저장 버튼 [U-17] |
 | SC-08 | 페이지 머리 · `Table`(팀 이름, 내 역할 `Badge`) · 행 클릭 이동(`cursor-pointer hover:bg-muted/50`은 `TableRow` 기본) |
 | SC-09 | 머리(`link` 버튼 '< 팀 목록' · 팀 이름 · 내 역할) · 구성원 추가 `Card`(소유자만) · 구성원 `Table` · 행 버튼 `size="sm"` |
@@ -339,5 +339,5 @@ FullCalendar는 shadcn에 없으므로 **CSS 변수로 shadcn 토큰에 연결**
 |------|------|--------|------|
 | v0.1 | 2026-11-05 | hjining | 초안. 와이어프레임 v0.12 기준 shadcn 컴포넌트 매핑, 토큰, 상태 배지, 비-shadcn 부품 규칙, FullCalendar 테마 연결 |
 | v0.2 | 2026-11-05 | hjining | 팀 캘린더 팔레트·여러 팀 색을 고정 색 금지의 예외로 명시(1장), 7장에 팔레트 표(7.1)와 막대 상태 규칙(7.2) 추가(UI-13, 6.3 CL-01–CL-06) |
-| v0.3 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(와이어프레임 v0.14). '6.3 CL-xx' 참조를 '실행 계획 6.3'으로 명확화(이 문서 6.3 '읽기 전용 값'과 구분). 내용 변경 없음 |
-| v0.4 | 2026-11-05 | hjining | 다크 테마 반영(DOC-01, 실행 계획 `docs-local/261105-i18n-theme-social-plan.md` THM-01·THM-02), 기준 문서 버전 갱신(와이어프레임 v0.15, 프로젝트 원칙 FE-12): 머리말·1장 '다크 모드 없음' 문구 정정, 2.1.1 다크 토큰 표와 캘린더 막대 변수 `--bar-ink`·`--bar-ink-y`·`--bar-mix`, 7.2 시작 전 글자색, 7.3 다크 대비 결과, 1장·8장 Google 로고 예외·테마 점검 |
+| v0.3 | 2026-11-05 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(와이어프레임 v0.14). '6.3 CL-xx' 참조를 '실행 계획 6.3'으로 명확화(이 문서 6.3 '읽기 전용 값'과 구분). 다크 테마 반영(DOC-01, 실행 계획 `docs-local/261105-i18n-theme-social-plan.md` THM-01·THM-02), 프로젝트 원칙 FE-12 참조 추가: 머리말·1장 '다크 모드 없음' 문구 정정, 2.1.1 다크 토큰 표와 캘린더 막대 변수 `--bar-ink`·`--bar-ink-y`·`--bar-mix`, 7.2 시작 전 글자색, 7.3 다크 대비 결과, 1장·8장 Google 로고 예외·테마 점검 |
+| v0.4 | 2026-11-06 | hjining | 문서 정합성 검토: 기준 문서 버전 갱신(와이어프레임 v0.15). 5장 SC-06에서 기본 카테고리 행의 `Badge`('기본') 삭제(커밋 fb235b4, 와이어프레임 4.7과 맞춤). 역할 `Badge`(3.2)·상태 `Badge`(4장)는 그대로 |
