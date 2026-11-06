@@ -186,6 +186,8 @@ export function CalendarPage() {
         initialDate={initial.date}
         events={events}
         eventDisplay="block"
+        // 시작=종료 할일은 FullCalendar가 기본 1시간을 붙여 23:59면 다음 날까지 그린다. 1분으로 줄여 그날 안에 둔다(R15)
+        defaultTimedEventDuration="00:01"
         eventContent={(arg) => <BarContent arg={arg} />}
         dayCellContent={
           mobileMonth
