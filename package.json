@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "test": "npm test --workspaces --if-present",
     "dev": "npm run dev -w backend",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w frontend",
     "db:migrate": "npm run db:migrate -w backend",
     "db:reset:test": "npm run db:reset:test -w backend",
     "dev:frontend": "npm run dev -w frontend"
